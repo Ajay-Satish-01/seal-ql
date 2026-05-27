@@ -33,6 +33,14 @@ testpaths = [
     "sdks/python/tests",
     "evals",
 ]
+pythonpath = [
+    "packages/core",
+    "packages/sql",
+    "packages/charts",
+    "packages/semantic",
+    "apps/api",
+    "sdks/python",
+]
 asyncio_mode = "auto"
 
 [tool.ruff]
