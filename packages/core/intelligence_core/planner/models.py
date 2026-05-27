@@ -1,9 +1,9 @@
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class ChartType(str, Enum):
+class ChartType(StrEnum):
     """Supported chart types for visualization."""
 
     LINE = "line"
