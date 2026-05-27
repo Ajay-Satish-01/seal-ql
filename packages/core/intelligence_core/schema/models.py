@@ -85,9 +85,7 @@ class ContinuousAggregateInfo(BaseModel):
     because the LLM can query them directly for pre-aggregated data.
     """
 
-    source_hypertable: str = Field(
-        description="The hypertable this aggregate reads from"
-    )
+    source_hypertable: str = Field(description="The hypertable this aggregate reads from")
     view_definition: str | None = Field(
         default=None, description="The SQL definition of the continuous aggregate"
     )

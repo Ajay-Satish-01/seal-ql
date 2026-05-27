@@ -217,7 +217,11 @@ SELECT
      FROM timescaledb_information.dimensions d
      WHERE d.hypertable_schema = h.hypertable_schema
        AND d.hypertable_name = h.hypertable_name
-       AND d.column_type IN ('timestamp with time zone', 'timestamp without time zone', 'date', 'bigint', 'integer')
+       AND d.column_type IN (
+           'timestamp with time zone',
+           'timestamp without time zone',
+           'date', 'bigint', 'integer'
+       )
      ORDER BY d.dimension_number
      LIMIT 1) AS time_column,
     num_chunks,
@@ -462,10 +466,7 @@ class PostgresIntrospector:
 
     def _build_row_count_lookup(self, rows: list[Any]) -> dict[str, int]:
         """Build a lookup of schema.table → approximate row count."""
-        return {
-            f"{row['table_schema']}.{row['table_name']}": row["row_count"]
-            for row in rows
-        }
+        return {f"{row['table_schema']}.{row['table_name']}": row["row_count"] for row in rows}
 
     def _build_hypertable_lookup(self, rows: list[Any]) -> dict[str, HypertableInfo]:
         """Build a lookup of schema.table → HypertableInfo."""
