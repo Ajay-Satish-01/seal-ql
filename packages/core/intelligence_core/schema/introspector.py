@@ -6,9 +6,10 @@ The get_introspector() factory selects the right implementation based on the dia
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from intelligence_core.schema.models import DatabaseSchema
+if TYPE_CHECKING:
+    from intelligence_core.schema.models import DatabaseSchema
 
 
 @runtime_checkable
