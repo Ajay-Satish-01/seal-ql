@@ -1,0 +1,20 @@
+[project]
+name = "intelligence-evals"
+version = "0.1.0"
+description = "Evaluation harness for Intelligence Connector"
+requires-python = ">=3.11"
+dependencies = [
+    "intelligence-core",
+    "intelligence-sql",
+    "intelligence-charts",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.uv.sources]
+intelligence-core = { workspace = true }
+intelligence-sql = { workspace = true }
+intelligence-charts = { workspace = true }

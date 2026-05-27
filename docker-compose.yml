@@ -1,0 +1,62 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/intelligence_connector
+      - DUCKDB_PATH=:memory:
+      - LLM_MODEL=ollama/llama3.1
+      - LLM_BASE_URL=http://ollama:11434
+      - MAX_ROWS=10000
+      - QUERY_TIMEOUT_SECONDS=30
+      - CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]
+    volumes:
+      - ./apps/api:/app/apps/api
+      - ./packages:/app/packages
+      - ./evals:/app/evals
+      - ./sdks/python:/app/sdks/python
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    restart: unless-stopped
+
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: intelligence_connector
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/seed.sql:/docker-entrypoint-initdb.d/seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Pull the default model on startup
+    entrypoint: >
+      /bin/sh -c "
+        /bin/ollama serve &
+        sleep 5 &&
+        /bin/ollama pull llama3.1 &&
+        wait
+      "
+
+volumes:
+  postgres_data:
+  ollama_data:

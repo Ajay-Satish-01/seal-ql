@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+*.egg
+.ruff_cache/
+
+# Environment
+.env
+
+# uv
+uv.lock
+
+# Node
+node_modules/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Generated SDK code
+sdks/typescript/src/generated/
+sdks/python/intelligence_connector/generated/
+
+# DuckDB
+*.duckdb
+*.duckdb.wal

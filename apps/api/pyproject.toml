@@ -1,0 +1,28 @@
+[project]
+name = "intelligence-connector-api"
+version = "0.1.0"
+description = "FastAPI application for the Intelligence Connector SDK"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic-settings>=2.6.0",
+    "httpx>=0.28.0",
+    "intelligence-core",
+    "intelligence-sql",
+    "intelligence-charts",
+    "intelligence-semantic",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.8.0",
+]
+
+[tool.uv.sources]
+intelligence-core = { workspace = true }
+intelligence-sql = { workspace = true }
+intelligence-charts = { workspace = true }
+intelligence-semantic = { workspace = true }

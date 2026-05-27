@@ -1,0 +1,17 @@
+[project]
+name = "intelligence-connector-sdk"
+version = "0.1.0"
+description = "Python SDK for Intelligence Connector"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.28.0",
+    "pydantic>=2.10.0",
+]
+
+[project.optional-dependencies]
+polars = ["polars>=1.15.0"]
+pandas = ["pandas>=2.2.0"]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24.0",
+]

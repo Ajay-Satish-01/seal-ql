@@ -1,0 +1,14 @@
+[project]
+name = "intelligence-semantic"
+version = "0.1.0"
+description = "YAML-based semantic metrics layer for Intelligence Connector"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.10.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
