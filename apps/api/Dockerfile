@@ -18,13 +18,13 @@ COPY sdks/python/pyproject.toml sdks/python/pyproject.toml
 COPY evals/pyproject.toml evals/pyproject.toml
 
 # Install dependencies (cached layer)
-RUN uv sync --frozen --no-install-workspace 2>/dev/null || uv sync --no-install-workspace
+RUN uv sync --frozen --no-install-workspace --all-packages 2>/dev/null || uv sync --no-install-workspace --all-packages
 
 # Copy source code
 COPY . .
 
 # Install workspace packages in editable mode
-RUN uv sync
+RUN uv sync --all-packages
 
 EXPOSE 8000
 
