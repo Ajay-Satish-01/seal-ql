@@ -4,15 +4,15 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
     environment:
-      - "DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/intelligence_connector"
-      - "DUCKDB_PATH=:memory:"
-      - "LLM_MODEL=ollama/llama3.1"
-      - "LLM_BASE_URL=http://ollama:11434"
-      - "MAX_ROWS=10000"
-      - "QUERY_TIMEOUT_SECONDS=30"
-      - 'CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]'
+      - "DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/intelligence_connector}"
+      - "DUCKDB_PATH=${DUCKDB_PATH:-:memory:}"
+      - "LLM_MODEL=${LLM_MODEL:-ollama/llama3.2:3b}"
+      - "LLM_BASE_URL=${LLM_BASE_URL:-http://ollama:11434}"
+      - "MAX_ROWS=${MAX_ROWS:-10000}"
+      - "QUERY_TIMEOUT_SECONDS=${QUERY_TIMEOUT_SECONDS:-30}"
+      - 'CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000","http://localhost:5173"]}'
     volumes:
       - ./apps/api:/app/apps/api
       - ./packages:/app/packages
@@ -28,16 +28,16 @@ services:
   postgres:
     image: timescale/timescaledb:latest-pg16
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: intelligence_connector
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-intelligence_connector}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/seed.sql:/docker-entrypoint-initdb.d/seed.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -45,15 +45,17 @@ services:
   ollama:
     image: ollama/ollama:latest
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - ollama_data:/root/.ollama
-    # Pull the default model on startup
+    environment:
+      - "LLM_MODEL=${LLM_MODEL:-ollama/llama3.2:3b}"
+    # Dynamically pull whichever model LLM_MODEL is set to
     entrypoint: >
       /bin/sh -c "
         /bin/ollama serve &
         sleep 5 &&
-        /bin/ollama pull llama3.1 &&
+        /bin/ollama pull $${LLM_MODEL#ollama/} &&
         wait
       "
 
