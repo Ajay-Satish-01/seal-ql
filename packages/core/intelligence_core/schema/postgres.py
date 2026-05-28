@@ -269,7 +269,11 @@ class PostgresIntrospector:
     """
 
     def __init__(self, connection_string: str) -> None:
-        self._connection_string = connection_string
+        # asyncpg only accepts "postgresql://" or "postgres://" schemes.
+        # Strip the SQLAlchemy-style "+asyncpg" dialect suffix if present.
+        self._connection_string = connection_string.replace(
+            "postgresql+asyncpg://", "postgresql://"
+        )
         self._pool: asyncpg.Pool | None = None
 
     async def _get_pool(self) -> asyncpg.Pool:
