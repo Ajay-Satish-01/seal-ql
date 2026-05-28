@@ -5,7 +5,13 @@ description = "Vega-Lite chart spec generation for Intelligence Connector"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.10.0",
+    "intelligence-core",
+    "intelligence-sql",
 ]
+
+[tool.uv.sources]
+intelligence-core = { workspace = true }
+intelligence-sql = { workspace = true }
 
 [project.optional-dependencies]
 dev = [
