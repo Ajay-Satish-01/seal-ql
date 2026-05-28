@@ -9,6 +9,7 @@ from intelligence_core.planner.prompts import (
     REPAIR_SYSTEM_PROMPT,
 )
 from intelligence_core.schema.models import DatabaseSchema
+from intelligence_core.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class QueryPlanner:
                 messages=messages,
                 response_model=QueryPlan,
                 api_base=self.api_base,
-                max_retries=2,  # Instructor handles Pydantic validation retries natively
+                max_retries=get_settings().llm_max_retries,  # From centralized settings
             )
             return plan  # type: ignore
         except Exception as e:
@@ -96,7 +97,7 @@ class QueryPlanner:
                 messages=messages,
                 response_model=QueryPlan,
                 api_base=self.api_base,
-                max_retries=2,
+                max_retries=get_settings().llm_max_retries,
             )
             return plan  # type: ignore
         except Exception as e:
