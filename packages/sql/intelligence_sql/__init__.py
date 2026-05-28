@@ -1,6 +1,17 @@
 """Intelligence SQL — SQL validation, sanitization, and safe execution."""
 
 from intelligence_sql.dialects import Dialect, is_supported_dialect, to_sqlglot_dialect, transpile
+from intelligence_sql.executor import (
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_RETRY_BASE_DELAY,
+    DEFAULT_ROW_CAP,
+    DEFAULT_TIMEOUT_SECONDS,
+    ExecutionConfig,
+    QueryExecutionError,
+    QueryExecutor,
+    QueryTimeoutError,
+)
+from intelligence_sql.result import ColumnMetadata, QueryResult
 from intelligence_sql.sanitizer import (
     DEFAULT_MAX_JOINS,
     DEFAULT_MAX_ROWS,
@@ -27,4 +38,16 @@ __all__ = [
     "DEFAULT_MAX_ROWS",
     "DEFAULT_MAX_JOINS",
     "DEFAULT_MAX_SUBQUERY_DEPTH",
+    # Executor
+    "QueryExecutor",
+    "ExecutionConfig",
+    "QueryExecutionError",
+    "QueryTimeoutError",
+    "DEFAULT_TIMEOUT_SECONDS",
+    "DEFAULT_MAX_RETRIES",
+    "DEFAULT_ROW_CAP",
+    "DEFAULT_RETRY_BASE_DELAY",
+    # Result
+    "QueryResult",
+    "ColumnMetadata",
 ]

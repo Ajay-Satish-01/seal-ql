@@ -2,6 +2,8 @@
 
 Every SQL query from the LLM passes through here after validation. The sanitizer
 ensures that only safe, read-only queries with bounded result sets reach the database.
+
+All default values come from the centralized Settings class (via env vars).
 """
 
 from __future__ import annotations
@@ -10,12 +12,27 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 import sqlglot
+from intelligence_core.settings import get_settings
 from sqlglot import exp
 from sqlglot.errors import ParseError
 
 from intelligence_sql.dialects import to_sqlglot_dialect
 
-# Maximum configurable defaults.
+
+def _default_max_rows() -> int:
+    return get_settings().max_rows
+
+
+def _default_max_joins() -> int:
+    return get_settings().max_joins
+
+
+def _default_max_subquery_depth() -> int:
+    return get_settings().max_subquery_depth
+
+
+# Backwards-compatible aliases for code that imports these directly.
+# These are evaluated at import time but match the env-configurable defaults.
 DEFAULT_MAX_ROWS = 10_000
 DEFAULT_MAX_JOINS = 10
 DEFAULT_MAX_SUBQUERY_DEPTH = 5
@@ -74,6 +91,9 @@ class SQLSanitizer:
     3. Enforces a LIMIT clause (injects one if missing)
     4. Enforces query complexity bounds (max joins, max subquery depth)
 
+    When no explicit limits are provided, values are read from the centralized
+    Settings class (env vars: MAX_ROWS, MAX_JOINS, MAX_SUBQUERY_DEPTH).
+
     Example:
         >>> sanitizer = SQLSanitizer(dialect="postgres", max_rows=1000)
         >>> result = sanitizer.sanitize("SELECT * FROM users")
@@ -85,22 +105,25 @@ class SQLSanitizer:
         self,
         dialect: str = "postgres",
         *,
-        max_rows: int = DEFAULT_MAX_ROWS,
-        max_joins: int = DEFAULT_MAX_JOINS,
-        max_subquery_depth: int = DEFAULT_MAX_SUBQUERY_DEPTH,
+        max_rows: int | None = None,
+        max_joins: int | None = None,
+        max_subquery_depth: int | None = None,
     ) -> None:
         """Initialize the sanitizer.
 
         Args:
             dialect: Database dialect string.
-            max_rows: Maximum number of rows allowed (injected as LIMIT if missing).
-            max_joins: Maximum number of JOIN clauses allowed.
+            max_rows: Maximum number of rows allowed. Falls back to Settings.max_rows.
+            max_joins: Maximum number of JOIN clauses allowed. Falls back to Settings.max_joins.
             max_subquery_depth: Maximum nesting depth of subqueries.
+                Falls back to Settings.max_subquery_depth.
         """
         self._dialect = to_sqlglot_dialect(dialect)
-        self._max_rows = max_rows
-        self._max_joins = max_joins
-        self._max_subquery_depth = max_subquery_depth
+        self._max_rows = max_rows if max_rows is not None else _default_max_rows()
+        self._max_joins = max_joins if max_joins is not None else _default_max_joins()
+        self._max_subquery_depth = (
+            max_subquery_depth if max_subquery_depth is not None else _default_max_subquery_depth()
+        )
 
     def sanitize(self, sql: str) -> SanitizationResult:
         """Sanitize a SQL query for safe execution.

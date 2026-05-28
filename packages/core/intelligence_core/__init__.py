@@ -12,6 +12,7 @@ from intelligence_core.schema.models import (
     TableKind,
     TableSchema,
 )
+from intelligence_core.settings import Settings, get_settings
 
 __all__ = [
     "ChartType",
@@ -25,4 +26,6 @@ __all__ = [
     "RelationshipInfo",
     "TableKind",
     "TableSchema",
+    "Settings",
+    "get_settings",
 ]
