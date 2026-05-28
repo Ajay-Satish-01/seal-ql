@@ -41,7 +41,7 @@ class TestSafeQueries:
 
     def test_select_with_join(self, sanitizer: SQLSanitizer) -> None:
         result = sanitizer.sanitize(
-            "SELECT u.name, o.amount FROM users u " "JOIN orders o ON u.id = o.user_id LIMIT 100"
+            "SELECT u.name, o.amount FROM users u JOIN orders o ON u.id = o.user_id LIMIT 100"
         )
         assert result.safe
 
@@ -51,7 +51,7 @@ class TestSafeQueries:
 
     def test_select_with_subquery(self, sanitizer: SQLSanitizer) -> None:
         result = sanitizer.sanitize(
-            "SELECT name FROM users WHERE id IN " "(SELECT user_id FROM orders) LIMIT 100"
+            "SELECT name FROM users WHERE id IN (SELECT user_id FROM orders) LIMIT 100"
         )
         assert result.safe
 
@@ -205,7 +205,7 @@ class TestComplexityBounds:
 
     def test_joins_at_limit(self, strict_sanitizer: SQLSanitizer) -> None:
         """Exactly 2 joins should be allowed."""
-        sql = "SELECT * FROM a " "JOIN b ON a.id = b.id " "JOIN c ON b.id = c.id " "LIMIT 10"
+        sql = "SELECT * FROM a JOIN b ON a.id = b.id JOIN c ON b.id = c.id LIMIT 10"
         result = strict_sanitizer.sanitize(sql)
         assert result.safe
 

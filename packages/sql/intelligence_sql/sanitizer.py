@@ -157,7 +157,7 @@ class SQLSanitizer:
         for op in (BlockedOperation.TRUNCATE, BlockedOperation.REVOKE, BlockedOperation.MERGE):
             if sql_upper.startswith(op.value):
                 blocked_ops.append(
-                    f"Blocked operation: {op.value}. " "Only read-only SELECT queries are allowed."
+                    f"Blocked operation: {op.value}. Only read-only SELECT queries are allowed."
                 )
 
         if blocked_ops:
@@ -176,7 +176,7 @@ class SQLSanitizer:
                     safe=False,
                     sanitized_sql=sql,
                     blocked_operations=[
-                        "Only SELECT queries are allowed. " f"Got: {type(parsed).__name__}"
+                        f"Only SELECT queries are allowed. Got: {type(parsed).__name__}"
                     ],
                 )
 
