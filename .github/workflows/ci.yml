@@ -77,8 +77,6 @@ jobs:
   typescript-lint:
     name: "TypeScript — ESLint & Prettier"
     runs-on: ubuntu-latest
-    # Only run if TypeScript files exist
-    if: hashFiles('sdks/typescript/src/**/*.ts', 'sdks/typescript/src/**/*.tsx') != ''
     steps:
       - uses: actions/checkout@v4
 
@@ -95,11 +93,21 @@ jobs:
 
       - name: ESLint
         working-directory: sdks/typescript
-        run: npx eslint src/ --max-warnings=0
+        run: |
+          if [ -d "src" ]; then
+            npx eslint src/ --max-warnings=0
+          else
+            echo "Skipping ESLint (src/ directory does not exist yet)"
+          fi
 
       - name: Prettier check
         working-directory: sdks/typescript
-        run: npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css}"
+        run: |
+          if [ -d "src" ]; then
+            npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css}"
+          else
+            echo "Skipping Prettier (src/ directory does not exist yet)"
+          fi
 
   # ============================================================
   # Docker: Verify the full stack builds and starts

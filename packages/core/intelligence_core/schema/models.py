@@ -7,12 +7,12 @@ produces these models, and every downstream consumer (planner, validator) reads 
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class ColumnType(str, Enum):
+class ColumnType(StrEnum):
     """Normalized column types across all supported databases."""
 
     STRING = "string"
@@ -27,7 +27,7 @@ class ColumnType(str, Enum):
     OTHER = "other"
 
 
-class TableKind(str, Enum):
+class TableKind(StrEnum):
     """The kind of relation in the database.
 
     Distinguishing these is critical because:

@@ -6,6 +6,12 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 
+[dependency-groups]
+dev = [
+    "ruff>=0.8.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
 [tool.uv.workspace]
 members = [
     "apps/api",
@@ -26,6 +32,14 @@ testpaths = [
     "apps/api/tests",
     "sdks/python/tests",
     "evals",
+]
+pythonpath = [
+    "packages/core",
+    "packages/sql",
+    "packages/charts",
+    "packages/semantic",
+    "apps/api",
+    "sdks/python",
 ]
 asyncio_mode = "auto"
 
