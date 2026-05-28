@@ -18,7 +18,7 @@ def get_model() -> str:
     Returns the configured LLM model string.
     Defaults to ollama/llama3.1 for local, zero-cost execution.
     """
-    return os.getenv("LLM_MODEL", "ollama/llama3.1")
+    return os.getenv("LLM_MODEL", "ollama/llama3.2:3b")
 
 
 def get_api_base() -> str:
