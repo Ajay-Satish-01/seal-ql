@@ -19,3 +19,8 @@ def get_query_planner(request: Request) -> QueryPlanner:
 def get_query_executor(request: Request) -> QueryExecutor:
     """Get the application's global query executor."""
     return request.app.state.executor
+
+
+def get_semantic_registry(request: Request):
+    """Get the application's global semantic registry."""
+    return request.app.state.semantic_registry
