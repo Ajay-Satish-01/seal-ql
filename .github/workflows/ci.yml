@@ -42,7 +42,7 @@ jobs:
       - name: Start services
         run: docker compose up -d --build postgres api
         env:
-          LLM_MODEL: "ollama/qwen3.5:9b"
+          LLM_MODEL: "ollama/qwen3.5:4b"
           LLM_BASE_URL: "http://localhost:11434"
 
       - name: Wait for Postgres to be healthy
@@ -87,7 +87,7 @@ jobs:
           # E2E requires a model, we securely inject secrets so it can run cloud models if available.
           # Otherwise it falls back to a small, fast local Ollama model.
           LLM_TYPE: ${{ secrets.LLM_TYPE || 'local' }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL || 'ollama/qwen3.5:9b' }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || 'ollama/qwen3.5:4b' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -183,7 +183,7 @@ jobs:
         run: |
           docker compose up -d postgres api
         env:
-          LLM_MODEL: "ollama/qwen3.5:9b"
+          LLM_MODEL: "ollama/qwen3.5:4b"
           LLM_BASE_URL: "http://localhost:11434"
 
       - name: Wait for API to be ready
