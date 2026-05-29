@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint . --fix",
     "format": "prettier --write .",
-    "fbl": "pnpm i && pnpm format && pnpm lint && pnpm build"
+    "fbl": "pnpm install --frozen-lockfile && pnpm format && pnpm lint && pnpm build"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
