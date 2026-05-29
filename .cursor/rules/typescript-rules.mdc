@@ -1,0 +1,12 @@
+---
+description: TypeScript SDK Rules
+globs: ["sdks/typescript/**/*.ts", "sdks/typescript/**/*.tsx"]
+---
+
+# TypeScript Constraints
+
+- Always use `pnpm` for package management (`pnpm install`, `pnpm build`).
+- Ensure APIs are async-first and strongly typed.
+- Never bypass the shared fetch wrapper/API client if one exists.
+- Validate using `eslint` and `prettier`.
+- Ensure chart rendering strictly expects Vega-Lite specification objects.
