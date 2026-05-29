@@ -23,7 +23,7 @@ export interface VegaChartProps {
   /** Enable dark mode styling. Defaults to false. */
   theme?: 'light' | 'dark';
   /** Called when the chart has successfully rendered. */
-  onRender?: (view: any) => void;
+  onRender?: (view: unknown) => void;
   /** Called if an error occurs during rendering. */
   onError?: (error: Error) => void;
 }
@@ -46,7 +46,7 @@ export const VegaChart: React.FC<VegaChartProps> = ({
   onError,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<any>(null);
+  const viewRef = useRef<{ finalize: () => void } | null>(null);
 
   useEffect(() => {
     // If no spec, or it's a table/metric card, don't render vega
@@ -67,7 +67,7 @@ export const VegaChart: React.FC<VegaChartProps> = ({
       .then((vegaEmbed) => {
         if (!mounted) return;
 
-        const embedOptions: any = {
+        const embedOptions: Record<string, unknown> = {
           actions,
           theme: theme === 'dark' ? 'dark' : undefined,
         };

@@ -56,6 +56,8 @@ openapi: ## Generate OpenAPI json spec
 lint: ## Run all linters (Python + TS)
 	@echo "🐍 Ruff lint..."
 	docker compose run --rm -T api uv run ruff check .
+	@echo "🟦 TS ESLint..."
+	cd sdks/typescript && pnpm exec eslint . --max-warnings=0
 	@echo "\n✅ All linters passed"
 
 format: ## Auto-format all code (Python + TS)
@@ -63,19 +65,25 @@ format: ## Auto-format all code (Python + TS)
 	docker compose run --rm -T api uv run ruff format .
 	@echo "🐍 Ruff fix..."
 	docker compose run --rm -T api uv run ruff check --fix .
+	@echo "🟦 TS Prettier..."
+	cd sdks/typescript && pnpm run format
 	@echo "\n✅ All code formatted"
 
 check: ## Run all checks (lint + format check + tests) — same as CI
 	@echo "═══════════════════════════════════════"
 	@echo "  Running full CI check suite"
 	@echo "═══════════════════════════════════════"
-	@echo "\n📋 1/4 — Ruff lint..."
-	docker compose run --rm -T api uv run ruff check .
-	@echo "\n📋 2/4 — Ruff format check..."
-	docker compose run --rm -T api uv run ruff format --check .
-	@echo "\n📋 3/4 — Tests..."
+	@echo "\n📋 1/6 — Ruff fix & lint..."
+	docker compose run --rm -T api uv run ruff check --fix .
+	@echo "\n📋 2/6 — Ruff format..."
+	docker compose run --rm -T api uv run ruff format .
+	@echo "\n📋 3/6 — TS ESLint & Prettier..."
+	cd sdks/typescript && pnpm run lint && pnpm run format
+	@echo "\n📋 4/6 — Python Tests..."
 	docker compose run --rm -T api uv run pytest -v --tb=short
-	@echo "\n📋 4/4 — Prod Image Build..."
+	@echo "\n📋 5/6 — TS Tests..."
+	cd sdks/typescript && pnpm test
+	@echo "\n📋 6/6 — Prod Image Build..."
 	docker build --target prod -t intelligence-connector/api:test -f apps/api/Dockerfile .
 	@echo "\n═══════════════════════════════════════"
 	@echo "  ✅ All checks passed!"
