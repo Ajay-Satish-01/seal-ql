@@ -14,7 +14,7 @@ class MockIntrospector:
 
 
 class MockPlanner:
-    async def plan(self, query: str, schema: DatabaseSchema):
+    async def generate_plan(self, schema: DatabaseSchema, query: str):
         return QueryPlan(
             sql="SELECT 1 as id",
             chart_type=ChartType.TABLE,

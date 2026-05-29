@@ -1,19 +1,74 @@
 {
   "name": "intelligence-sdk",
   "version": "0.1.0",
-  "description": "TypeScript SDK for intelligence_connector",
+  "description": "TypeScript SDK for Intelligence Connector",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "type": "module",
+  "packageManager": "pnpm@10.33.2",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "keywords": [
+    "ai",
+    "sql",
+    "analytics",
+    "charts",
+    "vega-lite",
+    "llm",
+    "database"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/intelligence-connector/intelligence-connector"
+  },
   "scripts": {
     "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "eslint . --fix",
     "format": "prettier --write ."
   },
+  "dependencies": {},
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "vega": "^5.30.0",
+    "vega-lite": "^5.20.0",
+    "vega-embed": "^6.26.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "vega": {
+      "optional": true
+    },
+    "vega-lite": {
+      "optional": true
+    },
+    "vega-embed": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^9.2.0",
+    "@testing-library/react": "^15.0.7",
+    "@types/react": "^18.3.12",
+    "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.2.0",
+    "jsdom": "^25.0.1",
     "prettier": "^3.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "typescript": "^5.4.5",
-    "typescript-eslint": "^8.0.0-alpha.20"
+    "typescript-eslint": "^8.0.0-alpha.20",
+    "vitest": "^3.2.1"
   }
 }

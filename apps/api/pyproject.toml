@@ -10,6 +10,7 @@ dependencies = [
     "intelligence-core",
     "intelligence-sql",
     "intelligence-charts",
+    "python-dotenv>=1.2.2",
 ]
 
 [project.optional-dependencies]

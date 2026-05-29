@@ -19,6 +19,20 @@
 - **Database Executor**: Optimally queries DuckDB or Postgres (TimescaleDB).
 - **Chart Spec Generator**: Produces Vega-Lite visual schemas based on return data.
 
+## Docker
+
+- Make sure this is docker first since we will be building this and hosting it in dockerhub and people will download the image and use self host it and connect to it using our sdk
+- This will have multiple services ( Postgres, Ollama, API, etc)
+
+## SDKs
+
+- People will connect to this using our sdk, so make sure the sdk is easy to use, we have sdk for python and typescript
+- Think about the best way to structure the sdk, for e.g, does it make sense to have a connector class that the user will import and use, or should it be a more functional approach?
+- We should have proper documentation for the sdk, we can use something like mkdocs to generate documentation from the sdk code
+- It should support different LLM providers, like OpenAI, Anthropic, Google, Ollama, etc
+- It should support different database providers, like Postgres, DuckDB for now.
+
+
 ## Conventions
 
 - Python dependencies are strictly managed through `uv` workspaces.

@@ -1,7 +1,15 @@
 import logging
 from typing import Any
 
-from intelligence_core.llm.client import get_api_base, get_async_client, get_model
+import litellm
+
+from intelligence_core.llm.client import (
+    get_api_base,
+    get_api_key,
+    get_async_client,
+    get_model,
+    validate_llm_env,
+)
 from intelligence_core.planner.models import QueryPlan
 from intelligence_core.planner.prompts import (
     PLANNER_SYSTEM_PROMPT,
@@ -22,9 +30,11 @@ class QueryPlanner:
     """
 
     def __init__(self, model: str | None = None, api_base: str | None = None) -> None:
+        validate_llm_env()
         self.client = get_async_client()
         self.model = model or get_model()
         self.api_base = api_base or get_api_base()
+        self.api_key = get_api_key()
 
     async def generate_plan(self, schema: DatabaseSchema, question: str) -> QueryPlan:
         """
@@ -61,9 +71,19 @@ class QueryPlanner:
                 messages=messages,
                 response_model=QueryPlan,
                 api_base=self.api_base,
+                api_key=self.api_key,
                 max_retries=get_settings().llm_max_retries,  # From centralized settings
             )
             return plan  # type: ignore
+        except litellm.AuthenticationError as e:
+            logger.error(f"Authentication Error with LLM: {e}")
+            raise
+        except litellm.RateLimitError as e:
+            logger.error(f"Rate Limited by LLM provider: {e}")
+            raise
+        except litellm.APIError as e:
+            logger.error(f"LLM API Error: {e}")
+            raise
         except Exception as e:
             logger.error(f"Failed to generate QueryPlan: {str(e)}")
             raise
@@ -97,9 +117,19 @@ class QueryPlanner:
                 messages=messages,
                 response_model=QueryPlan,
                 api_base=self.api_base,
+                api_key=self.api_key,
                 max_retries=get_settings().llm_max_retries,
             )
             return plan  # type: ignore
+        except litellm.AuthenticationError as e:
+            logger.error(f"Authentication Error with LLM: {e}")
+            raise
+        except litellm.RateLimitError as e:
+            logger.error(f"Rate Limited by LLM provider: {e}")
+            raise
+        except litellm.APIError as e:
+            logger.error(f"LLM API Error: {e}")
+            raise
         except Exception as e:
             logger.error(f"Failed to repair QueryPlan: {str(e)}")
             raise

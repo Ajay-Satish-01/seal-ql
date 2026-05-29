@@ -3,6 +3,7 @@
 import logging
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from intelligence_core.planner.planner import QueryPlanner
@@ -11,6 +12,9 @@ from intelligence_core.settings import get_settings
 from intelligence_sql.executor import QueryExecutor
 
 from app.routes import health, query, schema
+
+# Load .env into os.environ so litellm can find provider-specific keys (e.g. GEMINI_API_KEY)
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 

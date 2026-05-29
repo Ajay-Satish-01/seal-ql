@@ -55,20 +55,33 @@ class QueryPlan(BaseModel):
         return v
 
     chart_type: ChartType = Field(
-        ..., description="The recommended chart type for visualizing the results."
+        default=ChartType.TABLE,
+        description="The recommended chart type for visualizing the results.",
     )
-    x_field: str = Field(
-        ..., description="The column name to use for the X-axis (or primary category)."
+
+    @field_validator("chart_type", mode="before")
+    @classmethod
+    def clean_chart_type(cls, v: str) -> str:
+        """Fix small models outputting $defs.ChartType.pie instead of just pie."""
+        if isinstance(v, str) and v.startswith("$defs.ChartType."):
+            return v.split(".")[-1]
+        return v
+
+    x_field: str | None = Field(
+        default=None, description="The column name to use for the X-axis (or primary category)."
     )
-    y_field: str = Field(
-        ..., description="The column name to use for the Y-axis (or primary metric)."
+    y_field: str | None = Field(
+        default=None, description="The column name to use for the Y-axis (or primary metric)."
     )
     color_field: str | None = Field(
         default=None, description="Optional column name to use for coloring/grouping the data."
     )
-    title: str = Field(..., description="A concise, human-readable title for the chart/results.")
+    title: str = Field(
+        default="Query Results",
+        description="A concise, human-readable title for the chart/results.",
+    )
     explanation: str = Field(
-        ...,
+        default="No explanation provided.",
         description="A brief explanation of what the query does and how it answers the "
         "user's question.",
     )
