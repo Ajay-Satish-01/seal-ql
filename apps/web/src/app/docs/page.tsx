@@ -1,5 +1,6 @@
 import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
@@ -25,11 +26,12 @@ export default function DocsPage() {
         </p>
 
         <div className="mt-12">
-          <Button asChild size="lg" className="rounded-full">
-            <Link href="/docs/quickstart">
-              Proceed to Quickstart <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          <Link
+            href="/docs/quickstart"
+            className={cn(buttonVariants({ size: 'lg' }), 'rounded-full')}
+          >
+            Proceed to Quickstart <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
         </div>
       </div>
     </div>

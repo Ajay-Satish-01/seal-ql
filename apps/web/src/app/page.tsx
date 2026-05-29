@@ -1,6 +1,7 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -67,29 +68,26 @@ export default function Home() {
             variants={itemVariants}
             className="mx-auto flex w-full max-w-md flex-col justify-center gap-4 sm:flex-row"
           >
-            <Button
-              asChild
-              size="lg"
-              className="text-md shadow-primary/25 hover:shadow-primary/40 h-12 w-full rounded-full px-8 font-semibold shadow-lg transition-all hover:scale-105 sm:w-auto"
+            <Link
+              href="/docs"
+              className={cn(
+                buttonVariants({ size: 'lg' }),
+                'rounded-full px-8 text-md font-semibold h-12 w-full sm:w-auto shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:scale-105'
+              )}
             >
-              <Link href="/docs">
-                Get Started <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="text-md border-border/50 hover:bg-secondary h-12 w-full rounded-full px-8 font-semibold transition-all hover:scale-105 sm:w-auto"
+              Get Started <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+            <a
+              href="https://github.com/your-org/intelligence_connector"
+              target="_blank"
+              rel="noreferrer"
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'lg' }),
+                'rounded-full px-8 text-md font-semibold border-border/50 hover:bg-secondary h-12 w-full sm:w-auto transition-all hover:scale-105'
+              )}
             >
-              <a
-                href="https://github.com/your-org/intelligence_connector"
-                target="_blank"
-                rel="noreferrer"
-              >
-                View on GitHub
-              </a>
-            </Button>
+              View on GitHub
+            </a>
           </motion.div>
         </motion.div>
       </section>
