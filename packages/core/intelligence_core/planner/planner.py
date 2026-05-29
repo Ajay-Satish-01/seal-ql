@@ -36,13 +36,16 @@ class QueryPlanner:
         self.api_base = api_base or get_api_base()
         self.api_key = get_api_key()
 
-    async def generate_plan(self, schema: DatabaseSchema, question: str) -> QueryPlan:
+    async def generate_plan(
+        self, schema: DatabaseSchema, question: str, semantic_registry: Any | None = None
+    ) -> QueryPlan:
         """
         Generates a QueryPlan for the given natural language question and database schema.
 
         Args:
             schema: The full database schema context.
             question: The user's natural language question.
+            semantic_registry: Optional registry containing semantic metrics and dimensions.
 
         Returns:
             A fully structured QueryPlan containing the SQL, chart type, and metadata.
@@ -51,9 +54,12 @@ class QueryPlanner:
             Exception: If the LLM fails to generate a valid plan.
         """
         schema_context = schema.to_prompt_context()
+        semantic_context = ""
+        if semantic_registry is not None:
+            semantic_context = semantic_registry.get_context_string()
 
         system_prompt = PLANNER_SYSTEM_PROMPT.format(
-            schema_context=schema_context, dialect=schema.dialect
+            schema_context=schema_context, dialect=schema.dialect, semantic_context=semantic_context
         )
         user_prompt = PLANNER_USER_PROMPT.format(question=question)
 

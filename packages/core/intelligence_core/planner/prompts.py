@@ -4,11 +4,12 @@ type to visualize the results.
 
 You are given the following database schema context:
 {schema_context}
+{semantic_context}
 
 RULES:
 1. Generate valid SQL for the target database dialect: {dialect}
-2. ONLY use tables and columns that exist in the schema context provided. Do not hallucinate
-   columns.
+2. ONLY use tables and columns that exist in the schema context or semantic context provided.
+   Do not hallucinate columns.
 3. Use fully qualified column names (e.g., `table_name.column_name`) to avoid ambiguity, especially
    when joining tables.
 4. DO NOT generate destructive queries (e.g., DROP, DELETE, UPDATE, INSERT, ALTER). Only use SELECT

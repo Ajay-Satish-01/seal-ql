@@ -129,6 +129,15 @@ class Settings(BaseSettings):
     )
 
     # ============================================================
+    # Semantic Layer
+    # ============================================================
+
+    semantic_directory: str | None = Field(
+        default=None,
+        description="Path to a directory containing YAML files with semantic metrics.",
+    )
+
+    # ============================================================
     # Postgres (used by docker-compose, not directly by app code)
     # ============================================================
 

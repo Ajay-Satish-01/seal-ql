@@ -105,6 +105,43 @@ We enforce strict formatting rules to maintain maximum readability and zero boil
 
 ---
 
+## 🧠 Semantic Metrics, Repair Loops, & Evals
+
+Intelligence Connector features self-correcting query mechanisms and domain-aware schema reasoning to provide robust and accurate SQL generation.
+
+### 📊 Semantic Metric Layers
+**Purpose**: To bridge the gap between raw database schemas and business logic.
+- Raw tables often have obscure names (`txn_fct`) and lack domain context.
+- The **Semantic Metric Layer** (powered by `packages/semantic`) defines Pydantic models (`Metric`, `Dimension`) mapped via declarative YAML files.
+- **Workflow**:
+  1. At startup, the FastAPI app initializes a `SemanticRegistry` which loads YAML definitions from the configured `SEMANTIC_DIRECTORY`.
+  2. The `QueryPlanner` automatically injects these business metrics and definitions into the system prompt context.
+  3. The LLM can then reason over logical business concepts ("Revenue", "Active Users") rather than raw columns, significantly improving generation accuracy.
+
+### 🔄 Repair Loops
+**Purpose**: To gracefully recover from LLM hallucinations or SQL Dialect syntax errors without failing the user's request.
+- **Workflow**:
+  1. When the `QueryPlanner` generates SQL, it immediately passes through the strict `SQLValidator` and `SQLSanitizer`.
+  2. If the query is destructive (e.g., contains `DROP` or `DELETE`), uses non-existent columns, or fails execution on the underlying database (e.g., `DuckDB` or `TimescaleDB`), an error is raised.
+  3. The API execution route catches these errors and triggers the `QueryPlanner.repair_plan` method.
+  4. The LLM is provided with its original failed query and the exact database/validator error message, and is prompted to fix the mistake. This loop can retry up to a configurable number of attempts (e.g., 3).
+
+### 🧪 Evaluations (Evals)
+**Purpose**: To rigorously track and measure the accuracy, safety, and repair-ability of the Query Planner.
+- Located in `evals/`, the eval suite acts as an automated grading system for the LLM.
+- **`eval_set.jsonl`**: A dataset containing natural language questions, expected outcomes, and expected schema targets.
+- **`EvalRunner`**: Connects to the database (either DuckDB or Postgres) and evaluates the planner against the dataset. It tracks `execution_success`, `validation_success`, and how many queries successfully recovered via the `repair_loop`.
+- To run evals:
+  ```bash
+  # DuckDB in-memory evaluation
+  uv run python evals/intelligence_evals/runner.py :memory:
+
+  # TimescaleDB/Postgres evaluation (in docker)
+  docker compose exec api uv run python evals/intelligence_evals/runner.py postgresql+asyncpg://postgres:postgres@postgres:5432/intelligence_connector
+  ```
+
+---
+
 ## 🧪 Testing Guidelines
 
 No code should be pushed or merged without comprehensive test coverage.

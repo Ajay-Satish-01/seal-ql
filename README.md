@@ -62,10 +62,13 @@ console.log(result.chartSpec);  // Custom Vega-Lite visualization spec
 ## 🚀 Key Features
 
 * **Advanced Schema Introspection**: Deep introspection covering normal tables, database views, materialized views, foreign/primary key constraints, and TimescaleDB-specific features (hypertables, continuous aggregations) with automatic extension detection.
+* **Semantic Metric Layer**: Map raw schema structures to business logic with declarative YAML metric/dimension models to enhance LLM context accuracy.
+* **Self-Healing Repair Loops**: Automatic validation and execution error recovery that feeds exact dialect errors back into the LLM planner for multi-turn SQL correction.
 * **Dialect Intrinsic Execution**: Optimized schema processing and generation for **Postgres (with full TimescaleDB aggregates)** and **DuckDB (highly optimized analytics)**.
 * **Local-First & Production-Ready**: Orchestrated using Docker Compose with local LLM integration via **Ollama** by default.
 * **Modern Tooling & Environments**: Package structures utilizing `uv` workspaces for Python packages/applications, and modern typescript modules using `pnpm`.
 * **Zero-Trust SQL Safety**: SQLGlot-based AST safety checker to block destructive statements and enforce pagination limits.
+* **Automated Evaluations**: Built-in eval runners to measure SQL syntax success, execution rates, and planner repair metrics against DuckDB and TimescaleDB test cases.
 
 ---
 

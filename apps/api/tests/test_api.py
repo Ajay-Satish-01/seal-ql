@@ -1,4 +1,9 @@
-from app.dependencies import get_query_executor, get_query_planner, get_schema_introspector
+from app.dependencies import (
+    get_query_executor,
+    get_query_planner,
+    get_schema_introspector,
+    get_semantic_registry,
+)
 from app.main import app
 from fastapi.testclient import TestClient
 from intelligence_core.planner.models import ChartType, QueryPlan
@@ -14,7 +19,7 @@ class MockIntrospector:
 
 
 class MockPlanner:
-    async def generate_plan(self, schema: DatabaseSchema, query: str):
+    async def generate_plan(self, schema: DatabaseSchema, query: str, semantic_registry=None):
         return QueryPlan(
             sql="SELECT 1 as id",
             chart_type=ChartType.TABLE,
@@ -37,11 +42,17 @@ class MockExecutor:
         )
 
 
+class MockSemanticRegistry:
+    def get_context_string(self):
+        return ""
+
+
 # --- Overrides ---
 
 app.dependency_overrides[get_schema_introspector] = lambda: MockIntrospector()
 app.dependency_overrides[get_query_planner] = lambda: MockPlanner()
 app.dependency_overrides[get_query_executor] = lambda: MockExecutor()
+app.dependency_overrides[get_semantic_registry] = lambda: MockSemanticRegistry()
 
 client = TestClient(app)
 

@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from intelligence_core.planner.planner import QueryPlanner
 from intelligence_core.schema.introspector import get_introspector
 from intelligence_core.settings import get_settings
+from intelligence_semantic.registry import SemanticRegistry
 from intelligence_sql.executor import QueryExecutor
 
 from app.routes import health, query, schema
@@ -39,10 +40,15 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing Query Planner")
     planner = QueryPlanner()
 
+    # 4. Initialize Semantic Registry
+    logger.info("Initializing Semantic Registry")
+    semantic_registry = SemanticRegistry(settings.semantic_directory)
+
     # Store on app state
     app.state.introspector = introspector
     app.state.executor = executor
     app.state.planner = planner
+    app.state.semantic_registry = semantic_registry
 
     yield
 

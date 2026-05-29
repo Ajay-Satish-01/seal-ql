@@ -4,11 +4,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from intelligence_charts.engine import ChartEngine
 from intelligence_core.planner.planner import QueryPlanner
 from intelligence_core.schema.introspector import SchemaIntrospector
+from intelligence_semantic.registry import SemanticRegistry
 from intelligence_sql.executor import QueryExecutor
 from intelligence_sql.sanitizer import SQLSanitizer
 from intelligence_sql.validator import SQLValidator
 
-from app.dependencies import get_query_executor, get_query_planner, get_schema_introspector
+from app.dependencies import (
+    get_query_executor,
+    get_query_planner,
+    get_schema_introspector,
+    get_semantic_registry,
+)
 from app.schemas import QueryRequest, QueryResponse
 
 logger = logging.getLogger(__name__)
@@ -21,6 +27,7 @@ async def execute_query(
     introspector: SchemaIntrospector = Depends(get_schema_introspector),  # noqa: B008
     planner: QueryPlanner = Depends(get_query_planner),  # noqa: B008
     executor: QueryExecutor = Depends(get_query_executor),  # noqa: B008
+    semantic_registry: SemanticRegistry = Depends(get_semantic_registry),  # noqa: B008
 ):
     """Translates natural language to SQL, executes it, and returns chart specs."""
     try:
@@ -28,27 +35,43 @@ async def execute_query(
         schema = await introspector.introspect()
 
         # 2. Plan Query (LLM)
-        plan = await planner.generate_plan(schema, request.query)
+        plan = await planner.generate_plan(schema, request.query, semantic_registry)
 
-        # 3. Validate SQL
-        validator = SQLValidator(schema)
-        val_result = validator.validate(plan.sql)
-        if not val_result.valid:
-            raise HTTPException(
-                status_code=400, detail=f"SQL Validation failed: {val_result.errors}"
-            )
+        # Retry loop for repair
+        max_attempts = 3
+        current_attempt = 1
 
-        # 4. Sanitize SQL
-        sanitizer = SQLSanitizer()
-        san_result = sanitizer.sanitize(val_result.normalized_sql)
-        if not san_result.safe:
-            raise HTTPException(
-                status_code=400,
-                detail="SQL Sanitization failed: Query contains destructive operations.",
-            )
+        while current_attempt <= max_attempts:
+            try:
+                # 3. Validate SQL
+                validator = SQLValidator(schema)
+                val_result = validator.validate(plan.sql)
+                if not val_result.valid:
+                    raise ValueError(f"SQL Validation failed: {val_result.errors}")
 
-        # 5. Execute SQL
-        result = await executor.execute(san_result.sanitized_sql)
+                # 4. Sanitize SQL
+                sanitizer = SQLSanitizer()
+                san_result = sanitizer.sanitize(val_result.normalized_sql)
+                if not san_result.safe:
+                    raise ValueError(
+                        "SQL Sanitization failed: Query contains destructive operations."
+                    )
+
+                # 5. Execute SQL
+                result = await executor.execute(san_result.sanitized_sql)
+                break  # Success! Break out of the retry loop
+
+            except Exception as e:
+                if current_attempt >= max_attempts:
+                    logger.error(f"Failed after {max_attempts} attempts. Last error: {str(e)}")
+                    raise HTTPException(status_code=400, detail=f"Query failed: {str(e)}") from e
+
+                logger.debug(
+                    f"Attempt {current_attempt} failed. Attempting repair. Error: {str(e)}"
+                )
+                # Use the planner to repair the plan based on the error message
+                plan = await planner.repair_plan(request.query, plan.sql, str(e))
+                current_attempt += 1
 
         # 6. Generate Chart Spec
         chart_spec = ChartEngine.generate(plan, result)
