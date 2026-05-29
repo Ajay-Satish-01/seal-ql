@@ -1,14 +1,14 @@
 'use client';
 
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { ArrowRight, Database, Shield, Zap, Code2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -19,7 +19,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
 };
@@ -72,7 +72,7 @@ export default function Home() {
               href="/docs"
               className={cn(
                 buttonVariants({ size: 'lg' }),
-                'rounded-full px-8 text-md font-semibold h-12 w-full sm:w-auto shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:scale-105'
+                'text-md shadow-primary/25 hover:shadow-primary/40 h-12 w-full rounded-full px-8 font-semibold shadow-lg transition-all hover:scale-105 sm:w-auto',
               )}
             >
               Get Started <ArrowRight className="ml-2 h-4 w-4" />
@@ -83,7 +83,7 @@ export default function Home() {
               rel="noreferrer"
               className={cn(
                 buttonVariants({ variant: 'outline', size: 'lg' }),
-                'rounded-full px-8 text-md font-semibold border-border/50 hover:bg-secondary h-12 w-full sm:w-auto transition-all hover:scale-105'
+                'text-md border-border/50 hover:bg-secondary h-12 w-full rounded-full px-8 font-semibold transition-all hover:scale-105 sm:w-auto',
               )}
             >
               View on GitHub

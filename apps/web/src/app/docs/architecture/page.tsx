@@ -4,7 +4,19 @@ import { PageHeader } from '@/components/page-header';
 import { ArrowDown, Database, Server, Cpu, FileJson, Layout } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-function ArchitectureNode({ icon: Icon, title, description, delay = 0 }: any) {
+import { ElementType } from 'react';
+
+function ArchitectureNode({
+  icon: Icon,
+  title,
+  description,
+  delay = 0,
+}: {
+  icon: ElementType;
+  title: string;
+  description: string;
+  delay?: number;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

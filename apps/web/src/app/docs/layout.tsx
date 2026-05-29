@@ -26,9 +26,7 @@ const sidebarGroups = [
   },
   {
     title: 'Use Cases',
-    links: [
-      { title: 'Charts & Analysis', href: '/docs/charts-analysis' },
-    ],
+    links: [{ title: 'Charts & Analysis', href: '/docs/charts-analysis' }],
   },
 ];
 
