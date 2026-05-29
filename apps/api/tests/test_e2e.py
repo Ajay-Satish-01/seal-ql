@@ -31,9 +31,7 @@ def test_e2e_live_query():
     """Test a full query end-to-end against the local Docker stack."""
     # Note: TestClient calls lifespan events (startup/shutdown) automatically!
     with TestClient(app) as live_client:
-        response = live_client.post(
-            "/v1/query", json={"query": "Show me 2 tables from the database"}
-        )
+        response = live_client.post("/v1/query", json={"query": "Show me 2 products"})
 
         # If the LLM or DB fails, this might be a 500, but ideally it works.
         if response.status_code != 200:

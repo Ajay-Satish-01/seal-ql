@@ -42,7 +42,7 @@ jobs:
       - name: Start services
         run: docker compose up -d --build postgres api
         env:
-          LLM_MODEL: "ollama/llama3.2:3b"
+          LLM_MODEL: "ollama/qwen3.5:9b"
           LLM_BASE_URL: "http://localhost:11434"
 
       - name: Wait for Postgres to be healthy
@@ -125,7 +125,7 @@ jobs:
         run: |
           docker compose up -d postgres api
         env:
-          LLM_MODEL: "ollama/llama3.2:3b"
+          LLM_MODEL: "ollama/qwen3.5:9b"
           LLM_BASE_URL: "http://localhost:11434"
 
       - name: Wait for API to be ready

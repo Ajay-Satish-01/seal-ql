@@ -56,8 +56,12 @@ class Settings(BaseSettings):
     # LLM
     # ============================================================
 
+    llm_type: str = Field(
+        default="local",
+        description="Type of LLM ('local' for ollama, 'cloud' for external providers).",
+    )
     llm_model: str = Field(
-        default="ollama/llama3.2:3b",
+        default="ollama/llama3.2:1b",
         description="LiteLLM model identifier (e.g., 'ollama/llama3.1', 'gpt-4o-mini').",
     )
     llm_base_url: str = Field(

@@ -28,7 +28,7 @@ async def execute_query(
         schema = await introspector.introspect()
 
         # 2. Plan Query (LLM)
-        plan = await planner.plan(request.query, schema)
+        plan = await planner.generate_plan(schema, request.query)
 
         # 3. Validate SQL
         validator = SQLValidator(schema)

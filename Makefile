@@ -9,7 +9,7 @@ help: ## Show this help
 
 up: ## Start the entire dev stack
 	docker compose up --build -d
-	@echo "\n✅ Stack is running!"
+	@echo "\n✅ Stack is running (Dev Mode)!"
 	@echo "   API:      http://localhost:8000"
 	@echo "   Docs:     http://localhost:8000/docs"
 	@echo "   Postgres: localhost:5432"
@@ -17,6 +17,12 @@ up: ## Start the entire dev stack
 
 down: ## Stop the stack
 	docker compose down
+
+docker-build: ## Build the production Docker image
+	docker build --target prod -t intelligence-connector/api:latest -f apps/api/Dockerfile .
+
+docker-push: docker-build ## Push the production Docker image to DockerHub
+	docker push intelligence-connector/api:latest
 
 build: ## Rebuild all containers
 	docker compose build --no-cache
@@ -36,6 +42,12 @@ test: ## Run all tests (pass ARGS= for specific tests)
 
 test-cov: ## Run tests with coverage report
 	docker compose exec api uv run pytest --cov --cov-report=html --cov-report=term -v
+
+test-sdk: ## Run TS SDK tests locally
+	cd sdks/typescript && pnpm test
+
+openapi: ## Generate OpenAPI json spec
+	docker compose run --rm -T api uv run python scripts/generate_openapi.py
 
 # ============================================================
 # Linting & Formatting (Docker-first)
@@ -57,12 +69,14 @@ check: ## Run all checks (lint + format check + tests) — same as CI
 	@echo "═══════════════════════════════════════"
 	@echo "  Running full CI check suite"
 	@echo "═══════════════════════════════════════"
-	@echo "\n📋 1/3 — Ruff lint..."
+	@echo "\n📋 1/4 — Ruff lint..."
 	docker compose run --rm -T api uv run ruff check .
-	@echo "\n📋 2/3 — Ruff format check..."
+	@echo "\n📋 2/4 — Ruff format check..."
 	docker compose run --rm -T api uv run ruff format --check .
-	@echo "\n📋 3/3 — Tests..."
+	@echo "\n📋 3/4 — Tests..."
 	docker compose run --rm -T api uv run pytest -v --tb=short
+	@echo "\n📋 4/4 — Prod Image Build..."
+	docker build --target prod -t intelligence-connector/api:test -f apps/api/Dockerfile .
 	@echo "\n═══════════════════════════════════════"
 	@echo "  ✅ All checks passed!"
 	@echo "═══════════════════════════════════════"
