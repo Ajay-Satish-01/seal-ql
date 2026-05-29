@@ -74,8 +74,8 @@ jobs:
   # ============================================================
   # Python: E2E Tests via pytest
   # ============================================================
-  python-e2e-test:
-    name: "Python — E2E Tests"
+  e2e-tests:
+    name: "E2E Tests (Python & TypeScript)"
     runs-on: ubuntu-latest
     needs: python-lint
     steps:
@@ -114,16 +114,34 @@ jobs:
             sleep 2
           done
 
-      - name: Run E2E tests
+      - name: Run Python E2E tests
         run: docker compose exec -T api uv run pytest -v --tb=short sdks/python/tests/test_sdk_e2e.py apps/api/tests/test_e2e.py --junitxml=/tmp/e2e-test-results.xml
 
-      - name: Upload test results
+      - name: Upload Python test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-results
           path: /tmp/e2e-test-results.xml
           retention-days: 7
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: "sdks/typescript/pnpm-lock.yaml"
+
+      - name: Install TS dependencies
+        working-directory: sdks/typescript
+        run: pnpm install
+
+      - name: Run TypeScript E2E tests
+        working-directory: sdks/typescript
+        run: pnpm test
 
       - name: Stop services
         if: always()
@@ -138,22 +156,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: "sdks/typescript/pnpm-lock.yaml"
 
       - name: Install dependencies
         working-directory: sdks/typescript
         run: |
           if [ -f package.json ]; then
-            npm ci || npm install
+            pnpm install
           fi
 
       - name: ESLint
         working-directory: sdks/typescript
         run: |
           if [ -d "src" ]; then
-            npx eslint src/ --max-warnings=0
+            pnpm exec eslint src/ --max-warnings=0
           else
             echo "Skipping ESLint (src/ directory does not exist yet)"
           fi
@@ -162,7 +186,7 @@ jobs:
         working-directory: sdks/typescript
         run: |
           if [ -d "src" ]; then
-            npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css}"
+            pnpm exec prettier --check "src/**/*.{ts,tsx,js,jsx,json,css}"
           else
             echo "Skipping Prettier (src/ directory does not exist yet)"
           fi
