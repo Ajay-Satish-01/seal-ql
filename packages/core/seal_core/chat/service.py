@@ -108,7 +108,13 @@ class ChatService:
         ctx = self._prepare_turn(
             message, session_id, messages_override, enhancement_enabled, schema
         )
-        exec_result, chart, data_meta = await self._execute_data_path(ctx, include_charts)
+        decision = await self._chat_decision(ctx)
+        exec_result: ExecuteQueryResult | None = None
+        chart = None
+        if decision.needs_data or include_charts:
+            exec_result, chart, data_meta = await self._execute_data_path(ctx, include_charts)
+        else:
+            data_meta = {}
 
         # Run the same enhancement path as _run_turn so streamed answers are
         # schema/RAG/multi-turn aware instead of falling back to the base prompt.
@@ -158,7 +164,11 @@ class ChatService:
             # assistant output is not silently dropped from session history.
             assistant = "".join(full_text)
             self._sessions.append(ctx.session_id, ChatMessage(role="user", content=message))
-            self._sessions.append(ctx.session_id, ChatMessage(role="assistant", content=assistant))
+            if assistant.strip():
+                self._sessions.append(
+                    ctx.session_id,
+                    ChatMessage(role="assistant", content=assistant),
+                )
 
     def _prepare_turn(
         self,
