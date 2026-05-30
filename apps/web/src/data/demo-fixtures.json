@@ -103,7 +103,7 @@
       "label": "Hourly events",
       "query": "Show hourly event counts for the last day",
       "response": {
-        "sql": "SELECT time_bucket('1 hour', time) AS hour, COUNT(*) AS event_count FROM events_hourly GROUP BY hour ORDER BY hour LIMIT 10000",
+        "sql": "SELECT bucket AS hour, SUM(event_count) AS event_count FROM events_hourly GROUP BY bucket ORDER BY bucket LIMIT 10000",
         "columns": [
           {
             "name": "hour",

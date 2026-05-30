@@ -98,7 +98,9 @@ def _validate_vega_spec(
     data = spec.get("data")
     if not isinstance(data, dict) or "values" not in data:
         errors.append("vega_lite_spec missing data.values")
-    elif isinstance(data.get("values"), list) and len(data["values"]) != len(results):
+    elif not isinstance(data["values"], list):
+        errors.append("vega_lite_spec data.values must be a list")
+    elif len(data["values"]) != len(results):
         errors.append(
             f"data.values length ({len(data['values'])}) != results length ({len(results)})"
         )
@@ -108,8 +110,10 @@ def _validate_vega_spec(
         if not isinstance(enc, dict) or "theta" not in enc or "color" not in enc:
             errors.append("pie chart missing encoding.theta or encoding.color")
         else:
-            yf = enc["theta"].get("field")
-            xf = enc["color"].get("field")
+            theta = enc["theta"] if isinstance(enc["theta"], dict) else {}
+            color = enc["color"] if isinstance(enc["color"], dict) else {}
+            yf = theta.get("field")
+            xf = color.get("field")
             if meta.get("x_field") != xf:
                 errors.append(
                     f"metadata.x_field {meta.get('x_field')!r} != encoding.color.field {xf!r}"
@@ -122,8 +126,10 @@ def _validate_vega_spec(
         if not isinstance(enc, dict) or "x" not in enc or "y" not in enc:
             errors.append(f"{chart_type} chart missing encoding.x or encoding.y")
         else:
-            xf = enc["x"].get("field")
-            yf = enc["y"].get("field")
+            x_enc = enc["x"] if isinstance(enc["x"], dict) else {}
+            y_enc = enc["y"] if isinstance(enc["y"], dict) else {}
+            xf = x_enc.get("field")
+            yf = y_enc.get("field")
             if meta.get("x_field") != xf:
                 errors.append(
                     f"metadata.x_field {meta.get('x_field')!r} != encoding.x.field {xf!r}"

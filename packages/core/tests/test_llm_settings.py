@@ -5,13 +5,15 @@ from __future__ import annotations
 import pytest
 from intelligence_core.llm import client as llm_client
 from intelligence_core.llm.client import get_api_base, get_api_key, get_model
-from intelligence_core.settings import get_settings
+from intelligence_core.settings import Settings, get_settings
 
 
 def _clear_llm_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Isolate tests from .env and CI/docker env (e.g. LLM_BASE_URL=localhost)."""
-    monkeypatch.setenv("LLM_TYPE", "")
+    """Isolate tests from CI/docker env and from a developer's local .env file."""
+    # Disable .env loading so on-disk values can't leak into Settings under test.
+    monkeypatch.setitem(Settings.model_config, "env_file", None)
     for name in (
+        "LLM_TYPE",
         "OLLAMA_PROFILE",
         "LLM_MODEL",
         "LLM_BASE_URL",

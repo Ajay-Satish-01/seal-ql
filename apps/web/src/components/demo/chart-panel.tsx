@@ -83,7 +83,10 @@ export function ChartPanel({ chart, results }: ChartPanelProps) {
   }
 
   const chartType = chart.chart_type;
-  const meta = chart.metadata as Record<string, unknown>;
+  const meta =
+    chart.metadata && typeof chart.metadata === 'object'
+      ? (chart.metadata as Record<string, unknown>)
+      : {};
   const yField = typeof meta.y_field === 'string' ? meta.y_field : undefined;
 
   return (

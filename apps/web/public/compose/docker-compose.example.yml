@@ -22,7 +22,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       MAX_ROWS: ${MAX_ROWS:-10000}
       QUERY_TIMEOUT_SECONDS: ${QUERY_TIMEOUT_SECONDS:-30}
-      CORS_ORIGINS: ${CORS_ORIGINS:-'["http://localhost:3000","http://localhost:5173"]'}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000","http://localhost:5173"]}
     depends_on:
       postgres:
         condition: service_healthy

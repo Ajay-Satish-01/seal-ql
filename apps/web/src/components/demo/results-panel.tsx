@@ -12,7 +12,7 @@ interface ResultsPanelProps {
 
 export function ResultsPanel({ response }: ResultsPanelProps) {
   const [sqlOpen, setSqlOpen] = useState(true);
-  const meta = response.metadata as Record<string, unknown>;
+  const meta = (response.metadata ?? {}) as Record<string, unknown>;
 
   return (
     <div className="space-y-6">

@@ -137,8 +137,9 @@ class Settings(BaseSettings):
 
     @property
     def resolved_llm_model(self) -> str:
-        """LiteLLM model string with ollama/ prefix applied for local mode."""
-        if self.use_cloud_llm() or self.is_ollama_model():
+        """LiteLLM model string with ollama/ prefix applied only for bare local names."""
+        # Already provider-qualified (ollama/…, gemini/…, openai/…, etc.) or cloud mode.
+        if self.use_cloud_llm() or "/" in self.llm_model:
             return self.llm_model
         return f"ollama/{self.llm_model}"
 

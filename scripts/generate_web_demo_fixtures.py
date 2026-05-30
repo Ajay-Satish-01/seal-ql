@@ -106,8 +106,8 @@ def build_presets() -> list[dict]:
         label="Hourly events",
         preset_id="hourly-events",
         sql=(
-            "SELECT time_bucket('1 hour', time) AS hour, COUNT(*) AS event_count "
-            "FROM events_hourly GROUP BY hour ORDER BY hour LIMIT 10000"
+            "SELECT bucket AS hour, SUM(event_count) AS event_count "
+            "FROM events_hourly GROUP BY bucket ORDER BY bucket LIMIT 10000"
         ),
         columns=[
             ColumnMetadata("hour", "timestamptz"),
@@ -189,7 +189,10 @@ def build_presets() -> list[dict]:
         ],
         rows=product_rows,
         plan=QueryPlan(
-            sql="SELECT product_name, category, total_revenue, units_sold LIMIT 10000",
+            sql=(
+                "SELECT product_name, category, total_revenue, units_sold "
+                "FROM product_performance LIMIT 10000"
+            ),
             chart_type=ChartType.TABLE,
             x_field="product_name",
             y_field="total_revenue",
