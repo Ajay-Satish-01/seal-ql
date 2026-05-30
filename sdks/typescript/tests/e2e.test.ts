@@ -10,6 +10,8 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { Seal } from '../src/client.js';
 
 const API_URL = 'http://localhost:8000';
+/** Matches `.env.example` / Python `test_sdk_e2e.py` for local and CI compose stacks. */
+const API_KEY = process.env.SEAL_API_KEY ?? 'dev-local-change-me';
 
 async function isApiReachable(): Promise<boolean> {
   // Verify the live service is actually our API (not just something on the port).
@@ -34,6 +36,7 @@ describe('E2E Tests', async () => {
   beforeAll(() => {
     client = new Seal({
       baseUrl: API_URL,
+      apiKey: API_KEY,
       timeout: 180_000,
     });
   });
