@@ -108,45 +108,57 @@ class ChatService:
         ctx = self._prepare_turn(
             message, session_id, messages_override, enhancement_enabled, schema
         )
-        exec_result, chart, meta = await self._execute_data_path(ctx, include_charts)
+        exec_result, chart, data_meta = await self._execute_data_path(ctx, include_charts)
+
+        # Run the same enhancement path as _run_turn so streamed answers are
+        # schema/RAG/multi-turn aware instead of falling back to the base prompt.
+        system = await self._answer_system(ctx, data_meta)
 
         meta_event = {
             "session_id": ctx.session_id,
             "sources": ctx.metadata.get("sources", []),
             "sql": exec_result.sql if exec_result else None,
             "chart": chart.model_dump() if chart is not None else None,
-            "enhancement": meta,
+            "enhancement": {
+                "enabled": ctx.enhancement_enabled,
+                "applied": list(ctx.metadata.get("applied", [])),
+            },
         }
         yield f"event: seal.meta\ndata: {json.dumps(meta_event)}\n\n"
 
-        system = ctx.metadata.get("answer_system", CHAT_ANSWER_SYSTEM)
         llm_messages = self._build_answer_messages(ctx, exec_result, system)
 
         # Plain-text token streaming (not the Instructor/response_model path used by
         # handle_json): structured fields are already sent in the single seal.meta
         # event above, and the SSE contract streams the answer body as raw text deltas.
         full_text: list[str] = []
-        response = await litellm.acompletion(
-            model=self._model,
-            messages=llm_messages,
-            stream=True,
-            api_base=self._api_base,
-            api_key=self._api_key,
-        )
-        async for chunk in response:
-            delta = chunk.choices[0].delta.content or ""
-            if delta:
-                full_text.append(delta)
-                payload = {
-                    "object": "chat.completion.chunk",
-                    "choices": [{"index": 0, "delta": {"content": delta}, "finish_reason": None}],
-                }
-                yield f"data: {json.dumps(payload)}\n\n"
+        try:
+            response = await litellm.acompletion(
+                model=self._model,
+                messages=llm_messages,
+                stream=True,
+                api_base=self._api_base,
+                api_key=self._api_key,
+            )
+            async for chunk in response:
+                delta = chunk.choices[0].delta.content or ""
+                if delta:
+                    full_text.append(delta)
+                    payload = {
+                        "object": "chat.completion.chunk",
+                        "choices": [
+                            {"index": 0, "delta": {"content": delta}, "finish_reason": None}
+                        ],
+                    }
+                    yield f"data: {json.dumps(payload)}\n\n"
 
-        yield "data: [DONE]\n\n"
-        assistant = "".join(full_text)
-        self._sessions.append(ctx.session_id, ChatMessage(role="user", content=message))
-        self._sessions.append(ctx.session_id, ChatMessage(role="assistant", content=assistant))
+            yield "data: [DONE]\n\n"
+        finally:
+            # Persist the turn even if the stream errors mid-flight, so partial
+            # assistant output is not silently dropped from session history.
+            assistant = "".join(full_text)
+            self._sessions.append(ctx.session_id, ChatMessage(role="user", content=message))
+            self._sessions.append(ctx.session_id, ChatMessage(role="assistant", content=assistant))
 
     def _prepare_turn(
         self,
@@ -308,7 +320,9 @@ class ChatService:
             include_charts=False,
             metadata=dict(ctx.metadata),
         )
-        return await self._orchestrator.enhance_system_prompt(ect)
+        system = await self._orchestrator.enhance_system_prompt(ect)
+        ctx.metadata.update(ect.metadata)
+        return system
 
     def _build_answer_messages(
         self,
