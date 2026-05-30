@@ -108,7 +108,7 @@ class TestSyncClient:
             client.query("query")
         client.close()
 
-    def test_api_key_sent_on_v1_requests(self):
+    def test_api_key_sent_on_v1_requests(self) -> None:
         captured: list[httpx.Request] = []
 
         def handler(request: httpx.Request) -> httpx.Response:
@@ -133,7 +133,7 @@ class TestSyncClient:
         assert captured
         assert captured[0].headers["x-api-key"] == "secret-key"
 
-    def test_query_error_401(self):
+    def test_query_error_401(self) -> None:
         transport = httpx.MockTransport(
             _mock_transport(401, {"detail": "Invalid or missing API key"})
         )
