@@ -1,108 +1,124 @@
 import { PageHeader } from '@/components/page-header';
 import { CodeBlock } from '@/components/code-block';
+import { EndpointBlock } from '@/components/docs/endpoint-block';
+import { ParamTable } from '@/components/docs/param-table';
+import { Callout } from '@/components/docs/callout';
+import Link from 'next/link';
+import { listEndpoints, schemaToExample, getApiVersion } from '@/lib/openapi';
+import { SITE } from '@/lib/constants';
 
 export default function ApiReferencePage() {
+  const version = getApiVersion();
+  const endpoints = listEndpoints();
+
+  const health = endpoints.find((e) => e.path === '/health');
+  const schema = endpoints.find((e) => e.path === '/v1/schema');
+  const query = endpoints.find((e) => e.path === '/v1/query');
+
   return (
     <div className="max-w-3xl">
       <PageHeader
         title="API Reference"
-        description="Detailed breakdown of the REST API endpoints."
+        description={`REST API v${version} — generated from the committed OpenAPI spec.`}
       />
 
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
-        <h2>POST /query</h2>
-        <p>
-          The primary endpoint for natural language querying. It translates the prompt, executes the
-          SQL safely, and returns the data alongside a generated visualization schema.
+        <Callout variant="info" title="Try it on your stack">
+          After <Link href="/docs/self-hosting">running the Docker image</Link>, open{' '}
+          <code>{'{baseUrl}'}/docs</code> for Swagger UI against your live API, or download{' '}
+          <a href="/openapi.json" className="text-primary">
+            openapi.json
+          </a>{' '}
+          from this site.
+        </Callout>
+
+        {health ? (
+          <EndpointBlock
+            method={health.method}
+            path={health.path}
+            summary={health.summary}
+            description={health.description}
+          >
+            <h4 className="text-foreground mb-2 text-sm font-semibold">Response</h4>
+            <CodeBlock language="json" code={schemaToExample('HealthResponse')} />
+          </EndpointBlock>
+        ) : null}
+
+        {schema ? (
+          <EndpointBlock
+            method={schema.method}
+            path={schema.path}
+            summary={schema.summary}
+            description={schema.description}
+          >
+            <p>
+              Returns full database introspection (tables, columns, relationships, TimescaleDB
+              metadata).
+            </p>
+          </EndpointBlock>
+        ) : null}
+
+        {query ? (
+          <EndpointBlock
+            method={query.method}
+            path={query.path}
+            summary={query.summary}
+            description={query.description}
+          >
+            <ParamTable
+              title="Request body"
+              rows={[
+                {
+                  name: 'query',
+                  type: 'string',
+                  required: true,
+                  description: 'Natural language question.',
+                },
+                {
+                  name: 'database_id',
+                  type: 'string',
+                  required: false,
+                  description: 'Target database id (default: "default").',
+                },
+              ]}
+            />
+            <CodeBlock language="json" code={schemaToExample('QueryRequest')} />
+            <h4 className="text-foreground mt-8 mb-2 text-sm font-semibold">Response</h4>
+            <ParamTable
+              rows={[
+                { name: 'sql', type: 'string', description: 'Validated SQL that was executed.' },
+                {
+                  name: 'columns',
+                  type: 'ColumnMetadata[]',
+                  description: 'Column name, DB type, nullable.',
+                },
+                { name: 'results', type: 'object[]', description: 'Result rows.' },
+                {
+                  name: 'chart',
+                  type: 'ChartSpec | null',
+                  description: 'chart_type, vega_lite_spec, metadata.',
+                },
+                {
+                  name: 'metadata',
+                  type: 'object',
+                  description: 'row_count, execution_time_ms, truncated, warnings.',
+                },
+              ]}
+            />
+            <CodeBlock language="json" code={schemaToExample('QueryResponse')} />
+          </EndpointBlock>
+        ) : null}
+
+        <h2 className="text-foreground mt-10 text-2xl font-bold">Errors</h2>
+        <p>HTTP errors return FastAPI-style JSON:</p>
+        <CodeBlock language="json" code={'{\n  "detail": "Query failed: ..."\n}'} />
+
+        <p className="mt-8">
+          Source repository:{' '}
+          <a href={SITE.github} className="text-primary" target="_blank" rel="noreferrer">
+            GitHub
+          </a>
         </p>
-
-        <h3>Request Body</h3>
-        <p>
-          Content-Type: <code>application/json</code>
-        </p>
-        <CodeBlock
-          language="json"
-          code={`{
-  "query": "Show me the top 5 customers by revenue this month",
-  "llm_config": {
-    "provider": "ollama",
-    "model": "llama3.2:1b"
-  }
-}`}
-        />
-
-        <div className="my-6">
-          <table className="border-border/50 w-full border-collapse border text-left text-sm">
-            <thead className="bg-muted text-foreground">
-              <tr>
-                <th className="border-border/50 border p-2">Field</th>
-                <th className="border-border/50 border p-2">Type</th>
-                <th className="border-border/50 border p-2">Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="border-border/50 border p-2 font-mono">query</td>
-                <td className="border-border/50 border p-2">string</td>
-                <td className="border-border/50 border p-2">The natural language question.</td>
-              </tr>
-              <tr>
-                <td className="border-border/50 border p-2 font-mono">llm_config (optional)</td>
-                <td className="border-border/50 border p-2">object</td>
-                <td className="border-border/50 border p-2">
-                  Override the default LLM provider and model for this specific query.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <h3>Response</h3>
-        <p>Returns a 200 OK with the generated SQL, result set, and Vega-Lite chart schema.</p>
-        <CodeBlock
-          language="json"
-          code={`{
-  "sql": "SELECT name, SUM(amount) as revenue FROM users JOIN payments ON users.id = payments.user_id GROUP BY name ORDER BY revenue DESC LIMIT 5",
-  "columns": ["name", "revenue"],
-  "results": [
-    {"name": "Acme Corp", "revenue": 15000},
-    {"name": "Globex", "revenue": 12500}
-  ],
-  "chart": {
-    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-    "mark": "bar",
-    "encoding": {
-      "x": {"field": "name", "type": "nominal"},
-      "y": {"field": "revenue", "type": "quantitative"}
-    },
-    "data": {"values": [...]}
-  },
-  "metadata": {
-    "row_count": 2,
-    "execution_time_ms": 45,
-    "truncated": false,
-    "warnings": []
-  }
-}`}
-        />
-
-        <hr className="my-12" />
-
-        <h2>GET /health</h2>
-        <p>
-          Healthcheck endpoint to verify if the API gateway is running and the database connection
-          is alive.
-        </p>
-
-        <h3>Response</h3>
-        <CodeBlock
-          language="json"
-          code={`{
-  "status": "ok",
-  "database": "connected",
-  "version": "0.1.0"
-}`}
-        />
       </div>
     </div>
   );

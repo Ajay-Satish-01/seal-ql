@@ -1,6 +1,5 @@
 ---
-description: Python Backend & Core Logic Rules
-globs: ["packages/**/*.py", "apps/**/*.py", "tests/**/*.py"]
+alwaysApply: true
 ---
 
 # Python Constraints

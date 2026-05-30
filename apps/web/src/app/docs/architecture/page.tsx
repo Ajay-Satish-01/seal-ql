@@ -76,7 +76,7 @@ export default function ArchitecturePage() {
         <ArchitectureNode
           icon={Cpu}
           title="3. Query Planner (LLM)"
-          description="LiteLLM + Instructor + Ollama. Translates the prompt to SQL via schema semantic mapping."
+          description="LiteLLM + Instructor (Ollama or cloud via OLLAMA_PROFILE). Structured SQL plans from schema context."
           delay={0.5}
         />
 

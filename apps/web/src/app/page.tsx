@@ -5,17 +5,15 @@ import { cn } from '@/lib/utils';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ArrowRight, Database, Shield, Zap, Code2 } from 'lucide-react';
+import { ArrowRight, Database, Shield, Zap, Code2, Container } from 'lucide-react';
 import { motion, Variants } from 'framer-motion';
+import { SITE } from '@/lib/constants';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
+    transition: { staggerChildren: 0.1, delayChildren: 0.15 },
   },
 };
 
@@ -26,13 +24,12 @@ const itemVariants: Variants = {
 
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col items-center">
-      {/* Hero Section */}
-      <section className="from-background to-secondary/20 relative flex w-full items-center justify-center overflow-hidden bg-gradient-to-b py-24 lg:py-32 xl:py-48">
-        <div className="bg-primary/20 pointer-events-none absolute top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-60 blur-[100px]" />
+    <main className="flex flex-1 flex-col">
+      <section className="hero-grid border-border/40 relative flex w-full items-center justify-center overflow-hidden border-b py-24 lg:py-36">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-amber-500/5 via-transparent to-teal-500/5" />
 
         <motion.div
-          className="relative z-10 container flex flex-col items-center px-4 text-center md:px-6"
+          className="relative z-10 container mx-auto max-w-5xl px-4 md:px-6"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -40,131 +37,127 @@ export default function Home() {
           <motion.div variants={itemVariants}>
             <Badge
               variant="outline"
-              className="border-primary/40 text-primary bg-primary/5 mb-6 rounded-full px-4 py-1.5 text-sm"
+              className="border-primary/50 text-primary mb-6 rounded-sm px-3 py-1 font-mono text-xs tracking-widest uppercase"
             >
-              v1.0.0 is now live
+              Open source · Image-first
             </Badge>
           </motion.div>
 
           <motion.h1
             variants={itemVariants}
-            className="mx-auto mb-8 max-w-4xl text-4xl font-extrabold tracking-tight md:text-6xl lg:text-7xl"
+            className="font-heading mb-6 max-w-3xl text-4xl leading-[1.1] font-semibold tracking-tight md:text-6xl"
           >
-            Query your database with <br className="hidden md:block" />
-            <span className="from-primary bg-gradient-to-r to-blue-400 bg-clip-text text-transparent">
-              Natural Language
-            </span>
+            Natural language to <span className="text-primary">validated SQL</span> and charts
           </motion.h1>
 
           <motion.p
             variants={itemVariants}
-            className="text-muted-foreground mx-auto mb-10 max-w-[700px] text-xl leading-relaxed md:text-2xl"
+            className="text-muted-foreground mb-10 max-w-2xl text-lg leading-relaxed md:text-xl"
           >
-            An AI-powered SQL query generation, validation, and visualization SDK enforcing
-            zero-trust safety.
+            Self-host with Docker. Integrate via Python or TypeScript SDKs. Every query passes a
+            zero-trust SQLGlot boundary and returns Vega-Lite specs — no clone required to get
+            started.
           </motion.p>
 
-          <motion.div
-            variants={itemVariants}
-            className="mx-auto flex w-full max-w-md flex-col justify-center gap-4 sm:flex-row"
-          >
+          <motion.div variants={itemVariants} className="flex flex-col flex-wrap gap-3 sm:flex-row">
             <Link
-              href="/docs"
+              href="/demo"
+              className={cn(buttonVariants({ size: 'lg' }), 'rounded-sm px-6 font-semibold')}
+            >
+              Try Demo <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+            <Link
+              href="/docs/self-hosting"
               className={cn(
-                buttonVariants({ size: 'lg' }),
-                'text-md shadow-primary/25 hover:shadow-primary/40 h-12 w-full rounded-full px-8 font-semibold shadow-lg transition-all hover:scale-105 sm:w-auto',
+                buttonVariants({ variant: 'secondary', size: 'lg' }),
+                'rounded-sm px-6 font-semibold',
               )}
             >
-              Get Started <ArrowRight className="ml-2 h-4 w-4" />
+              <Container className="mr-2 h-4 w-4" />
+              Run with Docker
             </Link>
-            <a
-              href="https://github.com/your-org/intelligence_connector"
-              target="_blank"
-              rel="noreferrer"
+            <Link
+              href="/docs/integration-guide#sdk"
               className={cn(
                 buttonVariants({ variant: 'outline', size: 'lg' }),
-                'text-md border-border/50 hover:bg-secondary h-12 w-full rounded-full px-8 font-semibold transition-all hover:scale-105 sm:w-auto',
+                'rounded-sm px-6 font-semibold',
               )}
             >
-              View on GitHub
-            </a>
+              Install SDK
+            </Link>
           </motion.div>
+
+          <motion.p variants={itemVariants} className="text-muted-foreground mt-6 text-sm">
+            <Link
+              href="/docs/contributing"
+              className="hover:text-primary underline-offset-4 hover:underline"
+            >
+              Develop from source
+            </Link>{' '}
+            ·{' '}
+            <a
+              href={SITE.github}
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-primary underline-offset-4 hover:underline"
+            >
+              GitHub
+            </a>
+          </motion.p>
         </motion.div>
       </section>
 
-      {/* Features Grid */}
-      <section className="bg-background border-border/40 relative z-20 w-full border-t py-20">
+      <section className="container mx-auto max-w-6xl px-4 py-20 md:px-6">
         <motion.div
-          className="container mx-auto px-4 md:px-6"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
+          viewport={{ once: true }}
           variants={containerVariants}
         >
-          <motion.div variants={itemVariants} className="mb-16 text-center">
-            <h2 className="mb-4 text-3xl font-bold md:text-4xl">Enterprise-Grade Architecture</h2>
-            <p className="text-muted-foreground mx-auto max-w-[600px] text-lg">
-              Built with security, precision, and performance as first-class citizens.
+          <motion.div variants={itemVariants} className="mb-12 text-center">
+            <h2 className="font-heading text-3xl font-semibold md:text-4xl">
+              Built for production data apps
+            </h2>
+            <p className="text-muted-foreground mx-auto mt-3 max-w-xl">
+              Audit the validator on GitHub. Deploy from Docker Hub. Ship in minutes.
             </p>
           </motion.div>
 
-          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full">
-              <Card className="bg-card/40 border-border/50 hover:border-primary/50 hover:shadow-primary/5 h-full shadow-none backdrop-blur-md transition-colors hover:shadow-xl">
-                <CardHeader>
-                  <div className="bg-primary/10 mb-4 flex h-12 w-12 items-center justify-center rounded-lg">
-                    <Shield className="text-primary h-6 w-6" />
-                  </div>
-                  <CardTitle>Zero-Trust Safety</CardTitle>
-                  <CardDescription className="mt-2 text-base">
-                    Strict AST parsing using SQLGlot to block destructive statements and enforce
-                    limits.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full">
-              <Card className="bg-card/40 border-border/50 hover:border-primary/50 hover:shadow-primary/5 h-full shadow-none backdrop-blur-md transition-colors hover:shadow-xl">
-                <CardHeader>
-                  <div className="bg-primary/10 mb-4 flex h-12 w-12 items-center justify-center rounded-lg">
-                    <Database className="text-primary h-6 w-6" />
-                  </div>
-                  <CardTitle>Semantic Layer</CardTitle>
-                  <CardDescription className="mt-2 text-base">
-                    Map raw schema structures to business logic with declarative YAML models.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full">
-              <Card className="bg-card/40 border-border/50 hover:border-primary/50 hover:shadow-primary/5 h-full shadow-none backdrop-blur-md transition-colors hover:shadow-xl">
-                <CardHeader>
-                  <div className="bg-primary/10 mb-4 flex h-12 w-12 items-center justify-center rounded-lg">
-                    <Zap className="text-primary h-6 w-6" />
-                  </div>
-                  <CardTitle>Dialect Intrinsic</CardTitle>
-                  <CardDescription className="mt-2 text-base">
-                    Highly optimized execution for Postgres (TimescaleDB) and DuckDB.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="h-full">
-              <Card className="bg-card/40 border-border/50 hover:border-primary/50 hover:shadow-primary/5 h-full shadow-none backdrop-blur-md transition-colors hover:shadow-xl">
-                <CardHeader>
-                  <div className="bg-primary/10 mb-4 flex h-12 w-12 items-center justify-center rounded-lg">
-                    <Code2 className="text-primary h-6 w-6" />
-                  </div>
-                  <CardTitle>Visual Generation</CardTitle>
-                  <CardDescription className="mt-2 text-base">
-                    Automatically produces precise Vega-Lite visual schemas based on return data.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </motion.div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                icon: Shield,
+                title: 'Zero-Trust Safety',
+                desc: 'SQLGlot AST validation blocks destructive SQL and enforces row limits.',
+              },
+              {
+                icon: Database,
+                title: 'Deep Introspection',
+                desc: 'Postgres, TimescaleDB hypertables, materialized views, and DuckDB.',
+              },
+              {
+                icon: Zap,
+                title: 'Self-Healing SQL',
+                desc: 'Dialect errors feed back into the planner for automatic repair.',
+              },
+              {
+                icon: Code2,
+                title: 'Vega-Lite Charts',
+                desc: 'Chart engine returns typed specs your UI can render immediately.',
+              },
+            ].map(({ icon: Icon, title, desc }) => (
+              <motion.div key={title} variants={itemVariants}>
+                <Card className="border-border/60 bg-card/60 h-full rounded-sm backdrop-blur-sm">
+                  <CardHeader>
+                    <div className="bg-primary/10 mb-3 flex h-10 w-10 items-center justify-center rounded-sm">
+                      <Icon className="text-primary h-5 w-5" />
+                    </div>
+                    <CardTitle className="font-heading text-lg">{title}</CardTitle>
+                    <CardDescription className="text-base">{desc}</CardDescription>
+                  </CardHeader>
+                </Card>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
       </section>

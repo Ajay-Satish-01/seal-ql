@@ -1,0 +1,653 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Intelligence Connector API",
+    "description": "AI-powered SQL generation and execution.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Get Health",
+        "description": "Liveness check.",
+        "operationId": "get_health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/schema": {
+      "get": {
+        "summary": "Get Schema",
+        "description": "Introspect and return the full database schema.",
+        "operationId": "get_schema_v1_schema_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatabaseSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/query": {
+      "post": {
+        "summary": "Execute Query",
+        "description": "Translates natural language to SQL, executes it, and returns chart specs.",
+        "operationId": "execute_query_v1_query_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChartSpec": {
+        "properties": {
+          "chart_type": {
+            "$ref": "#/components/schemas/ChartType"
+          },
+          "vega_lite_spec": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Vega Lite Spec"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chart_type"
+        ],
+        "title": "ChartSpec",
+        "description": "The final visualization specification.\n\nAttributes:\n    chart_type: The determined type of chart (line, bar, table, etc.).\n    vega_lite_spec: A JSON-serializable dictionary containing a valid Vega-Lite v5 spec.\n        If chart_type is 'table' or 'metric_card', this will be empty (as they are\n        rendered natively by the UI, not via Vega-Lite).\n    metadata: Additional metadata for rendering (e.g., suggested titles, formatting hints)."
+      },
+      "ChartType": {
+        "type": "string",
+        "enum": [
+          "line",
+          "bar",
+          "scatter",
+          "table",
+          "pie",
+          "area",
+          "metric_card"
+        ],
+        "title": "ChartType",
+        "description": "Supported chart types for visualization."
+      },
+      "ColumnInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Column name"
+          },
+          "data_type": {
+            "type": "string",
+            "title": "Data Type",
+            "description": "Raw database type (e.g., 'VARCHAR(100)')"
+          },
+          "normalized_type": {
+            "$ref": "#/components/schemas/ColumnType",
+            "description": "Normalized portable type"
+          },
+          "nullable": {
+            "type": "boolean",
+            "title": "Nullable",
+            "description": "Whether the column allows NULL values",
+            "default": true
+          },
+          "is_primary_key": {
+            "type": "boolean",
+            "title": "Is Primary Key",
+            "description": "Whether this column is a primary key",
+            "default": false
+          },
+          "default_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Value",
+            "description": "Default value expression"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Column comment/description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "data_type",
+          "normalized_type"
+        ],
+        "title": "ColumnInfo",
+        "description": "Metadata for a single database column."
+      },
+      "ColumnMetadata": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "str"
+          },
+          "nullable": {
+            "type": "boolean",
+            "title": "Nullable",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ColumnMetadata",
+        "description": "Metadata for a single result column.\n\nAttributes:\n    name: Column name as returned by the database.\n    type: Python type name (e.g., 'int', 'str', 'datetime').\n    nullable: Whether the column contained any NULL values in the result set."
+      },
+      "ColumnType": {
+        "type": "string",
+        "enum": [
+          "string",
+          "integer",
+          "float",
+          "boolean",
+          "date",
+          "timestamp",
+          "numeric",
+          "json",
+          "array",
+          "other"
+        ],
+        "title": "ColumnType",
+        "description": "Normalized column types across all supported databases."
+      },
+      "ContinuousAggregateInfo": {
+        "properties": {
+          "source_hypertable": {
+            "type": "string",
+            "title": "Source Hypertable",
+            "description": "The hypertable this aggregate reads from"
+          },
+          "view_definition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View Definition",
+            "description": "The SQL definition of the continuous aggregate"
+          },
+          "refresh_interval": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Interval",
+            "description": "How often the aggregate refreshes (e.g., '1 hour')"
+          },
+          "refresh_start_offset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Start Offset",
+            "description": "Start offset for refresh window"
+          },
+          "refresh_end_offset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh End Offset",
+            "description": "End offset for refresh window"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_hypertable"
+        ],
+        "title": "ContinuousAggregateInfo",
+        "description": "TimescaleDB continuous aggregate metadata.\n\nContinuous aggregates are materialized views that are incrementally updated\nby TimescaleDB in the background. They're ideal for time-series analytics\nbecause the LLM can query them directly for pre-aggregated data."
+      },
+      "DatabaseSchema": {
+        "properties": {
+          "dialect": {
+            "type": "string",
+            "title": "Dialect",
+            "description": "Database dialect: 'postgres' or 'duckdb'"
+          },
+          "tables": {
+            "items": {
+              "$ref": "#/components/schemas/TableSchema"
+            },
+            "type": "array",
+            "title": "Tables",
+            "description": "All tables/views/matviews"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipInfo"
+            },
+            "type": "array",
+            "title": "Relationships",
+            "description": "Foreign key relationships"
+          },
+          "has_timescaledb": {
+            "type": "boolean",
+            "title": "Has Timescaledb",
+            "description": "Whether TimescaleDB extension is available",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "dialect"
+        ],
+        "title": "DatabaseSchema",
+        "description": "Complete schema for an entire database connection.\n\nThis is the top-level model passed to the query planner and SQL validator.\nIt contains all tables (including views, matviews, hypertables, continuous\naggregates), their columns, and relationships."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "The health status of the API."
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse",
+        "description": "Health check response."
+      },
+      "HypertableInfo": {
+        "properties": {
+          "time_column": {
+            "type": "string",
+            "title": "Time Column",
+            "description": "The time-partitioning column name"
+          },
+          "chunk_interval": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Interval",
+            "description": "Chunk time interval (e.g., '7 days')"
+          },
+          "compression_enabled": {
+            "type": "boolean",
+            "title": "Compression Enabled",
+            "description": "Whether compression is enabled on this hypertable",
+            "default": false
+          },
+          "num_chunks": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Chunks",
+            "description": "Number of chunks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "time_column"
+        ],
+        "title": "HypertableInfo",
+        "description": "TimescaleDB-specific metadata for a hypertable.\n\nHypertables are the core abstraction in TimescaleDB \u2014 they look like\nregular tables but are automatically partitioned by time for performance."
+      },
+      "QueryRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "The natural language query to translate to SQL and execute."
+          },
+          "database_id": {
+            "type": "string",
+            "title": "Database Id",
+            "description": "The identifier for the target database.",
+            "default": "default"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "QueryRequest",
+        "description": "The incoming query request from a user."
+      },
+      "QueryResponse": {
+        "properties": {
+          "sql": {
+            "type": "string",
+            "title": "Sql",
+            "description": "The generated and executed SQL query."
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/ColumnMetadata"
+            },
+            "type": "array",
+            "title": "Columns",
+            "description": "Metadata for the returned columns."
+          },
+          "results": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Results",
+            "description": "The query result rows."
+          },
+          "chart": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChartSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Vega-Lite chart specification, if applicable."
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Execution metadata (time, row count, limits, etc.)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "sql",
+          "columns",
+          "results"
+        ],
+        "title": "QueryResponse",
+        "description": "The complete response containing SQL, data, and visualization."
+      },
+      "RelationshipInfo": {
+        "properties": {
+          "from_table": {
+            "type": "string",
+            "title": "From Table",
+            "description": "Source table (the one with the FK)"
+          },
+          "from_column": {
+            "type": "string",
+            "title": "From Column",
+            "description": "Source column"
+          },
+          "to_table": {
+            "type": "string",
+            "title": "To Table",
+            "description": "Referenced table"
+          },
+          "to_column": {
+            "type": "string",
+            "title": "To Column",
+            "description": "Referenced column"
+          },
+          "constraint_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constraint Name",
+            "description": "FK constraint name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_table",
+          "from_column",
+          "to_table",
+          "to_column"
+        ],
+        "title": "RelationshipInfo",
+        "description": "A foreign key relationship between two tables."
+      },
+      "TableKind": {
+        "type": "string",
+        "enum": [
+          "table",
+          "view",
+          "materialized_view",
+          "hypertable",
+          "continuous_aggregate"
+        ],
+        "title": "TableKind",
+        "description": "The kind of relation in the database.\n\nDistinguishing these is critical because:\n- The LLM needs to know what it can query (e.g., matviews are pre-aggregated)\n- Hypertables and continuous aggregates have time-series semantics\n- The validator may need to handle these differently"
+      },
+      "TableSchema": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Table name"
+          },
+          "schema_name": {
+            "type": "string",
+            "title": "Schema Name",
+            "description": "Schema/namespace",
+            "default": "public"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TableKind",
+            "description": "Type of relation",
+            "default": "table"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/ColumnInfo"
+            },
+            "type": "array",
+            "title": "Columns",
+            "description": "Columns in the table"
+          },
+          "row_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row Count",
+            "description": "Approximate row count (if available)"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Table comment/description"
+          },
+          "hypertable_info": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HypertableInfo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "TimescaleDB hypertable metadata (if applicable)"
+          },
+          "continuous_aggregate_info": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContinuousAggregateInfo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "TimescaleDB continuous aggregate metadata (if applicable)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "TableSchema",
+        "description": "Full schema for a single database table, view, or materialized view."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

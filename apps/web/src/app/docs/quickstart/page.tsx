@@ -1,49 +1,77 @@
+import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { CodeBlock } from '@/components/code-block';
+import { Callout } from '@/components/docs/callout';
+import { SITE } from '@/lib/constants';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export default function QuickstartPage() {
   return (
     <div className="max-w-3xl">
       <PageHeader
-        title="Quickstart & Installation"
-        description="Get your local environment running in minutes."
+        title="Quickstart"
+        description="Evaluate, deploy, and integrate — without cloning the repository."
       />
 
-      <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none text-lg leading-relaxed">
-        <h2 className="text-foreground mt-10 mb-4 text-2xl font-bold">Prerequisites</h2>
-        <ul className="mb-8 list-disc space-y-2 pl-6">
-          <li>Docker & Docker Compose</li>
-          <li>
-            <code>uv</code> (Python package installer)
-          </li>
-          <li>
-            <code>pnpm</code> (Node package manager)
-          </li>
-        </ul>
+      <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
+        <Callout variant="success" title="No clone required">
+          The recommended path uses the published Docker image and SDK packages. Clone the repo only
+          if you are <Link href="/docs/contributing">developing from source</Link>.
+        </Callout>
 
-        <h2 className="text-foreground mt-10 mb-4 text-2xl font-bold">1. Spin Up Dev Stack</h2>
+        <h2 className="text-foreground mt-10 text-2xl font-bold">1. Explore the demo</h2>
         <p>
-          Use the automated Makefile controls to orchestrate your local environment (API, Postgres,
-          Ollama):
+          See the full NL → SQL → chart flow in your browser with pre-generated fixtures aligned to
+          our sample analytics schema.
         </p>
-        <CodeBlock code="make up" />
+        <Link href="/demo" className={cn(buttonVariants(), 'no-underline')}>
+          Open interactive demo
+        </Link>
 
-        <p className="mt-4">Once running, the stack exposes:</p>
-        <ul className="mb-8 list-disc space-y-2 pl-6">
-          <li>
-            API Server: <code>http://localhost:8000</code>
-          </li>
-          <li>
-            Postgres: <code>localhost:5432</code>
-          </li>
-          <li>
-            Ollama: <code>http://localhost:11434</code>
-          </li>
-        </ul>
+        <h2 className="text-foreground mt-10 text-2xl font-bold">2. Run with Docker</h2>
+        <p>Pull the API image and start the stack (Postgres + Ollama + API):</p>
+        <CodeBlock
+          language="bash"
+          code={`docker pull ${SITE.dockerImage}
+mkdir ic-quickstart && cd ic-quickstart
+curl -O https://raw.githubusercontent.com/intelligence-connector/intelligence-connector/main/apps/web/public/compose/docker-compose.example.yml
+curl -O https://raw.githubusercontent.com/intelligence-connector/intelligence-connector/main/apps/web/public/samples/seed.sql
+docker compose -f docker-compose.example.yml up -d
+curl http://localhost:8000/health`}
+        />
+        <p>
+          Full details: <Link href="/docs/self-hosting">Self-Hosting</Link>.
+        </p>
 
-        <h2 className="text-foreground mt-10 mb-4 text-2xl font-bold">2. Populate Database Seed</h2>
-        <p>Seed Postgres with a production-grade analytics schema to test introspection:</p>
-        <CodeBlock code="make seed" />
+        <Callout variant="info" title="LLM (LiteLLM)">
+          Models use LiteLLM ids such as <code>ollama/llama3.2:1b</code> or{' '}
+          <code>gemini/gemini-1.5-flash</code>. Local Ollama: default profile +{' '}
+          <code>LLM_BASE_URL</code>. Cloud: <code>OLLAMA_PROFILE=disabled</code> + provider API key
+          (<code>LLM_API_KEY</code>, <code>GEMINI_API_KEY</code>, etc.). See{' '}
+          <Link href="/docs/self-hosting#llm-configuration">LLM configuration</Link>.
+        </Callout>
+
+        <h2 className="text-foreground mt-10 text-2xl font-bold">3. Integrate with the SDK</h2>
+        <CodeBlock
+          language="bash"
+          code="pip install intelligence-connector\n# or\nnpm install intelligence-sdk"
+        />
+        <CodeBlock
+          language="python"
+          code={`from intelligence_connector import IntelligenceConnector
+
+with IntelligenceConnector("${SITE.defaultBaseUrl}") as client:
+    result = client.query("Show total revenue by product category")
+    print(result.sql)
+    print(result.results)
+    if result.chart:
+        print(result.chart.chart_type)`}
+        />
+        <p>
+          See the <Link href="/docs/integration-guide">Integration Guide</Link> and SDK docs for
+          TypeScript, charts, and error handling.
+        </p>
       </div>
     </div>
   );

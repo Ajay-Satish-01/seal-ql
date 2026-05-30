@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from intelligence_core.llm.client import validate_llm_env
 from intelligence_core.planner.planner import QueryPlanner
 from intelligence_core.schema.introspector import get_introspector
 from intelligence_core.settings import get_settings
@@ -24,6 +25,13 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Lifecycle manager for the FastAPI application."""
     settings = get_settings()
+    logger.info(
+        "LLM mode: %s (model=%s, ollama_profile=%s)",
+        settings.llm_mode_label(),
+        settings.resolved_llm_model,
+        settings.ollama_profile,
+    )
+    validate_llm_env()
 
     # Extract dialect from database url (e.g. postgresql:// -> postgres)
     dialect = "postgres" if "postgres" in settings.database_url else "duckdb"

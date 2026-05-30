@@ -1,0 +1,510 @@
+{
+  "version": "1.0.0",
+  "presets": [
+    {
+      "id": "revenue-by-category",
+      "label": "Revenue by category",
+      "query": "Show total revenue by product category",
+      "response": {
+        "sql": "SELECT p.category, SUM(o.amount) AS total_revenue FROM orders o JOIN products p ON o.product_id = p.id WHERE o.status = 'completed' GROUP BY p.category ORDER BY total_revenue DESC LIMIT 10000",
+        "columns": [
+          {
+            "name": "category",
+            "type": "varchar",
+            "nullable": true
+          },
+          {
+            "name": "total_revenue",
+            "type": "numeric",
+            "nullable": true
+          }
+        ],
+        "results": [
+          {
+            "category": "Electronics",
+            "total_revenue": 45200.5
+          },
+          {
+            "category": "Clothing",
+            "total_revenue": 28100.0
+          },
+          {
+            "category": "Home",
+            "total_revenue": 19850.75
+          },
+          {
+            "category": "Sports",
+            "total_revenue": 12400.0
+          }
+        ],
+        "chart": {
+          "chart_type": "bar",
+          "vega_lite_spec": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "title": "Revenue by Product Category",
+            "width": "container",
+            "height": "container",
+            "data": {
+              "values": [
+                {
+                  "category": "Electronics",
+                  "total_revenue": 45200.5
+                },
+                {
+                  "category": "Clothing",
+                  "total_revenue": 28100.0
+                },
+                {
+                  "category": "Home",
+                  "total_revenue": 19850.75
+                },
+                {
+                  "category": "Sports",
+                  "total_revenue": 12400.0
+                }
+              ]
+            },
+            "mark": {
+              "type": "bar",
+              "tooltip": true
+            },
+            "encoding": {
+              "x": {
+                "field": "category",
+                "type": "nominal",
+                "axis": {
+                  "labelAngle": -45
+                }
+              },
+              "y": {
+                "field": "total_revenue",
+                "type": "quantitative"
+              }
+            }
+          },
+          "metadata": {
+            "requested_chart_type": "bar",
+            "applied_chart_type": "bar",
+            "x_field": "category",
+            "y_field": "total_revenue",
+            "color_field": null
+          }
+        },
+        "metadata": {
+          "row_count": 4,
+          "execution_time_ms": 24.5,
+          "truncated": false,
+          "warnings": []
+        }
+      }
+    },
+    {
+      "id": "hourly-events",
+      "label": "Hourly events",
+      "query": "Show hourly event counts for the last day",
+      "response": {
+        "sql": "SELECT time_bucket('1 hour', time) AS hour, COUNT(*) AS event_count FROM events_hourly GROUP BY hour ORDER BY hour LIMIT 10000",
+        "columns": [
+          {
+            "name": "hour",
+            "type": "timestamptz",
+            "nullable": true
+          },
+          {
+            "name": "event_count",
+            "type": "int8",
+            "nullable": true
+          }
+        ],
+        "results": [
+          {
+            "hour": "2024-01-01T08:00:00",
+            "event_count": 120
+          },
+          {
+            "hour": "2024-01-01T09:00:00",
+            "event_count": 185
+          },
+          {
+            "hour": "2024-01-01T10:00:00",
+            "event_count": 240
+          },
+          {
+            "hour": "2024-01-01T11:00:00",
+            "event_count": 310
+          },
+          {
+            "hour": "2024-01-01T12:00:00",
+            "event_count": 275
+          }
+        ],
+        "chart": {
+          "chart_type": "line",
+          "vega_lite_spec": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "title": "Hourly Event Volume",
+            "width": "container",
+            "height": "container",
+            "data": {
+              "values": [
+                {
+                  "hour": "2024-01-01T08:00:00",
+                  "event_count": 120
+                },
+                {
+                  "hour": "2024-01-01T09:00:00",
+                  "event_count": 185
+                },
+                {
+                  "hour": "2024-01-01T10:00:00",
+                  "event_count": 240
+                },
+                {
+                  "hour": "2024-01-01T11:00:00",
+                  "event_count": 310
+                },
+                {
+                  "hour": "2024-01-01T12:00:00",
+                  "event_count": 275
+                }
+              ]
+            },
+            "mark": {
+              "type": "line",
+              "tooltip": true
+            },
+            "encoding": {
+              "x": {
+                "field": "hour",
+                "type": "nominal"
+              },
+              "y": {
+                "field": "event_count",
+                "type": "quantitative"
+              }
+            }
+          },
+          "metadata": {
+            "requested_chart_type": "line",
+            "applied_chart_type": "line",
+            "x_field": "hour",
+            "y_field": "event_count",
+            "color_field": null
+          }
+        },
+        "metadata": {
+          "row_count": 5,
+          "execution_time_ms": 24.5,
+          "truncated": false,
+          "warnings": []
+        }
+      }
+    },
+    {
+      "id": "orders-by-region",
+      "label": "Orders by region",
+      "query": "Orders by region as a pie chart",
+      "response": {
+        "sql": "SELECT region, COUNT(*) AS orders FROM orders GROUP BY region ORDER BY orders DESC LIMIT 10000",
+        "columns": [
+          {
+            "name": "region",
+            "type": "varchar",
+            "nullable": true
+          },
+          {
+            "name": "orders",
+            "type": "int8",
+            "nullable": true
+          }
+        ],
+        "results": [
+          {
+            "region": "North",
+            "orders": 142
+          },
+          {
+            "region": "South",
+            "orders": 98
+          },
+          {
+            "region": "East",
+            "orders": 115
+          },
+          {
+            "region": "West",
+            "orders": 87
+          }
+        ],
+        "chart": {
+          "chart_type": "pie",
+          "vega_lite_spec": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "title": "Orders by Region",
+            "width": "container",
+            "height": "container",
+            "data": {
+              "values": [
+                {
+                  "region": "North",
+                  "orders": 142
+                },
+                {
+                  "region": "South",
+                  "orders": 98
+                },
+                {
+                  "region": "East",
+                  "orders": 115
+                },
+                {
+                  "region": "West",
+                  "orders": 87
+                }
+              ]
+            },
+            "mark": {
+              "type": "arc",
+              "innerRadius": 50,
+              "tooltip": true
+            },
+            "encoding": {
+              "theta": {
+                "field": "orders",
+                "type": "quantitative"
+              },
+              "color": {
+                "field": "region",
+                "type": "nominal"
+              }
+            }
+          },
+          "metadata": {
+            "requested_chart_type": "pie",
+            "applied_chart_type": "pie",
+            "x_field": "region",
+            "y_field": "orders",
+            "color_field": null
+          }
+        },
+        "metadata": {
+          "row_count": 4,
+          "execution_time_ms": 24.5,
+          "truncated": false,
+          "warnings": []
+        }
+      }
+    },
+    {
+      "id": "product-performance",
+      "label": "Product performance table",
+      "query": "Top products with revenue and units sold",
+      "response": {
+        "sql": "SELECT product_name, category, total_revenue, units_sold FROM product_performance ORDER BY total_revenue DESC LIMIT 10",
+        "columns": [
+          {
+            "name": "product_name",
+            "type": "varchar",
+            "nullable": true
+          },
+          {
+            "name": "category",
+            "type": "varchar",
+            "nullable": true
+          },
+          {
+            "name": "total_revenue",
+            "type": "numeric",
+            "nullable": true
+          },
+          {
+            "name": "units_sold",
+            "type": "int8",
+            "nullable": true
+          }
+        ],
+        "results": [
+          {
+            "product_name": "Wireless Headphones",
+            "category": "Electronics",
+            "total_revenue": 18500.0,
+            "units_sold": 92
+          },
+          {
+            "product_name": "Running Shoes",
+            "category": "Sports",
+            "total_revenue": 14200.0,
+            "units_sold": 71
+          },
+          {
+            "product_name": "Desk Lamp",
+            "category": "Home",
+            "total_revenue": 8900.0,
+            "units_sold": 178
+          }
+        ],
+        "chart": {
+          "chart_type": "table",
+          "vega_lite_spec": {},
+          "metadata": {
+            "requested_chart_type": "table",
+            "applied_chart_type": "table",
+            "x_field": null,
+            "y_field": null,
+            "color_field": null
+          }
+        },
+        "metadata": {
+          "row_count": 3,
+          "execution_time_ms": 24.5,
+          "truncated": false,
+          "warnings": []
+        }
+      }
+    },
+    {
+      "id": "total-revenue-metric",
+      "label": "Total revenue KPI",
+      "query": "What is total completed order revenue?",
+      "response": {
+        "sql": "SELECT SUM(amount) AS total_revenue FROM orders WHERE status = 'completed' LIMIT 10000",
+        "columns": [
+          {
+            "name": "total_revenue",
+            "type": "numeric",
+            "nullable": true
+          }
+        ],
+        "results": [
+          {
+            "total_revenue": 105551.25
+          }
+        ],
+        "chart": {
+          "chart_type": "metric_card",
+          "vega_lite_spec": {},
+          "metadata": {
+            "requested_chart_type": "metric_card",
+            "applied_chart_type": "metric_card",
+            "x_field": null,
+            "y_field": "total_revenue",
+            "color_field": null
+          }
+        },
+        "metadata": {
+          "row_count": 1,
+          "execution_time_ms": 24.5,
+          "truncated": false,
+          "warnings": []
+        }
+      }
+    },
+    {
+      "id": "customer-segments",
+      "label": "Customer segments",
+      "query": "Customer count vs average order value by segment",
+      "response": {
+        "sql": "SELECT region, AVG(total_spent) AS avg_order_value, COUNT(*) AS customer_count FROM customer_summary GROUP BY region LIMIT 10000",
+        "columns": [
+          {
+            "name": "region",
+            "type": "varchar",
+            "nullable": true
+          },
+          {
+            "name": "avg_order_value",
+            "type": "numeric",
+            "nullable": true
+          },
+          {
+            "name": "customer_count",
+            "type": "int8",
+            "nullable": true
+          }
+        ],
+        "results": [
+          {
+            "region": "North",
+            "avg_order_value": 85.2,
+            "customer_count": 12
+          },
+          {
+            "region": "South",
+            "avg_order_value": 120.5,
+            "customer_count": 8
+          },
+          {
+            "region": "East",
+            "avg_order_value": 65.0,
+            "customer_count": 22
+          },
+          {
+            "region": "West",
+            "avg_order_value": 200.1,
+            "customer_count": 5
+          }
+        ],
+        "chart": {
+          "chart_type": "scatter",
+          "vega_lite_spec": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "title": "Customer Segments",
+            "width": "container",
+            "height": "container",
+            "data": {
+              "values": [
+                {
+                  "region": "North",
+                  "avg_order_value": 85.2,
+                  "customer_count": 12
+                },
+                {
+                  "region": "South",
+                  "avg_order_value": 120.5,
+                  "customer_count": 8
+                },
+                {
+                  "region": "East",
+                  "avg_order_value": 65.0,
+                  "customer_count": 22
+                },
+                {
+                  "region": "West",
+                  "avg_order_value": 200.1,
+                  "customer_count": 5
+                }
+              ]
+            },
+            "mark": {
+              "type": "point",
+              "tooltip": true
+            },
+            "encoding": {
+              "x": {
+                "field": "avg_order_value",
+                "type": "quantitative"
+              },
+              "y": {
+                "field": "customer_count",
+                "type": "quantitative"
+              }
+            }
+          },
+          "metadata": {
+            "requested_chart_type": "scatter",
+            "applied_chart_type": "scatter",
+            "x_field": "avg_order_value",
+            "y_field": "customer_count",
+            "color_field": null
+          }
+        },
+        "metadata": {
+          "row_count": 4,
+          "execution_time_ms": 24.5,
+          "truncated": false,
+          "warnings": []
+        }
+      }
+    }
+  ]
+}

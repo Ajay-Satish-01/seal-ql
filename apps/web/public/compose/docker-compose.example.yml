@@ -1,0 +1,75 @@
+# Intelligence Connector — image-first stack (no git clone required)
+# Usage: docker compose -f docker-compose.example.yml up -d
+#
+# LLM modes (set in .env beside this file):
+#   A) Ollama (default): LLM_MODEL=ollama/llama3.2:1b, LLM_BASE_URL=http://ollama:11434
+#   B) Cloud (Gemini/Claude/OpenAI): OLLAMA_PROFILE=disabled, LLM_MODEL=gemini/…,
+#      plus LLM_API_KEY or GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY
+
+services:
+  api:
+    image: intelligence-connector/api:latest
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/intelligence_connector}
+      OLLAMA_PROFILE: ${OLLAMA_PROFILE:-default}
+      LLM_MODEL: ${LLM_MODEL:-ollama/llama3.2:1b}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://ollama:11434}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      MAX_ROWS: ${MAX_ROWS:-10000}
+      QUERY_TIMEOUT_SECONDS: ${QUERY_TIMEOUT_SECONDS:-30}
+      CORS_ORIGINS: ${CORS_ORIGINS:-'["http://localhost:3000","http://localhost:5173"]'}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+        required: false
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-intelligence_connector}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    profiles: ["${OLLAMA_PROFILE:-default}"]
+    image: ollama/ollama:latest
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      LLM_MODEL: ${LLM_MODEL:-ollama/llama3.2:1b}
+    entrypoint: >
+      /bin/sh -c "
+        /bin/ollama serve &
+        sleep 5 &&
+        /bin/ollama pull $${LLM_MODEL#ollama/} &&
+        wait
+      "
+
+volumes:
+  postgres_data:
+  ollama_data:

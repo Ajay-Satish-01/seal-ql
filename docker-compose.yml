@@ -10,7 +10,7 @@ services:
     environment:
       - "DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/intelligence_connector}"
       - "DUCKDB_PATH=${DUCKDB_PATH:-:memory:}"
-      - "LLM_TYPE=${LLM_TYPE:-local}"
+      - "OLLAMA_PROFILE=${OLLAMA_PROFILE:-default}"
       - "LLM_MODEL=${LLM_MODEL:-ollama/llama3.2:1b}"
       - "LLM_BASE_URL=${LLM_BASE_URL:-http://ollama:11434}"
       - "LLM_API_KEY=${LLM_API_KEY:-}"

@@ -1,0 +1,169 @@
+import Link from 'next/link';
+import { PageHeader } from '@/components/page-header';
+import { CodeBlock } from '@/components/code-block';
+import { Callout } from '@/components/docs/callout';
+import { SITE } from '@/lib/constants';
+
+export default function IntegrationGuidePage() {
+  return (
+    <div className="max-w-3xl">
+      <PageHeader
+        title="Integration Guide"
+        description="Connect your application to a self-hosted Intelligence Connector API."
+      />
+
+      <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
+        <Callout variant="info" title="Recommended path">
+          Docker image → SDK install → set <code>baseUrl</code>. You do not need to clone the
+          repository to integrate.
+        </Callout>
+
+        <h2 id="docker" className="text-foreground mt-10 text-2xl font-bold">
+          1. Run the API (Docker)
+        </h2>
+        <p>
+          Follow <Link href="/docs/self-hosting">Self-Hosting</Link> to pull{' '}
+          <code>{SITE.dockerImage}</code> and start the compose stack. Confirm health:
+        </p>
+        <CodeBlock language="bash" code="curl http://localhost:8000/health" />
+
+        <h2 id="llm" className="text-foreground mt-10 text-2xl font-bold">
+          1b. Configure the LLM (LiteLLM)
+        </h2>
+        <p>
+          The planner uses{' '}
+          <a
+            href="https://docs.litellm.ai/docs/providers"
+            className="text-primary hover:underline"
+            target="_blank"
+            rel="noreferrer"
+          >
+            LiteLLM
+          </a>
+          . Set <code>LLM_MODEL</code> to a LiteLLM provider string (
+          <code>ollama/…</code>, <code>gemini/…</code>, <code>openai/…</code>,{' '}
+          <code>anthropic/…</code>) and provide the matching API key env vars LiteLLM expects.
+        </p>
+        <p>
+          Use <code>OLLAMA_PROFILE=disabled</code> for cloud providers; leave the profile at{' '}
+          <code>default</code> (or omit it) for bundled Ollama with <code>LLM_BASE_URL</code>.
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`# Ollama — .env next to docker-compose.example.yml
+LLM_MODEL=ollama/llama3.2:1b
+LLM_BASE_URL=http://ollama:11434
+
+# Cloud (Gemini) — same file, different values
+OLLAMA_PROFILE=disabled
+LLM_MODEL=gemini/gemini-1.5-flash
+GEMINI_API_KEY=your-key-here`}
+        />
+        <p>
+          Model ids, keys, and compose profiles:{' '}
+          <Link href="/docs/self-hosting#llm-configuration">Self-Hosting → LLM configuration</Link>.
+        </p>
+
+        <h2 id="sdk" className="text-foreground mt-10 text-2xl font-bold">
+          2. Install the SDK
+        </h2>
+        <CodeBlock
+          language="bash"
+          code={`# Python
+pip install intelligence-connector
+
+# TypeScript / React
+npm install intelligence-sdk
+npm install react react-dom vega vega-lite vega-embed`}
+        />
+
+        <h2 className="text-foreground mt-10 text-2xl font-bold">3. Connect</h2>
+        <p>
+          Set <code>baseUrl</code> to your API (local or internal). Use HTTPS in production behind
+          your proxy.
+        </p>
+        <CodeBlock
+          language="typescript"
+          code={`import { IntelligenceConnector } from 'intelligence-sdk';
+
+const client = new IntelligenceConnector({
+  baseUrl: 'https://connector.internal.example.com',
+});
+
+const result = await client.query('Hourly event counts');
+console.log(result.sql, result.results, result.chart);`}
+        />
+        <p>
+          Python: <Link href="/docs/python-sdk">Python SDK</Link> · TypeScript:{' '}
+          <Link href="/docs/typescript-sdk">TypeScript SDK</Link>
+        </p>
+
+        <h2 className="text-foreground mt-10 text-2xl font-bold">4. HTTP / OpenAPI</h2>
+        <p>
+          Without an SDK, call <code>POST /v1/query</code> with JSON{' '}
+          <code>{'{ "query": "..." }'}</code>. Download{' '}
+          <a href="/openapi.json" className="text-primary">
+            openapi.json
+          </a>{' '}
+          or use live Swagger at <code>{'{baseUrl}'}/docs</code>.
+        </p>
+        <p>
+          <Link href="/docs/api-reference">API Reference</Link>
+        </p>
+
+        <h2 className="text-foreground mt-10 text-2xl font-bold">5. Build a dashboard</h2>
+        <ul>
+          <li>
+            <code>results</code> + <code>columns</code> for tables
+          </li>
+          <li>
+            <code>chart.chart_type</code> — bar, line, pie, scatter, area use Vega-Lite; table and
+            metric_card render from rows
+          </li>
+          <li>
+            React: <code>&lt;VegaChart spec={'{result.chart}'} /&gt;</code>
+          </li>
+        </ul>
+        <p>
+          <Link href="/docs/charts-analysis">Charts &amp; Analysis</Link> ·{' '}
+          <Link href="/demo">Interactive demo</Link>
+        </p>
+
+        <h2 className="text-foreground mt-10 text-2xl font-bold">6. Schema-first queries</h2>
+        <p>
+          Call <code>GET /v1/schema</code> (or <code>client.schema()</code>) to inspect tables
+          before asking NL questions. Sample seed includes <code>products</code>,{' '}
+          <code>orders</code>, <code>events_hourly</code>, <code>product_performance</code>.
+        </p>
+
+        <h2 className="text-foreground mt-10 text-2xl font-bold">7. Troubleshooting</h2>
+        <ul>
+          <li>
+            <strong>Connection refused</strong> — check container health and port mapping.
+          </li>
+          <li>
+            <strong>CORS</strong> — add your frontend origin to <code>CORS_ORIGINS</code>.
+          </li>
+          <li>
+            <strong>LLM timeouts</strong> — Ollama: confirm the model finished pulling; cloud: check
+            quota and that <code>LLM_MODEL</code> matches your API key provider.
+          </li>
+          <li>
+            <strong>Model / profile mismatch</strong> — cloud models (
+            <code>gemini/</code>, <code>openai/</code>, …) require{' '}
+            <code>OLLAMA_PROFILE=disabled</code>; check API startup warnings in the logs.
+          </li>
+          <li>
+            <strong>Version skew</strong> — align Docker image tag with SDK version.
+          </li>
+        </ul>
+
+        <h2 className="text-foreground mt-10 text-2xl font-bold">Advanced: develop from source</h2>
+        <p>
+          Contributors clone the public repo and use <code>make up</code> / <code>make seed</code>.
+          See <Link href="/docs/contributing">Contributing</Link>.
+        </p>
+      </div>
+    </div>
+  );
+}

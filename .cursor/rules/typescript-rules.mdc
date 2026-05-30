@@ -1,6 +1,5 @@
 ---
-description: TypeScript SDK Rules
-globs: ["sdks/typescript/**/*.ts", "sdks/typescript/**/*.tsx"]
+alwaysApply: true
 ---
 
 # TypeScript Constraints

@@ -39,6 +39,7 @@ testpaths = [
     "packages/semantic/tests",
     "apps/api/tests",
     "sdks/python/tests",
+    "tests",
     "evals",
 ]
 pythonpath = [
@@ -48,6 +49,7 @@ pythonpath = [
     "packages/semantic",
     "apps/api",
     "sdks/python",
+    "scripts",
 ]
 asyncio_mode = "auto"
 
