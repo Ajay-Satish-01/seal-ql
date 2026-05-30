@@ -1,11 +1,11 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import type { ChartSpec } from 'intelligence-sdk';
+import type { ChartSpec } from 'seal';
 import { useTheme } from 'next-themes';
 import { Badge } from '@/components/ui/badge';
 
-const VegaChart = dynamic(() => import('intelligence-sdk').then((m) => m.VegaChart), {
+const VegaChart = dynamic(() => import('seal').then((m) => m.VegaChart), {
   ssr: false,
   loading: () => <ChartSkeleton />,
 });

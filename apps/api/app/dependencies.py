@@ -1,9 +1,9 @@
 """API Dependency Injection."""
 
 from fastapi import Request
-from intelligence_core.planner.planner import QueryPlanner
-from intelligence_core.schema.introspector import SchemaIntrospector
-from intelligence_sql.executor import QueryExecutor
+from seal_core.planner.planner import QueryPlanner
+from seal_core.schema.introspector import SchemaIntrospector
+from seal_sql.executor import QueryExecutor
 
 
 def get_schema_introspector(request: Request) -> SchemaIntrospector:

@@ -1,31 +1,32 @@
 /**
- * Intelligence Connector TypeScript SDK client.
+ * Seal TypeScript SDK client.
  *
  * Usage:
- *   import { IntelligenceConnector } from "intelligence-sdk";
+ *   import { Seal } from "seal";
  *
- *   const client = new IntelligenceConnector({ baseUrl: "http://localhost:8000" });
+ *   const client = new Seal({ baseUrl: "http://localhost:8000" });
  *   const result = await client.query("Show me monthly revenue");
  *   console.log(result.sql);
  *   console.log(result.results);
  */
 
-import { ConnectionError, QueryError, ServerError } from './errors.js';
-import type { ConnectorOptions, DatabaseSchema, HealthResponse, QueryResponse } from './types.js';
+import { QueryError, SealConnectionError, ServerError } from './errors.js';
+import type { SealOptions, DatabaseSchema, HealthResponse, QueryResponse } from './types.js';
 
 const DEFAULT_TIMEOUT = 120_000; // 120 seconds
 
-export class IntelligenceConnector {
+export class Seal {
   private readonly baseUrl: string;
   private readonly timeout: number;
   private readonly headers: Record<string, string>;
 
-  constructor(options: ConnectorOptions) {
+  constructor(options: SealOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '');
     this.timeout = options.timeout ?? DEFAULT_TIMEOUT;
     this.headers = {
       'Content-Type': 'application/json',
       ...(options.headers ?? {}),
+      ...(options.apiKey ? { 'X-API-Key': options.apiKey } : {}),
     };
   }
 
@@ -66,11 +67,11 @@ export class IntelligenceConnector {
         signal,
       });
     } catch (error: unknown) {
-      if (IntelligenceConnector.isTimeoutError(error)) {
-        throw new ConnectionError(`Request to ${url} timed out after ${this.timeout}ms`);
+      if (Seal.isTimeoutError(error)) {
+        throw new SealConnectionError(`Request to ${url} timed out after ${this.timeout}ms`);
       }
       const message = error instanceof Error ? error.message : String(error);
-      throw new ConnectionError(`Cannot connect to ${url}: ${message}`);
+      throw new SealConnectionError(`Cannot connect to ${url}: ${message}`);
     } finally {
       cleanup?.();
     }

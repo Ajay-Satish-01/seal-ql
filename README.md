@@ -1,4 +1,4 @@
-# 🌌 Intelligence Connector
+# 🌌 Seal
 
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -8,12 +8,17 @@
 An **AI-powered SQL query generation, validation, and visualization SDK** enabling natural language querying over multi-dialect databases with robust client/server safety and native visual chart rendering.
 
 ```ts
-// Express your data questions in natural language:
-const result = await sdk.query("Monthly revenue trends by region");
+import { Seal } from "seal";
 
-console.log(result.sql);        // Validated, safe, optimized SQL
-console.log(result.data);       // Executed database results
-console.log(result.chartSpec);  // Custom Vega-Lite visualization spec
+const client = new Seal({
+  baseUrl: "http://localhost:8000",
+  apiKey: process.env.SEAL_API_KEY,
+});
+
+const result = await client.query("Monthly revenue trends by region");
+console.log(result.sql);    // Validated, safe SQL
+console.log(result.results);  // Executed rows
+console.log(result.chart);    // Vega-Lite chart spec (when applicable)
 ```
 
 ---
@@ -68,6 +73,7 @@ console.log(result.chartSpec);  // Custom Vega-Lite visualization spec
 * **Local-First & Production-Ready**: Orchestrated using Docker Compose with local LLM integration via **Ollama** by default.
 * **Modern Tooling & Environments**: Package structures utilizing `uv` workspaces for Python packages/applications, and modern typescript modules using `pnpm`.
 * **Zero-Trust SQL Safety**: SQLGlot-based AST safety checker to block destructive statements and enforce pagination limits.
+* **API Key Authentication**: Shared `X-API-Key` for `/v1/*` with production-safe env validation (`SEAL_AUTH_REQUIRED`, `SEAL_DEV_MODE`, `SEAL_DISABLE_DOCS`).
 * **Automated Evaluations**: Built-in eval runners to measure SQL syntax success, execution rates, and planner repair metrics against DuckDB and TimescaleDB test cases.
 
 ---
@@ -89,14 +95,19 @@ Ensure you have the following installed on your machine:
 Use the automated Makefile controls to orchestrate your local environment:
 
 ```bash
+# First time: copy env template (sets SEAL_DEV_MODE=true and a placeholder API key for local dev)
+cp .env.example .env
+
 # Start all services (API, Postgres with TimescaleDB, Ollama)
 make up
 ```
 
+For production-style auth (`SEAL_AUTH_REQUIRED`, generated `SEAL_API_KEY`), see [SETUP.md](./SETUP.md) and the docs site **Authentication** page.
+
 Once running, the stack exposes:
 * **API Server**: `http://localhost:8000`
 * **Swagger/OpenAPI docs**: `http://localhost:8000/docs`
-* **Postgres Database**: `localhost:5432` (User: `postgres`, Pass: `postgres`, DB: `intelligence_connector`)
+* **Postgres Database**: `localhost:5432` (User: `postgres`, Pass: `postgres`, DB: `seal`)
 * **Ollama Service**: `http://localhost:11434`
 
 To stop the services:
@@ -194,6 +205,10 @@ pre-commit run --all-files
 ```
 
 ---
+
+## 📦 Publishing
+
+Self-host with Docker (`seal/api`), or install the SDKs from PyPI/npm as `seal`. See [RELEASING.md](RELEASING.md) and [SETUP.md](SETUP.md).
 
 ## 📜 License
 

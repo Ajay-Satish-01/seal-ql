@@ -1,23 +1,23 @@
-# Intelligence Connector TypeScript SDK
+# Seal TypeScript SDK
 
-The official TypeScript SDK for interacting with the Intelligence Connector API.
+The official TypeScript SDK for interacting with the Seal API.
 
 ## Installation
 
 ```bash
-npm install intelligence-sdk
+npm install seal
 # or
-yarn add intelligence-sdk
+yarn add seal
 # or
-pnpm add intelligence-sdk
+pnpm add seal
 ```
 
 ## Basic Usage
 
 ```typescript
-import { IntelligenceConnector } from 'intelligence-sdk';
+import { Seal } from 'seal';
 
-const client = new IntelligenceConnector({
+const client = new Seal({
   baseUrl: 'http://localhost:8000',
 });
 
@@ -54,9 +54,9 @@ npm install react react-dom vega vega-lite vega-embed
 
 ```tsx
 import React, { useState } from 'react';
-import { IntelligenceConnector, VegaChart } from 'intelligence-sdk';
+import { Seal, VegaChart } from 'seal';
 
-const client = new IntelligenceConnector({ baseUrl: 'http://localhost:8000' });
+const client = new Seal({ baseUrl: 'http://localhost:8000' });
 
 export function Dashboard() {
   const [result, setResult] = useState(null);

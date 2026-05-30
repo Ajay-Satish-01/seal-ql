@@ -1,4 +1,4 @@
-import type { QueryResponse } from 'intelligence-sdk';
+import type { QueryResponse } from 'seal';
 import fixtures from '@/data/demo-fixtures.json';
 
 export interface DemoPreset {

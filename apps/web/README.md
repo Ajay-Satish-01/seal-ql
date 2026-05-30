@@ -1,6 +1,6 @@
-# Intelligence Connector Docs Site
+# Seal Docs Site
 
-Documentation, marketing landing, and interactive demo (`/demo`) for Intelligence Connector.
+Documentation, marketing landing, and interactive demo (`/demo`) for Seal.
 
 ## Development
 

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 
 export default function FeaturesPage() {
@@ -5,7 +6,7 @@ export default function FeaturesPage() {
     <div className="max-w-3xl">
       <PageHeader
         title="Features"
-        description="Deep dive into the core capabilities of Intelligence Connector."
+        description="Deep dive into the core capabilities of Seal."
       />
 
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
@@ -13,7 +14,7 @@ export default function FeaturesPage() {
         <p>
           Before any query is generated, the system actively fetches the live DDL (Data Definition
           Language) of your connected database. Instead of blindly guessing table structures,
-          Intelligence Connector feeds the exact tables, column types, and foreign key relationships
+          Seal feeds the exact tables, column types, and foreign key relationships
           into the LLM context.
         </p>
         <ul>
@@ -69,9 +70,25 @@ export default function FeaturesPage() {
 
         <hr />
 
+        <h2>API authentication</h2>
+        <p>
+          Self-hosted deployments protect <code>/v1/query</code> and <code>/v1/schema</code> with a
+          shared <code>X-API-Key</code> header. Production settings require a generated secret (
+          <code>SEAL_AUTH_REQUIRED=true</code>, <code>SEAL_DEV_MODE=false</code>), reject
+          placeholder keys even if dev mode was left on, optionally hide public Swagger (
+          <code>SEAL_DISABLE_DOCS</code>), and expect your application server — not end-user
+          browsers — to hold the key. See the{' '}
+          <Link href="/docs/authentication" className="text-primary">
+            Authentication
+          </Link>{' '}
+          guide for BFF patterns, Docker env vars, and SDK usage.
+        </p>
+
+        <hr />
+
         <h2>Instant Chart Generation</h2>
         <p>
-          Data without visualization is hard to consume. Intelligence Connector includes a Chart
+          Data without visualization is hard to consume. Seal includes a Chart
           Engine that analyzes the returned SQL result set and automatically generates a complete{' '}
           <strong>Vega-Lite</strong> JSON specification.
         </p>

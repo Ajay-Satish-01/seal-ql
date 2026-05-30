@@ -6,15 +6,17 @@ Run `make up` before executing these tests.
 
 from __future__ import annotations
 
+import os
 import socket
 
 import pytest
-from intelligence_connector import (
-    AsyncIntelligenceConnector,
-    IntelligenceConnector,
+from seal import (
+    AsyncSeal,
+    Seal,
 )
 
 _API_URL = "http://localhost:8000"
+_API_KEY = os.environ.get("SEAL_API_KEY", "dev-local-change-me")
 
 
 def _api_reachable() -> bool:
@@ -34,18 +36,18 @@ class TestSyncE2E:
     """E2E tests using the synchronous client."""
 
     def test_health(self):
-        with IntelligenceConnector(_API_URL) as client:
+        with Seal(_API_URL, api_key=_API_KEY) as client:
             result = client.health()
             assert result.status == "ok"
 
     def test_schema(self):
-        with IntelligenceConnector(_API_URL) as client:
+        with Seal(_API_URL, api_key=_API_KEY) as client:
             result = client.schema()
             assert result.dialect == "postgres"
             assert len(result.tables) > 0
 
     def test_query(self):
-        with IntelligenceConnector(_API_URL, timeout=180) as client:
+        with Seal(_API_URL, api_key=_API_KEY, timeout=180) as client:
             try:
                 result = client.query("Show me 2 products")
                 assert result.sql  # non-empty SQL
@@ -64,20 +66,20 @@ class TestAsyncE2E:
 
     @pytest.mark.asyncio
     async def test_health(self):
-        async with AsyncIntelligenceConnector(_API_URL) as client:
+        async with AsyncSeal(_API_URL, api_key=_API_KEY) as client:
             result = await client.health()
             assert result.status == "ok"
 
     @pytest.mark.asyncio
     async def test_schema(self):
-        async with AsyncIntelligenceConnector(_API_URL) as client:
+        async with AsyncSeal(_API_URL, api_key=_API_KEY) as client:
             result = await client.schema()
             assert result.dialect == "postgres"
             assert len(result.tables) > 0
 
     @pytest.mark.asyncio
     async def test_query(self):
-        async with AsyncIntelligenceConnector(_API_URL, timeout=180) as client:
+        async with AsyncSeal(_API_URL, api_key=_API_KEY, timeout=180) as client:
             try:
                 result = await client.query("Show me 2 products")
                 assert result.sql

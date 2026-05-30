@@ -1,4 +1,4 @@
-# Intelligence Connector — image-first stack (no git clone required)
+# Seal — image-first stack (no git clone required)
 # Usage: docker compose -f docker-compose.example.yml up -d
 #
 # LLM modes (set in .env beside this file):
@@ -8,11 +8,11 @@
 
 services:
   api:
-    image: intelligence-connector/api:latest
+    image: seal/api:latest
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/intelligence_connector}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/seal}
       OLLAMA_PROFILE: ${OLLAMA_PROFILE:-default}
       LLM_MODEL: ${LLM_MODEL:-ollama/llama3.2:1b}
       LLM_BASE_URL: ${LLM_BASE_URL:-http://ollama:11434}
@@ -23,6 +23,11 @@ services:
       MAX_ROWS: ${MAX_ROWS:-10000}
       QUERY_TIMEOUT_SECONDS: ${QUERY_TIMEOUT_SECONDS:-30}
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000","http://localhost:5173"]}
+      # Required in .env — openssl rand -hex 32 (placeholders rejected at startup)
+      SEAL_API_KEY: ${SEAL_API_KEY:?Set SEAL_API_KEY in .env}
+      SEAL_AUTH_REQUIRED: ${SEAL_AUTH_REQUIRED:-true}
+      SEAL_DEV_MODE: ${SEAL_DEV_MODE:-false}
+      SEAL_DISABLE_DOCS: ${SEAL_DISABLE_DOCS:-true}
     depends_on:
       postgres:
         condition: service_healthy
@@ -31,17 +36,18 @@ services:
         required: false
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8000/health']
+      test: ['CMD', 'python', '/app/scripts/healthcheck.py']
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   postgres:
     image: timescale/timescaledb:latest-pg16
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-intelligence_connector}
+      POSTGRES_DB: ${POSTGRES_DB:-seal}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:

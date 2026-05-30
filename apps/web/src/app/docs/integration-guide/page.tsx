@@ -9,7 +9,7 @@ export default function IntegrationGuidePage() {
     <div className="max-w-3xl">
       <PageHeader
         title="Integration Guide"
-        description="Connect your application to a self-hosted Intelligence Connector API."
+        description="Connect your application to a self-hosted Seal API."
       />
 
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
@@ -70,10 +70,10 @@ GEMINI_API_KEY=your-key-here`}
         <CodeBlock
           language="bash"
           code={`# Python
-pip install intelligence-connector
+pip install seal
 
 # TypeScript / React
-npm install intelligence-sdk
+npm install seal
 npm install react react-dom vega vega-lite vega-embed`}
         />
 
@@ -84,10 +84,11 @@ npm install react react-dom vega vega-lite vega-embed`}
         </p>
         <CodeBlock
           language="typescript"
-          code={`import { IntelligenceConnector } from 'intelligence-sdk';
+          code={`import { Seal } from 'seal';
 
-const client = new IntelligenceConnector({
-  baseUrl: 'https://connector.internal.example.com',
+const client = new Seal({
+  baseUrl: 'https://seal.internal.example.com',
+  apiKey: process.env.SEAL_API_KEY, // X-API-Key header
 });
 
 const result = await client.query('Hourly event counts');
@@ -98,6 +99,16 @@ console.log(result.sql, result.results, result.chart);`}
           <Link href="/docs/typescript-sdk">TypeScript SDK</Link>
         </p>
 
+        <h2 className="text-foreground mt-10 text-2xl font-bold">3b. API authentication</h2>
+        <p>
+          Set <code>SEAL_API_KEY</code> on the server. In production use{' '}
+          <code>SEAL_AUTH_REQUIRED=true</code>, <code>SEAL_DEV_MODE=false</code>, and{' '}
+          <code>SEAL_DISABLE_DOCS=true</code>. Clients send <code>X-API-Key</code>; the TypeScript
+          SDK&apos;s <code>apiKey</code> option overrides any <code>X-API-Key</code> in custom{' '}
+          <code>headers</code>. <code>/health</code> stays public. See{' '}
+          <Link href="/docs/authentication">Authentication</Link>.
+        </p>
+
         <h2 className="text-foreground mt-10 text-2xl font-bold">4. HTTP / OpenAPI</h2>
         <p>
           Without an SDK, call <code>POST /v1/query</code> with JSON{' '}
@@ -105,7 +116,8 @@ console.log(result.sql, result.results, result.chart);`}
           <a href="/openapi.json" className="text-primary">
             openapi.json
           </a>{' '}
-          or use live Swagger at <code>{'{baseUrl}'}/docs</code>.
+          or use live Swagger at <code>{'{baseUrl}'}/docs</code> when{' '}
+          <code>SEAL_DISABLE_DOCS=false</code> (typical local dev; hidden in production compose).
         </p>
         <p>
           <Link href="/docs/api-reference">API Reference</Link>

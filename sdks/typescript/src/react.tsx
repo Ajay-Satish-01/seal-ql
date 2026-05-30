@@ -6,7 +6,7 @@ const isBrowser = typeof window !== 'undefined';
 
 export interface VegaChartProps {
   /**
-   * The chart spec returned by the Intelligence Connector API.
+   * The chart spec returned by the Seal API.
    * If this is null or not provided, the component renders nothing.
    */
   spec: ChartSpec | null | undefined;
@@ -30,7 +30,7 @@ export interface VegaChartProps {
 
 /**
  * A React component that renders Vega-Lite specifications returned by
- * the Intelligence Connector API.
+ * the Seal API.
  *
  * Note: Requires `react` and `vega-embed` to be installed as peer dependencies.
  */
@@ -119,7 +119,5 @@ export const VegaChart: React.FC<VegaChartProps> = ({
     ...style,
   };
 
-  return (
-    <div ref={containerRef} className={`intelligence-vega-chart ${className}`} style={baseStyle} />
-  );
+  return <div ref={containerRef} className={`seal-vega-chart ${className}`} style={baseStyle} />;
 };

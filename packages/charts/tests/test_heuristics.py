@@ -1,9 +1,9 @@
 """Tests for chart heuristics."""
 
 import pytest
-from intelligence_charts.heuristics import apply_heuristics
-from intelligence_core.planner.models import ChartType, QueryPlan
-from intelligence_sql.result import ColumnMetadata, QueryResult
+from seal_charts.heuristics import apply_heuristics
+from seal_core.planner.models import ChartType, QueryPlan
+from seal_sql.result import ColumnMetadata, QueryResult
 
 
 @pytest.fixture

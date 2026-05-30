@@ -1,17 +1,17 @@
 [project]
-name = "intelligence-charts"
+name = "seal-charts"
 version = "0.1.0"
-description = "Vega-Lite chart spec generation for Intelligence Connector"
+description = "Vega-Lite chart spec generation for Seal"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.10.0",
-    "intelligence-core",
-    "intelligence-sql",
+    "seal-core",
+    "seal-sql",
 ]
 
 [tool.uv.sources]
-intelligence-core = { workspace = true }
-intelligence-sql = { workspace = true }
+seal-core = { workspace = true }
+seal-sql = { workspace = true }
 
 [project.optional-dependencies]
 dev = [

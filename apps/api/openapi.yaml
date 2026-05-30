@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Intelligence Connector API
+  title: Seal API
   description: AI-powered SQL generation and execution.
   version: 0.1.0
 paths:
@@ -28,6 +28,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DatabaseSchema'
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
+      security:
+      - APIKeyHeader: []
   /v1/query:
     post:
       summary: Execute Query
@@ -47,12 +55,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QueryResponse'
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyHeader: []
 components:
   schemas:
     ChartSpec:
@@ -473,3 +489,8 @@ components:
       - msg
       - type
       title: ValidationError
+  securitySchemes:
+    APIKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key

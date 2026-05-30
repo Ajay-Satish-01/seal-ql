@@ -1,10 +1,10 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from intelligence_core.planner.models import ChartType, QueryPlan
-from intelligence_core.planner.planner import QueryPlanner
-from intelligence_core.schema.models import DatabaseSchema
 from pydantic import ValidationError
+from seal_core.planner.models import ChartType, QueryPlan
+from seal_core.planner.planner import QueryPlanner
+from seal_core.schema.models import DatabaseSchema
 
 
 @pytest.fixture
@@ -30,7 +30,7 @@ def mock_query_plan() -> QueryPlan:
 
 
 @pytest.mark.asyncio
-@patch("intelligence_core.planner.planner.get_async_client")
+@patch("seal_core.planner.planner.get_async_client")
 async def test_query_planner_generate_plan(
     mock_get_client: MagicMock, mock_schema: DatabaseSchema, mock_query_plan: QueryPlan
 ) -> None:
@@ -57,7 +57,7 @@ async def test_query_planner_generate_plan(
 
 
 @pytest.mark.asyncio
-@patch("intelligence_core.planner.planner.get_async_client")
+@patch("seal_core.planner.planner.get_async_client")
 async def test_query_planner_repair_plan(
     mock_get_client: MagicMock, mock_query_plan: QueryPlan
 ) -> None:

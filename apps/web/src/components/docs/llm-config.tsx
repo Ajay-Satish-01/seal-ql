@@ -4,7 +4,7 @@ import { ParamTable } from '@/components/docs/param-table';
 
 const LITELLM_DOCS = 'https://docs.litellm.ai/docs/providers';
 
-/** Shared LLM setup docs — mirrors `.env.example` and `intelligence_core.settings`. */
+/** Shared LLM setup docs — mirrors `.env.example` and `seal_core.settings`. */
 export function LlmConfigSection() {
   return (
     <section id="llm-configuration" className="not-prose scroll-mt-24">

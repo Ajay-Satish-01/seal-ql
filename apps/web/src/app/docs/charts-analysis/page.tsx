@@ -8,7 +8,7 @@ export default function ChartsAnalysisPage() {
     <div className="max-w-3xl">
       <PageHeader
         title="Charts & Analysis"
-        description="How Intelligence Connector chooses chart types and returns Vega-Lite specs."
+        description="How Seal chooses chart types and returns Vega-Lite specs."
       />
 
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">

@@ -34,15 +34,32 @@ export default function QuickstartPage() {
         <CodeBlock
           language="bash"
           code={`docker pull ${SITE.dockerImage}
-mkdir ic-quickstart && cd ic-quickstart
-curl -O https://raw.githubusercontent.com/intelligence-connector/intelligence-connector/main/apps/web/public/compose/docker-compose.example.yml
-curl -O https://raw.githubusercontent.com/intelligence-connector/intelligence-connector/main/apps/web/public/samples/seed.sql
+mkdir seal-quickstart && cd seal-quickstart
+curl -O https://raw.githubusercontent.com/seal/seal/main/apps/web/public/compose/docker-compose.example.yml
+curl -O https://raw.githubusercontent.com/seal/seal/main/apps/web/public/samples/seed.sql
+
+# Production .env (generate a real key — do not use placeholders)
+printf '%s\\n' \\
+  "SEAL_API_KEY=$(openssl rand -hex 32)" \\
+  "SEAL_AUTH_REQUIRED=true" \\
+  "SEAL_DEV_MODE=false" \\
+  "SEAL_DISABLE_DOCS=true" \\
+  > .env
+
 docker compose -f docker-compose.example.yml up -d
 curl http://localhost:8000/health`}
         />
         <p>
-          Full details: <Link href="/docs/self-hosting">Self-Hosting</Link>.
+          Full details: <Link href="/docs/self-hosting">Self-Hosting</Link> ·{' '}
+          <Link href="/docs/authentication">Authentication</Link>. Production requires a generated{' '}
+          <code>SEAL_API_KEY</code>; the example compose rejects placeholders at startup.
         </p>
+
+        <Callout variant="info" title="Develop from source">
+          Clone the repo, <code>cp .env.example .env</code> (placeholder key is OK with{' '}
+          <code>SEAL_DEV_MODE=true</code>), then <code>make up</code> and <code>make seed</code>.
+          See <Link href="/docs/contributing">Contributing</Link>.
+        </Callout>
 
         <Callout variant="info" title="LLM (LiteLLM)">
           Models use LiteLLM ids such as <code>ollama/llama3.2:1b</code> or{' '}
@@ -55,13 +72,17 @@ curl http://localhost:8000/health`}
         <h2 className="text-foreground mt-10 text-2xl font-bold">3. Integrate with the SDK</h2>
         <CodeBlock
           language="bash"
-          code="pip install intelligence-connector\n# or\nnpm install intelligence-sdk"
+          code="pip install seal\n# or\nnpm install seal"
         />
         <CodeBlock
           language="python"
-          code={`from intelligence_connector import IntelligenceConnector
+          code={`import os
+from seal import Seal
 
-with IntelligenceConnector("${SITE.defaultBaseUrl}") as client:
+with Seal(
+    "${SITE.defaultBaseUrl}",
+    api_key=os.environ["SEAL_API_KEY"],
+) as client:
     result = client.query("Show total revenue by product category")
     print(result.sql)
     print(result.results)

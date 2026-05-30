@@ -11,9 +11,9 @@ sys.path.insert(0, str(root_dir / "packages" / "core"))
 sys.path.insert(0, str(root_dir / "packages" / "sql"))
 sys.path.insert(0, str(root_dir / "packages" / "charts"))
 
-from intelligence_charts.engine import ChartEngine  # noqa: E402
-from intelligence_core.planner.models import ChartType, QueryPlan  # noqa: E402
-from intelligence_sql.result import ColumnMetadata, QueryResult  # noqa: E402
+from seal_charts.engine import ChartEngine  # noqa: E402
+from seal_core.planner.models import ChartType, QueryPlan  # noqa: E402
+from seal_sql.result import ColumnMetadata, QueryResult  # noqa: E402
 
 OUTPUT_PATH = root_dir / "apps" / "web" / "src" / "data" / "demo-fixtures.json"
 

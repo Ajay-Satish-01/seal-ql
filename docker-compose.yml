@@ -4,11 +4,11 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
       target: dev
-    image: intelligence-connector/api:latest
+    image: seal/api:latest
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
-      - "DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/intelligence_connector}"
+      - "DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/seal}"
       - "DUCKDB_PATH=${DUCKDB_PATH:-:memory:}"
       - "OLLAMA_PROFILE=${OLLAMA_PROFILE:-default}"
       - "LLM_MODEL=${LLM_MODEL:-ollama/llama3.2:1b}"
@@ -20,7 +20,14 @@ services:
       - "MAX_ROWS=${MAX_ROWS:-10000}"
       - "QUERY_TIMEOUT_SECONDS=${QUERY_TIMEOUT_SECONDS:-30}"
       - 'CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000","http://localhost:5173"]}'
+      # Set SEAL_API_KEY in .env (see .env.example). No insecure default in compose.
+      - "SEAL_API_KEY=${SEAL_API_KEY:-}"
+      - "SEAL_AUTH_REQUIRED=${SEAL_AUTH_REQUIRED:-false}"
+      - "SEAL_DEV_MODE=${SEAL_DEV_MODE:-true}"
+      - "SEAL_DISABLE_DOCS=${SEAL_DISABLE_DOCS:-false}"
     volumes:
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./uv.lock:/app/uv.lock
       - ./apps/api:/app/apps/api
       - ./packages:/app/packages
       - ./evals:/app/evals
@@ -34,17 +41,18 @@ services:
         required: false
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "/app/scripts/healthcheck.py"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   postgres:
     image: timescale/timescaledb:latest-pg16
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-intelligence_connector}
+      POSTGRES_DB: ${POSTGRES_DB:-seal}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:

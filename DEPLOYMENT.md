@@ -1,6 +1,6 @@
 # Deployment Guide (Self-Hosting)
 
-The Intelligence Connector provides an easy-to-deploy, Docker-first architecture for hosting your own SQL agent and API gateway.
+The Seal provides an easy-to-deploy, Docker-first architecture for hosting your own SQL agent and API gateway.
 
 ## Architecture
 
@@ -59,7 +59,7 @@ docker run -d -p 8000:8000 \
   -e DATABASE_URL="postgresql+asyncpg://user:pass@dbhost/mydb" \
   -e LLM_MODEL="gemini/gemini-1.5-flash" \
   -e LLM_API_KEY="your-key" \
-  intelligence-connector/api:latest
+  seal/api:latest
 ```
 
 ## Health Checks

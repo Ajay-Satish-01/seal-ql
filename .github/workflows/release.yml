@@ -1,0 +1,129 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  IMAGE: seal/api
+
+jobs:
+  verify:
+    name: Verify before publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python workspace
+        run: uv sync --all-packages --all-extras
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Unit tests (no E2E)
+        run: |
+          uv run pytest -v --tb=short \
+            --ignore=sdks/python/tests/test_sdk_e2e.py \
+            --ignore=apps/api/tests/test_e2e.py
+
+      - name: Build Python SDK
+        run: uv build --package seal
+
+      - name: Validate Python distribution
+        run: uv tool run twine check --strict dist/seal-*
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: sdks/typescript/pnpm-lock.yaml
+
+      - name: TypeScript SDK tests
+        working-directory: sdks/typescript
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+
+      - name: Build production Docker image
+        run: docker build --target prod -t seal/api:verify -f apps/api/Dockerfile .
+
+      - name: Verify healthcheck script in image
+        run: docker run --rm seal/api:verify test -f /app/scripts/healthcheck.py
+
+  release:
+    name: Publish Docker, PyPI, and npm
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Verify tag matches package versions
+        run: |
+          set -euo pipefail
+          grep -q "^version = \"${VERSION}\"" sdks/python/pyproject.toml
+          grep -q "^version = \"${VERSION}\"" apps/api/pyproject.toml
+          grep -q "\"version\": \"${VERSION}\"" sdks/typescript/package.json
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: prod
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ env.VERSION }}
+            ${{ env.IMAGE }}:latest
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Build and publish Python SDK
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          uv build --package seal
+          uv tool run twine check --strict dist/seal-*
+          uv publish --package seal
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+          cache-dependency-path: sdks/typescript/pnpm-lock.yaml
+
+      - name: Publish TypeScript SDK
+        working-directory: sdks/typescript
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

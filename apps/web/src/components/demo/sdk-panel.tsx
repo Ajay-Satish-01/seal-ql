@@ -24,9 +24,9 @@ interface SdkPanelProps {
 function buildPythonSnippet(query: string, baseUrl: string): string {
   const q = escapePythonString(query);
   const url = escapePythonString(baseUrl);
-  return `from intelligence_connector import IntelligenceConnector
+  return `from seal import Seal
 
-with IntelligenceConnector("${url}") as client:
+with Seal("${url}") as client:
     result = client.query("${q}")
 
 print(result.sql)
@@ -39,9 +39,9 @@ if result.chart:
 function buildTypeScriptSnippet(query: string, baseUrl: string): string {
   const q = escapePythonString(query);
   const url = escapeTsString(baseUrl);
-  return `import { IntelligenceConnector, VegaChart } from 'intelligence-sdk';
+  return `import { Seal, VegaChart } from 'seal';
 
-const client = new IntelligenceConnector({
+const client = new Seal({
   baseUrl: '${url}',
 });
 

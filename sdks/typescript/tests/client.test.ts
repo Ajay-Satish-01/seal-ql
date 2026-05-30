@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { IntelligenceConnector } from '../src/client.js';
-import { QueryError, ServerError, ConnectionError } from '../src/errors.js';
+import { Seal } from '../src/client.js';
+import { QueryError, ServerError, SealConnectionError } from '../src/errors.js';
 
 // ============================================================
 // Helpers
@@ -24,12 +24,12 @@ function mockFetch(status: number, body: unknown, ok?: boolean): typeof globalTh
 // Tests
 // ============================================================
 
-describe('IntelligenceConnector', () => {
-  let client: IntelligenceConnector;
+describe('Seal', () => {
+  let client: Seal;
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
-    client = new IntelligenceConnector({ baseUrl: 'http://testserver' });
+    client = new Seal({ baseUrl: 'http://testserver' });
   });
 
   afterEach(() => {
@@ -102,9 +102,9 @@ describe('IntelligenceConnector', () => {
       await expect(client.query('query')).rejects.toThrow(/Internal error/);
     });
 
-    it('should throw ConnectionError on fetch failure', async () => {
+    it('should throw SealConnectionError on fetch failure', async () => {
       globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('fetch failed'));
-      await expect(client.query('query')).rejects.toThrow(ConnectionError);
+      await expect(client.query('query')).rejects.toThrow(SealConnectionError);
     });
 
     it('should send database_id in the request body', async () => {
@@ -158,7 +158,7 @@ describe('IntelligenceConnector', () => {
       const fetchMock = mockFetch(200, { status: 'ok' });
       globalThis.fetch = fetchMock;
 
-      const c = new IntelligenceConnector({
+      const c = new Seal({
         baseUrl: 'http://testserver///',
       });
       await c.health();
@@ -170,7 +170,7 @@ describe('IntelligenceConnector', () => {
       const fetchMock = mockFetch(200, { status: 'ok' });
       globalThis.fetch = fetchMock;
 
-      const c = new IntelligenceConnector({
+      const c = new Seal({
         baseUrl: 'http://testserver',
         headers: { Authorization: 'Bearer token123' },
       });
@@ -185,6 +185,66 @@ describe('IntelligenceConnector', () => {
           }),
         }),
       );
+    });
+
+    it('should let apiKey override X-API-Key in custom headers', async () => {
+      const fetchMock = mockFetch(200, {
+        sql: 'SELECT 1',
+        columns: [],
+        results: [],
+        chart: null,
+        metadata: {},
+      });
+      globalThis.fetch = fetchMock;
+
+      const c = new Seal({
+        baseUrl: 'http://testserver',
+        apiKey: 'correct-key',
+        headers: { 'X-API-Key': 'wrong-key' },
+      });
+      await c.query('test');
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://testserver/v1/query',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'X-API-Key': 'correct-key',
+          }),
+        }),
+      );
+    });
+
+    it('should send X-API-Key on v1 requests when apiKey is set', async () => {
+      const fetchMock = mockFetch(200, {
+        sql: 'SELECT 1',
+        columns: [],
+        results: [],
+        chart: null,
+        metadata: {},
+      });
+      globalThis.fetch = fetchMock;
+
+      const c = new Seal({
+        baseUrl: 'http://testserver',
+        apiKey: 'secret-key',
+      });
+      await c.query('test');
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://testserver/v1/query',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'X-API-Key': 'secret-key',
+          }),
+        }),
+      );
+    });
+
+    it('should throw QueryError on 401', async () => {
+      globalThis.fetch = mockFetch(401, { detail: 'Invalid or missing API key' }, false);
+      const c = new Seal({ baseUrl: 'http://testserver' });
+      await expect(c.query('query')).rejects.toThrow(QueryError);
+      await expect(c.query('query')).rejects.toThrow(/Invalid or missing API key/);
     });
   });
 });

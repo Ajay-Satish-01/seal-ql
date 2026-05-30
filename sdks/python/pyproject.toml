@@ -1,12 +1,36 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
 [project]
-name = "intelligence-connector-sdk"
+name = "seal"
 version = "0.1.0"
-description = "Python SDK for Intelligence Connector"
+description = "Python SDK for Seal — natural language queries over your database"
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
+authors = [{ name = "Seal Contributors" }]
+keywords = ["ai", "sql", "analytics", "llm", "database", "sdk"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
 dependencies = [
     "httpx>=0.28.0",
     "pydantic>=2.10.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/seal/seal"
+Repository = "https://github.com/seal/seal"
+Documentation = "https://github.com/seal/seal/tree/main/sdks/python"
+Issues = "https://github.com/seal/seal/issues"
 
 [project.optional-dependencies]
 polars = ["polars>=1.15.0"]
@@ -15,3 +39,9 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24.0",
 ]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["seal", "README.md", "LICENSE", "pyproject.toml"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["seal"]

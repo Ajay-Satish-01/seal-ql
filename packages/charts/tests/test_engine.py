@@ -1,8 +1,8 @@
 """Tests for the ChartEngine orchestrator."""
 
-from intelligence_charts.engine import ChartEngine
-from intelligence_core.planner.models import ChartType, QueryPlan
-from intelligence_sql.result import ColumnMetadata, QueryResult
+from seal_charts.engine import ChartEngine
+from seal_core.planner.models import ChartType, QueryPlan
+from seal_sql.result import ColumnMetadata, QueryResult
 
 
 def test_engine_generates_valid_vega_spec():

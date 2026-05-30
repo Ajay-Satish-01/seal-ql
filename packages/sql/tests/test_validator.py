@@ -1,7 +1,7 @@
 """Tests for the SQL validator module."""
 
 import pytest
-from intelligence_core.schema.models import (
+from seal_core.schema.models import (
     ColumnInfo,
     ColumnType,
     DatabaseSchema,
@@ -9,7 +9,7 @@ from intelligence_core.schema.models import (
     TableKind,
     TableSchema,
 )
-from intelligence_sql.validator import SQLValidator
+from seal_sql.validator import SQLValidator
 
 # ---------------------------------------------------------------------------
 # Test fixtures

@@ -1,10 +1,12 @@
+import os
+
 import pytest
 from app.main import app
 from fastapi.testclient import TestClient
-from intelligence_core.settings import get_settings
+from seal_core.settings import get_settings
 
 # We use TestClient, but we DON'T override dependencies, so it uses the real Docker stack!
-client = TestClient(app)
+_API_HEADERS = {"X-API-Key": os.environ.get("SEAL_API_KEY", "dev-local-change-me")}
 
 
 def is_docker_running() -> bool:
@@ -31,7 +33,11 @@ def test_e2e_live_query():
     """Test a full query end-to-end against the local Docker stack."""
     # Note: TestClient calls lifespan events (startup/shutdown) automatically!
     with TestClient(app) as live_client:
-        response = live_client.post("/v1/query", json={"query": "Show me 2 products"})
+        response = live_client.post(
+            "/v1/query",
+            json={"query": "Show me 2 products"},
+            headers=_API_HEADERS,
+        )
 
         # If the LLM or DB fails, this might be a 500, but ideally it works.
         if response.status_code != 200:

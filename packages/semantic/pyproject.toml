@@ -1,7 +1,7 @@
 [project]
-name = "intelligence-semantic"
+name = "seal-semantic"
 version = "0.1.0"
-description = "YAML-based semantic metrics layer for Intelligence Connector"
+description = "YAML-based semantic metrics layer for Seal"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.10.0",

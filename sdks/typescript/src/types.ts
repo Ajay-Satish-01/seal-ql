@@ -1,5 +1,5 @@
 /**
- * TypeScript types for the Intelligence Connector API.
+ * TypeScript types for the Seal API.
  *
  * These mirror the Pydantic models on the server side,
  * keeping the SDK fully decoupled from server internals.
@@ -69,9 +69,11 @@ export interface QueryRequest {
 // Client Options
 // ============================================================
 
-export interface ConnectorOptions {
-  /** Base URL of the Intelligence Connector API (e.g., "http://localhost:8000"). */
+export interface SealOptions {
+  /** Base URL of the Seal API (e.g., "http://localhost:8000"). */
   baseUrl: string;
+  /** API key sent as the `X-API-Key` header when the server has `SEAL_API_KEY` set. */
+  apiKey?: string;
   /** Request timeout in milliseconds (default: 120000). */
   timeout?: number;
   /** Extra headers to include in every request. */
