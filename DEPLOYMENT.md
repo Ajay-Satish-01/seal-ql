@@ -90,6 +90,12 @@ Use the published compose example (also at `apps/web/public/compose/docker-compo
 | `CATALOG_AUTO_SYNC` | Sync catalog from DB schema on startup | `true` |
 | `CATALOG_PRUNE_REMOVED` | Drop YAML entries for removed tables | `false` |
 | `CHAT_ENHANCEMENT_ENABLED` | Prompt enhancer chain on `/v1/chat` | `true` |
+| `CHAT_SESSION_TTL_SECONDS` | In-memory chat session TTL | `3600` |
+| `CHAT_MAX_HISTORY_MESSAGES` | Max messages stored per session | `20` |
+| `CHAT_SUMMARIZE_AFTER_MESSAGES` | Summarize when history exceeds this count | `12` |
+| `CHAT_RECENT_MESSAGES` | Recent messages kept verbatim at answer stage | `6` |
+| `CHAT_ANSWER_PREVIEW_ROWS` | Result rows sent to the LLM as grounding facts | `20` |
+| `CHAT_MAX_CONTEXT_TABLES` | Max tables in focused schema/catalog context | `8` |
 | `VECTOR_STORE` | `none`, `chroma`, or custom via `VECTOR_STORE_CLASS` | `none` |
 | `VECTOR_STORE_CLASS` | Dotted path to custom vector store | — |
 | `RAG_DOCUMENTS_PATH` | Extra files to index for RAG | — |

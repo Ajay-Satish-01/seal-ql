@@ -122,6 +122,9 @@ class ChatService:
         system = ctx.metadata.get("answer_system", CHAT_ANSWER_SYSTEM)
         llm_messages = self._build_answer_messages(ctx, exec_result, system)
 
+        # Plain-text token streaming (not the Instructor/response_model path used by
+        # handle_json): structured fields are already sent in the single seal.meta
+        # event above, and the SSE contract streams the answer body as raw text deltas.
         full_text: list[str] = []
         response = await litellm.acompletion(
             model=self._model,
@@ -313,15 +316,16 @@ class ChatService:
         exec_result: ExecuteQueryResult | None,
         system: str,
     ) -> list[dict[str, str]]:
+        settings = get_settings()
         messages: list[dict[str, str]] = [{"role": "system", "content": system}]
-        for m in ctx.messages[-6:]:
+        for m in ctx.messages[-settings.chat_recent_messages :]:
             messages.append({"role": m.role, "content": m.content})
         if not any(m["role"] == "user" for m in messages[1:]):
             last_content = ctx.messages[-1].content if ctx.messages else ""
             messages.append({"role": "user", "content": last_content})
 
         if exec_result:
-            preview = json.dumps(exec_result.rows[:20], default=str)
+            preview = json.dumps(exec_result.rows[: settings.chat_answer_preview_rows], default=str)
             messages.append(
                 {
                     "role": "user",

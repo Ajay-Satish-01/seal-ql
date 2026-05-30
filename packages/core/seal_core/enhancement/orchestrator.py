@@ -14,19 +14,35 @@ from seal_core.settings import get_settings
 if TYPE_CHECKING:
     from seal_core.chat.models import ChatMessage
     from seal_core.enhancement.context import EnhancementContext
+    from seal_core.enhancement.protocol import PromptEnhancer
 
 logger = logging.getLogger(__name__)
 
+_REQUIRED_ENHANCER_METHODS = ("enabled", "enhance_system_prompt", "enhance_user_messages")
 
-def _load_enhancer(dotted: str) -> Any:
+
+def _validate_enhancer(enhancer: Any, source: str) -> PromptEnhancer:
+    if not isinstance(getattr(enhancer, "name", None), str):
+        raise TypeError(f"Enhancer {source} is missing a string 'name' attribute")
+    missing = [m for m in _REQUIRED_ENHANCER_METHODS if not callable(getattr(enhancer, m, None))]
+    if missing:
+        raise TypeError(f"Enhancer {source} does not implement PromptEnhancer: missing {missing}")
+    return enhancer
+
+
+def _load_enhancer(dotted: str) -> PromptEnhancer:
     module_path, _, class_name = dotted.rpartition(".")
+    if not module_path:
+        raise ValueError(f"Invalid enhancer path (expected 'module.Class'): {dotted!r}")
     module = importlib.import_module(module_path)
-    return getattr(module, class_name)()
+    return _validate_enhancer(getattr(module, class_name)(), dotted)
 
 
 class EnhancementOrchestrator:
-    def __init__(self, enhancers: list[Any]) -> None:
-        self._enhancers = enhancers
+    def __init__(self, enhancers: list[PromptEnhancer]) -> None:
+        self._enhancers: list[PromptEnhancer] = [
+            _validate_enhancer(e, type(e).__name__) for e in enhancers
+        ]
 
     async def enhance_system_prompt(self, ctx: EnhancementContext) -> str:
         prompt = ctx.base_system_prompt
@@ -68,7 +84,7 @@ def build_default_orchestrator(
     semantic_registry: Any | None,
     vector_store: Any,
 ) -> EnhancementOrchestrator:
-    enhancers: list[Any] = [
+    enhancers: list[PromptEnhancer] = [
         SchemaAwareEnhancer(catalog=catalog, semantic_registry=semantic_registry),
         VectorRagEnhancer(vector_store),
         MultiTurnEnhancer(),

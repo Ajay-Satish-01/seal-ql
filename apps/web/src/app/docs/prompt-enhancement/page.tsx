@@ -18,10 +18,14 @@ export default function PromptEnhancementPage() {
       <h2 className="font-heading mt-8 text-xl font-semibold">Environment</h2>
       <CodeBlock
         language="bash"
-        code={`# docker-compose / .env
+        code={`# docker-compose / .env (see .env.example)
 CHAT_ENHANCEMENT_ENABLED=true
+CHAT_SESSION_TTL_SECONDS=3600
 CHAT_MAX_HISTORY_MESSAGES=20
 CHAT_SUMMARIZE_AFTER_MESSAGES=12
+CHAT_RECENT_MESSAGES=6
+CHAT_ANSWER_PREVIEW_ROWS=20
+CHAT_MAX_CONTEXT_TABLES=8
 VECTOR_STORE=none
 # VECTOR_STORE=chroma   # requires seal-core[chroma] in the image`}
       />

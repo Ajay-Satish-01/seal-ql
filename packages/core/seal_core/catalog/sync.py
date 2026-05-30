@@ -78,13 +78,22 @@ def _entry_from_table_merge(existing: CatalogEntry | None, table: TableSchema) -
         else:
             table_desc = table.description
 
+    # Only fall back to the previously stored description when the kind is
+    # unchanged. After a kind flip, _merge_descriptions has already migrated (or
+    # intentionally cleared) the fields, so reusing existing.*_description would
+    # resurrect stale metadata on the opposite slot.
+    same_kind = table.kind == existing.kind
     return CatalogEntry(
         schema=table.schema_name,
         name=table.name,
         kind=table.kind,
         columns=fresh.columns,
-        table_description=table_desc if table_desc is not None else existing.table_description,
-        view_description=view_desc if view_desc is not None else existing.view_description,
+        table_description=(
+            table_desc if table_desc is not None or not same_kind else existing.table_description
+        ),
+        view_description=(
+            view_desc if view_desc is not None or not same_kind else existing.view_description
+        ),
     )
 
 

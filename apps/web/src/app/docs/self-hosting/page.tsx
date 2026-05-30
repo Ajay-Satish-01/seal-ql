@@ -133,6 +133,21 @@ curl http://localhost:8000/health`}
               description: 'Enable schema/RAG/multi-turn enhancers on /v1/chat.',
             },
             {
+              name: 'CHAT_RECENT_MESSAGES',
+              type: 'integer',
+              description: 'Recent messages kept verbatim at answer stage (default 6).',
+            },
+            {
+              name: 'CHAT_ANSWER_PREVIEW_ROWS',
+              type: 'integer',
+              description: 'SQL result rows sent to the answer LLM as grounding (default 20).',
+            },
+            {
+              name: 'CHAT_MAX_CONTEXT_TABLES',
+              type: 'integer',
+              description: 'Max tables in focused schema/catalog context (default 8).',
+            },
+            {
               name: 'VECTOR_STORE',
               type: 'string',
               description: 'none (default), chroma, or custom via VECTOR_STORE_CLASS.',

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 try:
     import chromadb
 except ImportError as e:
@@ -20,7 +22,8 @@ class ChromaVectorStore:
     async def upsert(self, documents: list[VectorDocument], embeddings: list[list[float]]) -> None:
         if not documents:
             return
-        self._collection.upsert(
+        await asyncio.to_thread(
+            self._collection.upsert,
             ids=[d.id for d in documents],
             documents=[d.text for d in documents],
             embeddings=embeddings,
@@ -28,7 +31,9 @@ class ChromaVectorStore:
         )
 
     async def search(self, query_embedding: list[float], *, top_k: int) -> list[VectorDocument]:
-        result = self._collection.query(query_embeddings=[query_embedding], n_results=top_k)
+        result = await asyncio.to_thread(
+            self._collection.query, query_embeddings=[query_embedding], n_results=top_k
+        )
         docs: list[VectorDocument] = []
         ids = result.get("ids") or [[]]
         texts = result.get("documents") or [[]]

@@ -5,12 +5,22 @@ import { SITE } from '@/lib/constants';
 
 export const DOC_API_KEY = 'your-api-key';
 
+function escapeControlChars(value: string): string {
+  return value
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t')
+    .replace(/[\b]/g, '\\b')
+    .replace(/\f/g, '\\f')
+    .replace(/\v/g, '\\v');
+}
+
 function escapeForDoubleQuotedString(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return escapeControlChars(value.replace(/\\/g, '\\\\').replace(/"/g, '\\"'));
 }
 
 function escapeForSingleQuotedString(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  return escapeControlChars(value.replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
 }
 
 function escapeForShellSingleQuoted(value: string): string {
@@ -209,5 +219,8 @@ mkdir config
 DATA_CATALOG_PATH=/app/config/catalog.yaml
 CATALOG_AUTO_SYNC=true
 CHAT_ENHANCEMENT_ENABLED=true
+CHAT_RECENT_MESSAGES=6
+CHAT_ANSWER_PREVIEW_ROWS=20
+CHAT_MAX_CONTEXT_TABLES=8
 VECTOR_STORE=none`;
 }

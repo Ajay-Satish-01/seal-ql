@@ -47,6 +47,9 @@ async def execute_natural_language_query(
     max_attempts: int = 3,
 ) -> ExecuteQueryResult:
     """Plan SQL, validate, sanitize, execute with repair loop."""
+    if max_attempts < 1:
+        raise ValueError(f"max_attempts must be >= 1, got {max_attempts}")
+
     plan = await planner.generate_plan(
         schema,
         question,

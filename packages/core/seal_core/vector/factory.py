@@ -43,11 +43,22 @@ def get_vector_store(settings: Settings | None = None) -> VectorStore:
     settings = settings or get_settings()
 
     if settings.vector_store_class:
-        cls = _load_class(settings.vector_store_class)
         config = {}
         if settings.vector_store_config:
-            config = json.loads(settings.vector_store_config)
-        return cls(**config)  # type: ignore[no-any-return]
+            try:
+                config = json.loads(settings.vector_store_config)
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    "VECTOR_STORE_CONFIG must be valid JSON; got "
+                    f"{settings.vector_store_config!r}: {e}"
+                ) from e
+        try:
+            cls = _load_class(settings.vector_store_class)
+            return cls(**config)  # type: ignore[no-any-return]
+        except (ImportError, AttributeError, TypeError, ValueError) as e:
+            raise RuntimeError(
+                f"Failed to load VECTOR_STORE_CLASS={settings.vector_store_class!r}: {e}"
+            ) from e
 
     if settings.vector_store.lower() == "none":
         return NoopVectorStore()

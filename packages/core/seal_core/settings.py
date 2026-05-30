@@ -468,6 +468,10 @@ class Settings(BaseSettings):
         default=6,
         description="Recent messages kept verbatim at answer stage.",
     )
+    chat_answer_preview_rows: int = Field(
+        default=20,
+        description="Result rows fed to the LLM as grounding facts at answer stage.",
+    )
     chat_max_context_tables: int = Field(
         default=8,
         description="Max tables in focused schema/catalog context.",
