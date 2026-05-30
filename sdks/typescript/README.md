@@ -19,6 +19,7 @@ import { Seal } from 'seal';
 
 const client = new Seal({
   baseUrl: 'http://localhost:8000',
+  apiKey: process.env.SEAL_API_KEY,
 });
 
 async function run() {
@@ -34,6 +35,17 @@ async function run() {
 
   console.log('SQL executed:', response.sql);
   console.log('Results:', response.results);
+
+  const catalog = await client.catalog();
+  console.log('Catalog tables:', catalog.tables.length);
+
+  const chat = await client.chat('What tables exist?', { sessionId: 'demo' });
+  console.log(chat.message);
+
+  for await (const event of client.chatStream('Explain revenue trends', { includeCharts: true })) {
+    if (event.type === 'meta') console.log('SQL:', event.data.sql);
+    if (event.type === 'delta') process.stdout.write(event.content);
+  }
 }
 run();
 ```

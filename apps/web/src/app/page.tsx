@@ -57,9 +57,12 @@ export default function Home() {
             variants={itemVariants}
             className="text-muted-foreground mb-10 max-w-2xl text-lg leading-relaxed md:text-xl"
           >
-            Self-host with Docker. Integrate via Python or TypeScript SDKs. Every query passes a
-            zero-trust SQLGlot boundary and returns Vega-Lite specs — no clone required to get
-            started.
+            Self-host with Docker. Conversational Q&A with RAG, optional charts, and agent-tool
+            compatible APIs. Every query passes a zero-trust SQLGlot boundary — see{' '}
+            <Link href="/docs/chat-qa" className="text-primary underline-offset-4 hover:underline">
+              Chat &amp; Q&A
+            </Link>
+            .
           </motion.p>
 
           <motion.div variants={itemVariants} className="flex flex-col flex-wrap gap-3 sm:flex-row">

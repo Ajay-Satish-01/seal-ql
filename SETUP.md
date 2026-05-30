@@ -81,6 +81,39 @@ curl -H "X-API-Key: $SEAL_API_KEY" http://localhost:8000/v1/schema
 
 Full guide on the docs site: **Authentication** (`/docs/authentication`).
 
+## Data catalog & chat
+
+On startup, Seal can auto-sync `config/catalog.yaml` from introspected schema (`CATALOG_AUTO_SYNC=true`). Edit `table_description` / `view_description` in that file to improve NL query and chat answers.
+
+- `GET /v1/catalog` — read catalog JSON
+- `POST /v1/catalog/sync` — force re-sync
+- `POST /v1/chat` — schema-grounded Q&A (`include_charts`, `stream`, `enhancement`)
+
+Optional vector RAG: `VECTOR_STORE=chroma` with `seal-core[chroma]` installed. Default is `VECTOR_STORE=none`.
+
+```bash
+make sync-catalog   # CLI sync without restarting API
+```
+
+### SDK examples
+
+```python
+from seal import Seal
+
+with Seal("http://localhost:8000", api_key="your-secret") as client:
+    client.catalog()
+    client.chat("Revenue last quarter?", include_charts=True)
+```
+
+```typescript
+import { Seal } from "seal";
+
+const client = new Seal({ baseUrl: "http://localhost:8000", apiKey: "your-secret" });
+await client.chat("Revenue last quarter?", { includeCharts: true });
+```
+
+Contributor docs: `docs/chat-enhancement.md`, `docs/integrations/`. User-facing: docs site `/docs/chat-qa`.
+
 ## Docker database
 
 Default compose uses database name `seal`. If you change `POSTGRES_DB`, update `DATABASE_URL` to match.

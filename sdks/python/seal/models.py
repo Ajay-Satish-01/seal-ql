@@ -78,3 +78,24 @@ class DatabaseSchema(BaseModel):
 
     dialect: str
     tables: list[SchemaTable] = Field(default_factory=list)
+
+
+class ChatResponse(BaseModel):
+    """Response from POST /v1/chat."""
+
+    session_id: str
+    message: str
+    sources: list[str] = Field(default_factory=list)
+    sql: str | None = None
+    results: list[dict[str, Any]] | None = None
+    chart: ChartSpec | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class CatalogResponse(BaseModel):
+    """Response from GET /v1/catalog."""
+
+    version: int = 1
+    generated_at: str | None = None
+    schema_hash: str | None = None
+    tables: list[dict[str, Any]] = Field(default_factory=list)

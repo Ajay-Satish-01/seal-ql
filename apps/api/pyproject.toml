@@ -14,6 +14,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+chroma = ["seal-core[chroma]"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24.0",

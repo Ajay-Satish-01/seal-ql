@@ -3,6 +3,14 @@ import { PageHeader } from '@/components/page-header';
 import { CodeBlock } from '@/components/code-block';
 import { Callout } from '@/components/docs/callout';
 import { SITE } from '@/lib/constants';
+import {
+  curlChat,
+  localDevSetupSnippet,
+  productionCatalogEnvSnippet,
+  pythonChatSnippet,
+  pythonQuerySnippet,
+  tsChatSnippet,
+} from '@/lib/doc-snippets';
 
 export default function IntegrationGuidePage() {
   return (
@@ -26,6 +34,17 @@ export default function IntegrationGuidePage() {
           <code>{SITE.dockerImage}</code> and start the compose stack. Confirm health:
         </p>
         <CodeBlock language="bash" code="curl http://localhost:8000/health" />
+
+        <h2 className="text-foreground mt-10 text-2xl font-bold">1a. Data catalog (recommended)</h2>
+        <p>
+          Mount <code>./config</code> and let the API sync business descriptions into{' '}
+          <code>catalog.yaml</code> on startup. Improves both query and chat accuracy.
+        </p>
+        <CodeBlock language="bash" code={productionCatalogEnvSnippet()} />
+        <p>
+          Contributors: <code>make sync-catalog</code> after <code>make seed</code>. Details:{' '}
+          <Link href="/docs/data-catalog">Data catalog</Link>.
+        </p>
 
         <h2 id="llm" className="text-foreground mt-10 text-2xl font-bold">
           1b. Configure the LLM (LiteLLM)
@@ -94,6 +113,10 @@ const client = new Seal({
 const result = await client.query('Hourly event counts');
 console.log(result.sql, result.results, result.chart);`}
         />
+        <CodeBlock
+          language="python"
+          code={pythonQuerySnippet('https://seal.internal.example.com', 'Hourly event counts')}
+        />
         <p>
           Python: <Link href="/docs/python-sdk">Python SDK</Link> · TypeScript:{' '}
           <Link href="/docs/typescript-sdk">TypeScript SDK</Link>
@@ -109,10 +132,35 @@ console.log(result.sql, result.results, result.chart);`}
           <Link href="/docs/authentication">Authentication</Link>.
         </p>
 
+        <h2 className="text-foreground mt-10 text-2xl font-bold">3c. Conversational Q&amp;A</h2>
+        <p>
+          Use <code>POST /v1/chat</code> for multi-turn questions, optional charts, and streaming.
+          Pass <code>session_id</code> from the previous response for follow-ups.
+        </p>
+        <CodeBlock
+          language="typescript"
+          code={tsChatSnippet(SITE.defaultBaseUrl, 'Orders by region last week', {
+            includeCharts: true,
+          })}
+        />
+        <CodeBlock language="bash" code={curlChat(SITE.defaultBaseUrl, 'Orders by region last week', { includeCharts: true })} />
+        <CodeBlock
+          language="python"
+          code={pythonChatSnippet(SITE.defaultBaseUrl, 'Orders by region last week', {
+            includeCharts: true,
+          })}
+        />
+        <p>
+          <Link href="/docs/chat-qa">Chat &amp; Q&A</Link> ·{' '}
+          <Link href="/docs/data-catalog">Data catalog</Link> ·{' '}
+          <Link href="/docs/chat-streaming">Streaming</Link>
+        </p>
+
         <h2 className="text-foreground mt-10 text-2xl font-bold">4. HTTP / OpenAPI</h2>
         <p>
           Without an SDK, call <code>POST /v1/query</code> with JSON{' '}
-          <code>{'{ "query": "..." }'}</code>. Download{' '}
+          <code>{'{ "query": "..." }'}</code> or <code>POST /v1/chat</code> with{' '}
+          <code>{'{ "message": "..." }'}</code>. Download{' '}
           <a href="/openapi.json" className="text-primary">
             openapi.json
           </a>{' '}
@@ -171,9 +219,10 @@ console.log(result.sql, result.results, result.chart);`}
         </ul>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Advanced: develop from source</h2>
+        <CodeBlock language="bash" code={localDevSetupSnippet()} />
         <p>
-          Contributors clone the public repo and use <code>make up</code> / <code>make seed</code>.
-          See <Link href="/docs/contributing">Contributing</Link>.
+          See <Link href="/docs/contributing">Contributing</Link> for tooling and{' '}
+          <code>make sync-docs-assets</code>.
         </p>
       </div>
     </div>

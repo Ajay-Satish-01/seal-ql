@@ -3,116 +3,89 @@
 import { useState } from 'react';
 import { CodeBlock } from '@/components/code-block';
 import { SITE } from '@/lib/constants';
+import {
+  curlChat,
+  curlWithAuth,
+  pythonCatalogSnippet,
+  pythonChatSnippet,
+  pythonChatStreamSnippet,
+  pythonQuerySnippet,
+  tsCatalogSnippet,
+  tsChatSnippet,
+  tsChatStreamSnippet,
+  tsQuerySnippet,
+  chatMessageFromQuery,
+} from '@/lib/doc-snippets';
 import { cn } from '@/lib/utils';
 
-type Tab = 'python' | 'typescript' | 'curl';
-
-function escapePythonString(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
-function escapeTsString(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-}
+type LangTab = 'python' | 'typescript' | 'curl';
+type ModeTab = 'query' | 'chat' | 'catalog' | 'stream';
 
 interface SdkPanelProps {
   query: string;
   baseUrl: string;
-  onBaseUrlChange: (url: string) => void;
 }
 
-function buildPythonSnippet(query: string, baseUrl: string): string {
-  const q = escapePythonString(query);
-  const url = escapePythonString(baseUrl);
-  return `from seal import Seal
+export function SdkPanel({ query, baseUrl }: SdkPanelProps) {
+  const [lang, setLang] = useState<LangTab>('python');
+  const [mode, setMode] = useState<ModeTab>('query');
 
-# api_key is required when the server sets SEAL_API_KEY (sent as X-API-Key).
-with Seal("${url}", api_key="your-api-key") as client:
-    result = client.query("${q}")
+  const chatMessage = chatMessageFromQuery(query);
 
-print(result.sql)
-print(result.results)
-if result.chart:
-    print(result.chart.chart_type)
-    print(result.chart.vega_lite_spec)`;
-}
-
-function buildTypeScriptSnippet(query: string, baseUrl: string): string {
-  const q = escapePythonString(query);
-  const url = escapeTsString(baseUrl);
-  return `import { Seal, VegaChart } from 'seal';
-
-const client = new Seal({
-  baseUrl: '${url}',
-  // apiKey is required when the server sets SEAL_API_KEY (sent as X-API-Key).
-  apiKey: 'your-api-key',
-});
-
-const result = await client.query("${q}");
-
-console.log(result.sql, result.results);
-
-// In React:
-// <VegaChart spec={result.chart} theme="dark" />`;
-}
-
-function buildCurlSnippet(query: string, baseUrl: string): string {
-  const body = JSON.stringify({ query, database_id: 'default' }, null, 2);
-  return `curl -s -X POST "${baseUrl}/v1/query" \\
-  -H "Content-Type: application/json" \\
-  -d '${body.replace(/'/g, "'\\''")}'`;
-}
-
-export function SdkPanel({ query, baseUrl, onBaseUrlChange }: SdkPanelProps) {
-  const [tab, setTab] = useState<Tab>('python');
-
-  const tabs: { id: Tab; label: string }[] = [
+  const langTabs: { id: LangTab; label: string }[] = [
     { id: 'python', label: 'Python' },
     { id: 'typescript', label: 'TypeScript' },
     { id: 'curl', label: 'curl' },
   ];
 
-  const code =
-    tab === 'python'
-      ? buildPythonSnippet(query, baseUrl)
-      : tab === 'typescript'
-        ? buildTypeScriptSnippet(query, baseUrl)
-        : buildCurlSnippet(query, baseUrl);
+  const modeTabs: { id: ModeTab; label: string }[] = [
+    { id: 'query', label: 'Query' },
+    { id: 'chat', label: 'Chat' },
+    { id: 'stream', label: 'Stream' },
+    { id: 'catalog', label: 'Catalog' },
+  ];
 
-  const lang = tab === 'curl' ? 'bash' : tab;
+  const code = (() => {
+    const b = baseUrl || SITE.defaultBaseUrl;
+    if (mode === 'query') {
+      if (lang === 'python') return pythonQuerySnippet(b, query);
+      if (lang === 'typescript') return tsQuerySnippet(b, query);
+      return curlWithAuth(b, 'POST', '/v1/query', { query, database_id: 'default' });
+    }
+    if (mode === 'chat') {
+      if (lang === 'python') return pythonChatSnippet(b, chatMessage, { includeCharts: true });
+      if (lang === 'typescript') return tsChatSnippet(b, chatMessage, { includeCharts: true });
+      return curlChat(b, chatMessage, { includeCharts: true });
+    }
+    if (mode === 'stream') {
+      if (lang === 'python') return pythonChatStreamSnippet(b, chatMessage);
+      if (lang === 'typescript') return tsChatStreamSnippet(b, chatMessage);
+      return curlChat(b, chatMessage, { stream: true, includeCharts: true });
+    }
+    if (lang === 'python') return pythonCatalogSnippet(b);
+    if (lang === 'typescript') return tsCatalogSnippet(b);
+    return curlWithAuth(b, 'GET', '/v1/catalog');
+  })();
+
+  const blockLang = lang === 'curl' ? 'bash' : lang;
 
   return (
     <div className="space-y-4">
-      <div>
-        <label
-          htmlFor="base-url"
-          className="text-muted-foreground mb-2 block text-xs font-medium tracking-wider uppercase"
-        >
-          API base URL
-        </label>
-        <input
-          id="base-url"
-          type="url"
-          value={baseUrl}
-          onChange={(e) => onBaseUrlChange(e.target.value)}
-          className="border-input bg-background w-full rounded-md border px-3 py-2 font-mono text-sm"
-          placeholder={SITE.defaultBaseUrl}
-        />
-        <p className="text-muted-foreground mt-2 text-xs">
-          Point at your self-hosted API after{' '}
-          <code className="text-foreground">docker compose up</code>.
-        </p>
-      </div>
+      <p className="text-muted-foreground text-xs">
+        Snippets target{' '}
+        <code className="text-foreground">{baseUrl || SITE.defaultBaseUrl}</code>. Change it in{' '}
+        <strong className="text-foreground">Live API connection</strong> below.
+      </p>
 
-      <div className="border-border/50 flex gap-1 border-b">
-        {tabs.map((t) => (
+      <div className="border-border/50 flex flex-wrap gap-1 border-b">
+        {modeTabs.map((t) => (
           <button
             key={t.id}
             type="button"
-            onClick={() => setTab(t.id)}
+            onClick={() => setMode(t.id)}
             className={cn(
-              '-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors',
-              tab === t.id
+              '-mb-px border-b-2 px-3 py-2 text-xs font-medium tracking-wide uppercase transition-colors',
+              mode === t.id
                 ? 'border-primary text-foreground'
                 : 'text-muted-foreground hover:text-foreground border-transparent',
             )}
@@ -122,11 +95,33 @@ export function SdkPanel({ query, baseUrl, onBaseUrlChange }: SdkPanelProps) {
         ))}
       </div>
 
-      <CodeBlock language={lang} code={code} />
+      <div className="border-border/50 flex gap-1 border-b">
+        {langTabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setLang(t.id)}
+            className={cn(
+              '-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+              lang === t.id
+                ? 'border-primary text-foreground'
+                : 'text-muted-foreground hover:text-foreground border-transparent',
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <CodeBlock language={blockLang} code={code} />
 
       <p className="text-muted-foreground text-xs leading-relaxed">
-        This page uses pre-generated JSON. Install the SDK and set{' '}
-        <code className="text-foreground">baseUrl</code> to your running container for live queries.
+        Query tab matches the preset above. Use live panels below for <strong>Chat</strong> and{' '}
+        <strong>Streaming</strong>. Docs:{' '}
+        <a href="/docs/integration-guide" className="text-primary underline-offset-4 hover:underline">
+          Integration guide
+        </a>
+        .
       </p>
     </div>
   );

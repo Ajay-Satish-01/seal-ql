@@ -3,6 +3,12 @@ import { PageHeader } from '@/components/page-header';
 import { CodeBlock } from '@/components/code-block';
 import { Callout } from '@/components/docs/callout';
 import { SITE } from '@/lib/constants';
+import {
+  tsCatalogSnippet,
+  tsChatSnippet,
+  tsChatStreamSnippet,
+  tsQuerySnippet,
+} from '@/lib/doc-snippets';
 
 export default function TypeScriptSDKPage() {
   return (
@@ -36,15 +42,7 @@ npm install react react-dom vega vega-lite vega-embed`}
         <h2 className="text-foreground mt-10 text-2xl font-bold">Client</h2>
         <CodeBlock
           language="typescript"
-          code={`import { Seal } from 'seal';
-
-const client = new Seal({
-  baseUrl: '${SITE.defaultBaseUrl}',
-  apiKey: process.env.SEAL_API_KEY,
-});
-
-const result = await client.query('Orders by region');
-console.log(result.sql, result.results, result.chart);`}
+          code={tsQuerySnippet(SITE.defaultBaseUrl, 'Orders by region')}
         />
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">VegaChart (React)</h2>
@@ -72,6 +70,20 @@ export async function ChartExample() {
 }`}
         />
 
+        <h2 className="text-foreground mt-10 text-2xl font-bold">Chat &amp; catalog</h2>
+        <CodeBlock language="typescript" code={tsCatalogSnippet(SITE.defaultBaseUrl)} />
+        <CodeBlock
+          language="typescript"
+          code={tsChatSnippet(SITE.defaultBaseUrl, 'Orders last week?', {
+            includeCharts: true,
+            sessionId: 'user-1',
+          })}
+        />
+        <CodeBlock
+          language="typescript"
+          code={tsChatStreamSnippet(SITE.defaultBaseUrl, 'Summarize revenue')}
+        />
+
         <h2 className="text-foreground mt-10 text-2xl font-bold">Errors</h2>
         <p>
           <code>QueryError</code>, <code>ServerError</code>, <code>ConnectionError</code> from{' '}
@@ -80,6 +92,7 @@ export async function ChartExample() {
 
         <p>
           <Link href="/demo">Demo</Link> ·{' '}
+          <Link href="/docs/chat-qa">Chat &amp; Q&amp;A</Link> ·{' '}
           <Link href="/docs/charts-analysis">Charts &amp; Analysis</Link>
         </p>
       </div>

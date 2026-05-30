@@ -30,7 +30,14 @@ cp .env.example .env
 # For anything shared or production-like, run: openssl rand -hex 32
 make up    # fails fast if SEAL_API_KEY is missing in .env
 make seed
-uv run pytest -v`}
+make sync-catalog
+uv run pytest -v
+
+# Smoke-test chat (uses SEAL_API_KEY from .env)
+curl -s -X POST http://localhost:8000/v1/chat \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: $SEAL_API_KEY" \\
+  -d '{"message":"What tables exist?"}' | python3 -m json.tool`}
         />
         <p>
           See <code>.env.example</code> (auth + LLM vars) and{' '}
@@ -76,7 +83,10 @@ uv run pytest -v`}
         <h2 className="text-foreground mt-10 text-2xl font-bold">Regenerate docs assets</h2>
         <CodeBlock language="bash" code="make sync-docs-assets" />
 
-        <p>Updates OpenAPI spec, demo fixtures, and copies seed SQL into the docs site.</p>
+        <p>
+          Updates OpenAPI spec, demo fixtures, <code>seal-tools.openai.json</code>,{' '}
+          <code>catalog.example.yaml</code>, and seed SQL into the docs site.
+        </p>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Releases</h2>
         <p>

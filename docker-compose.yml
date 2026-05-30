@@ -4,7 +4,12 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
       target: dev
+      args:
+        # Set SEAL_EXTRA=chroma in .env when VECTOR_STORE=chroma (make up sets this automatically)
+        SEAL_EXTRA: ${SEAL_EXTRA:-}
     image: seal/api:latest
+    env_file:
+      - .env
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
@@ -18,14 +23,27 @@ services:
       - "OPENAI_API_KEY=${OPENAI_API_KEY:-}"
       - "ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}"
       - "MAX_ROWS=${MAX_ROWS:-10000}"
+      - "MAX_JOINS=${MAX_JOINS:-10}"
+      - "MAX_SUBQUERY_DEPTH=${MAX_SUBQUERY_DEPTH:-5}"
       - "QUERY_TIMEOUT_SECONDS=${QUERY_TIMEOUT_SECONDS:-30}"
+      - "QUERY_MAX_RETRIES=${QUERY_MAX_RETRIES:-2}"
+      - "QUERY_ROW_CAP=${QUERY_ROW_CAP:-10000}"
+      - "QUERY_RETRY_BASE_DELAY=${QUERY_RETRY_BASE_DELAY:-0.5}"
+      - "LLM_MAX_RETRIES=${LLM_MAX_RETRIES:-2}"
       - 'CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000","http://localhost:5173"]}'
       # Set SEAL_API_KEY in .env (see .env.example). No insecure default in compose.
       - "SEAL_API_KEY=${SEAL_API_KEY:-}"
       - "SEAL_AUTH_REQUIRED=${SEAL_AUTH_REQUIRED:-false}"
       - "SEAL_DEV_MODE=${SEAL_DEV_MODE:-true}"
       - "SEAL_DISABLE_DOCS=${SEAL_DISABLE_DOCS:-false}"
+      - "DATA_CATALOG_PATH=${DATA_CATALOG_PATH:-/app/config/catalog.yaml}"
+      - "CATALOG_AUTO_SYNC=${CATALOG_AUTO_SYNC:-true}"
+      - "VECTOR_STORE=${VECTOR_STORE:-none}"
+      - "CHAT_ENHANCEMENT_ENABLED=${CHAT_ENHANCEMENT_ENABLED:-true}"
+      - "CHROMA_PERSIST_PATH=${CHROMA_PERSIST_PATH:-/app/data/chroma}"
+      - "EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-3-small}"
     volumes:
+      - ./.env.example:/app/.env.example:ro
       - ./pyproject.toml:/app/pyproject.toml
       - ./uv.lock:/app/uv.lock
       - ./apps/api:/app/apps/api
@@ -33,6 +51,8 @@ services:
       - ./evals:/app/evals
       - ./sdks/python:/app/sdks/python
       - ./scripts:/app/scripts
+      - ./config:/app/config
+      - chroma_data:/app/data/chroma
     depends_on:
       postgres:
         condition: service_healthy
@@ -85,3 +105,4 @@ services:
 volumes:
   postgres_data:
   ollama_data:
+  chroma_data:

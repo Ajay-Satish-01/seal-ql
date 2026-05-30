@@ -9,6 +9,8 @@
 services:
   api:
     image: seal/api:latest
+    env_file:
+      - .env
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
@@ -28,6 +30,15 @@ services:
       SEAL_AUTH_REQUIRED: ${SEAL_AUTH_REQUIRED:-true}
       SEAL_DEV_MODE: ${SEAL_DEV_MODE:-false}
       SEAL_DISABLE_DOCS: ${SEAL_DISABLE_DOCS:-true}
+      DATA_CATALOG_PATH: ${DATA_CATALOG_PATH:-/app/config/catalog.yaml}
+      CATALOG_AUTO_SYNC: ${CATALOG_AUTO_SYNC:-true}
+      VECTOR_STORE: ${VECTOR_STORE:-none}
+      CHAT_ENHANCEMENT_ENABLED: ${CHAT_ENHANCEMENT_ENABLED:-true}
+      CHROMA_PERSIST_PATH: ${CHROMA_PERSIST_PATH:-/app/data/chroma}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+    volumes:
+      - ./config:/app/config
+      - chroma_data:/app/data/chroma
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,3 +90,4 @@ services:
 volumes:
   postgres_data:
   ollama_data:
+  chroma_data:

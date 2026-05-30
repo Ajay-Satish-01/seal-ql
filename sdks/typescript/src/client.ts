@@ -11,7 +11,17 @@
  */
 
 import { QueryError, SealConnectionError, ServerError } from './errors.js';
-import type { SealOptions, DatabaseSchema, HealthResponse, QueryResponse } from './types.js';
+import { flushSseRemainder, splitSseBuffer } from './sse.js';
+import type {
+  CatalogResponse,
+  ChatResponse,
+  ChatStreamEvent,
+  ChatStreamMeta,
+  DatabaseSchema,
+  HealthResponse,
+  QueryResponse,
+  SealOptions,
+} from './types.js';
 
 const DEFAULT_TIMEOUT = 120_000; // 120 seconds
 
@@ -124,5 +134,130 @@ export class Seal {
    */
   async schema(): Promise<DatabaseSchema> {
     return this.request<DatabaseSchema>('GET', '/v1/schema');
+  }
+
+  /**
+   * Fetch the global data catalog (business descriptions for tables/views).
+   */
+  async catalog(): Promise<CatalogResponse> {
+    return this.request<CatalogResponse>('GET', '/v1/catalog');
+  }
+
+  /**
+   * Schema-grounded conversational Q&A.
+   */
+  async chat(
+    message: string,
+    options?: {
+      sessionId?: string;
+      includeCharts?: boolean;
+      enhancement?: boolean;
+      databaseId?: string;
+    },
+  ): Promise<ChatResponse> {
+    return this.request<ChatResponse>('POST', '/v1/chat', {
+      message,
+      session_id: options?.sessionId,
+      include_charts: options?.includeCharts ?? false,
+      stream: false,
+      enhancement: options?.enhancement,
+      database_id: options?.databaseId ?? 'default',
+    });
+  }
+
+  /**
+   * Stream the final chat answer as SSE (`seal.meta` then OpenAI-style chunks).
+   */
+  async *chatStream(
+    message: string,
+    options?: {
+      sessionId?: string;
+      includeCharts?: boolean;
+      enhancement?: boolean;
+      databaseId?: string;
+    },
+  ): AsyncGenerator<ChatStreamEvent> {
+    const url = `${this.baseUrl}/v1/chat`;
+    const { signal, cleanup } = this.requestSignal();
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify({
+          message,
+          session_id: options?.sessionId,
+          include_charts: options?.includeCharts ?? false,
+          stream: true,
+          enhancement: options?.enhancement,
+          database_id: options?.databaseId ?? 'default',
+        }),
+        signal,
+      });
+    } catch (error: unknown) {
+      if (Seal.isTimeoutError(error)) {
+        throw new SealConnectionError(`Request to ${url} timed out after ${this.timeout}ms`);
+      }
+      const messageText = error instanceof Error ? error.message : String(error);
+      throw new SealConnectionError(`Cannot connect to ${url}: ${messageText}`);
+    } finally {
+      cleanup?.();
+    }
+
+    if (!response.ok) {
+      let detail: string;
+      try {
+        const errorBody = (await response.json()) as { detail?: string };
+        detail = errorBody.detail ?? response.statusText;
+      } catch {
+        detail = response.statusText;
+      }
+      if (response.status >= 500) {
+        throw new ServerError(`Server error (${response.status}): ${detail}`, response.status);
+      }
+      throw new QueryError(`Chat rejected (${response.status}): ${detail}`, response.status);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new SealConnectionError('Streaming response has no body');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    const yieldParsed = function* (
+      raw: import('./sse.js').SseParseResult | null,
+    ): Generator<ChatStreamEvent, void, unknown> {
+      if (!raw) return;
+      if (raw.kind === 'meta') {
+        yield { type: 'meta' as const, data: raw.data as unknown as ChatStreamMeta };
+      } else if (raw.kind === 'delta') {
+        yield { type: 'delta' as const, content: raw.content };
+      } else if (raw.kind === 'done') {
+        yield { type: 'done' as const };
+      }
+    };
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const { events, remainder } = splitSseBuffer(buffer);
+        buffer = remainder;
+        for (const part of events) {
+          yield* yieldParsed(part);
+        }
+      }
+      buffer += decoder.decode();
+      const { events: tailEvents, remainder } = splitSseBuffer(buffer);
+      for (const part of [...tailEvents, ...flushSseRemainder(remainder)]) {
+        yield* yieldParsed(part);
+      }
+    } finally {
+      reader.releaseLock();
+    }
   }
 }

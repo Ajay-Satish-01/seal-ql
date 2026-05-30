@@ -16,10 +16,16 @@ up: ## Start the entire dev stack
 		echo "❌ Set SEAL_API_KEY in .env (see .env.example; use: openssl rand -hex 32)"; \
 		exit 1; \
 	fi
-	@if [ "$${OLLAMA_PROFILE:-default}" = "disabled" ]; then \
-		docker compose up --build -d; \
+	@SEAL_EXTRA=$$(grep -E '^SEAL_EXTRA=' .env 2>/dev/null | cut -d= -f2-); \
+	if [ -z "$$SEAL_EXTRA" ] && grep -qE '^VECTOR_STORE=chroma' .env 2>/dev/null; then \
+	  SEAL_EXTRA=chroma; \
+	  echo "ℹ️  VECTOR_STORE=chroma — building API with SEAL_EXTRA=chroma"; \
+	fi; \
+	export SEAL_EXTRA; \
+	if [ "$${OLLAMA_PROFILE:-default}" = "disabled" ]; then \
+	  docker compose up --build -d; \
 	else \
-		COMPOSE_PROFILES=default docker compose up --build -d; \
+	  COMPOSE_PROFILES=default docker compose up --build -d; \
 	fi
 	@echo "\n✅ Stack is running (Dev Mode)!"
 	@echo "   API:      http://localhost:8000"
@@ -37,8 +43,9 @@ down: ## Stop the stack
 VERSION ?= 0.1.0
 IMAGE ?= seal/api
 
-docker-build: ## Build the production Docker image (VERSION=0.1.0)
+docker-build: ## Build the production Docker image (VERSION=0.1.0; SEAL_EXTRA=chroma for Chroma RAG)
 	docker build --target prod \
+		--build-arg SEAL_EXTRA=$(SEAL_EXTRA) \
 		-t $(IMAGE):$(VERSION) \
 		-t $(IMAGE):latest \
 		-f apps/api/Dockerfile .
@@ -78,6 +85,9 @@ test-sdk: ## Run TS SDK tests locally
 openapi: ## Generate OpenAPI json/yaml spec
 	uv run python scripts/generate_openapi.py
 
+sync-catalog: ## Sync data catalog YAML from live database schema
+	uv run python scripts/sync_catalog.py
+
 web-fixtures: ## Generate demo fixtures for apps/web
 	uv run python scripts/generate_web_demo_fixtures.py
 
@@ -86,7 +96,10 @@ sync-docs-assets: openapi web-fixtures ## Copy seed.sql and OpenAPI into docs si
 	cp scripts/seed.sql apps/web/public/samples/seed.sql
 	cp apps/api/openapi.json apps/web/src/data/openapi.json
 	cp apps/api/openapi.json apps/web/public/openapi.json
-	@echo "✅ Synced docs assets (seed.sql, openapi.json)"
+	mkdir -p apps/web/public/config
+	cp -f config/seal-tools.openai.json apps/web/public/seal-tools.openai.json
+	cp -f config/catalog.example.yaml apps/web/public/config/catalog.example.yaml
+	@echo "✅ Synced docs assets (seed.sql, openapi.json, seal-tools, catalog.example)"
 
 verify-openapi-sync: openapi ## Fail if committed OpenAPI copies differ from generated
 	cp apps/api/openapi.json apps/web/src/data/openapi.json

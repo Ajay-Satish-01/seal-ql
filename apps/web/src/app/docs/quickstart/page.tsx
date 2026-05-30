@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/page-header';
 import { CodeBlock } from '@/components/code-block';
 import { Callout } from '@/components/docs/callout';
 import { SITE } from '@/lib/constants';
+import { pythonChatSnippet, tsQuerySnippet } from '@/lib/doc-snippets';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +47,7 @@ printf '%s\\n' \\
   "SEAL_DISABLE_DOCS=true" \\
   > .env
 
+mkdir config
 docker compose -f docker-compose.example.yml up -d
 curl http://localhost:8000/health`}
         />
@@ -74,24 +76,15 @@ curl http://localhost:8000/health`}
           language="bash"
           code="pip install seal\n# or\nnpm install seal"
         />
+        <CodeBlock language="typescript" code={tsQuerySnippet(SITE.defaultBaseUrl, 'Show total revenue by product category')} />
         <CodeBlock
           language="python"
-          code={`import os
-from seal import Seal
-
-with Seal(
-    "${SITE.defaultBaseUrl}",
-    api_key=os.environ["SEAL_API_KEY"],
-) as client:
-    result = client.query("Show total revenue by product category")
-    print(result.sql)
-    print(result.results)
-    if result.chart:
-        print(result.chart.chart_type)`}
+          code={pythonChatSnippet(SITE.defaultBaseUrl, 'What drove revenue?', { includeCharts: true })}
         />
         <p>
-          See the <Link href="/docs/integration-guide">Integration Guide</Link> and SDK docs for
-          TypeScript, charts, and error handling.
+          See the <Link href="/docs/integration-guide">Integration Guide</Link>,{' '}
+          <Link href="/docs/chat-qa">Chat &amp; Q&A</Link>, and SDK docs for TypeScript, streaming,
+          and charts.
         </p>
       </div>
     </div>

@@ -2,20 +2,27 @@
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from seal_core.catalog.registry import DataCatalogRegistry
+from seal_core.catalog.sync import sync_catalog
+from seal_core.chat.service import ChatService
+from seal_core.chat.sessions import SessionStore
+from seal_core.enhancement.orchestrator import build_default_orchestrator
 from seal_core.llm.client import validate_llm_env
 from seal_core.planner.planner import QueryPlanner
 from seal_core.schema.introspector import get_introspector
-from seal_core.settings import get_settings
+from seal_core.settings import get_settings, validate_vector_store_configuration
+from seal_core.vector.factory import get_vector_store
+from seal_core.vector.indexer import VectorIndexBuilder
 from seal_semantic.registry import SemanticRegistry
 from seal_sql.executor import QueryExecutor
 
-from app.routes import health, query, schema
+from app.routes import catalog, chat, health, query, schema
 
-# Load .env into os.environ so litellm can find provider-specific keys (e.g. GEMINI_API_KEY)
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -39,35 +46,75 @@ async def lifespan(app: FastAPI):
             logger.error(message)
         raise RuntimeError("; ".join(auth_errors))
     settings.log_auth_configuration_warnings()
+    validate_vector_store_configuration()
 
-    # Extract dialect from database url (e.g. postgresql:// -> postgres)
     dialect = "postgres" if "postgres" in settings.database_url else "duckdb"
 
-    # 1. Initialize Schema Introspector
-    logger.info(f"Initializing Schema Introspector for dialect: {dialect}")
+    logger.info("Initializing Schema Introspector for dialect: %s", dialect)
     introspector = get_introspector(dialect, settings.database_url)
 
-    # 2. Initialize Query Executor (has internal connection pool)
     logger.info("Initializing Query Executor")
     executor = QueryExecutor(dialect, settings.database_url)
 
-    # 3. Initialize Query Planner
     logger.info("Initializing Query Planner")
     planner = QueryPlanner()
 
-    # 4. Initialize Semantic Registry
     logger.info("Initializing Semantic Registry")
     semantic_registry = SemanticRegistry(settings.semantic_directory)
 
-    # Store on app state
+    data_catalog = DataCatalogRegistry()
+    if settings.data_catalog_path:
+        catalog_path = Path(settings.data_catalog_path)
+        if settings.catalog_auto_sync:
+            schema = await introspector.introspect()
+            await sync_catalog(
+                schema,
+                catalog_path,
+                prune_removed=settings.catalog_prune_removed,
+            )
+        data_catalog.load(catalog_path)
+        if settings.data_catalog_strict:
+            schema = await introspector.introspect()
+            errors = data_catalog.validate_against_schema(schema)
+            if errors:
+                raise RuntimeError("; ".join(errors))
+
+    vector_store = get_vector_store(settings)
+    if settings.vector_store.lower() != "none" or settings.vector_store_class:
+        try:
+            schema = await introspector.introspect()
+            builder = VectorIndexBuilder(vector_store)
+            await builder.build(schema, data_catalog)
+        except Exception as e:
+            logger.warning("Vector index build skipped: %s", e)
+
+    orchestrator = None
+    if settings.chat_enhancement_enabled:
+        orchestrator = build_default_orchestrator(
+            catalog=data_catalog,
+            semantic_registry=semantic_registry,
+            vector_store=vector_store,
+        )
+
+    chat_service = ChatService(
+        planner=planner,
+        executor=executor,
+        sessions=SessionStore(),
+        orchestrator=orchestrator,
+        catalog=data_catalog,
+        semantic_registry=semantic_registry,
+    )
+
     app.state.introspector = introspector
     app.state.executor = executor
     app.state.planner = planner
     app.state.semantic_registry = semantic_registry
+    app.state.data_catalog = data_catalog
+    app.state.chat_service = chat_service
+    app.state.vector_store = vector_store
 
     yield
 
-    # Teardown
     logger.info("Closing database connections...")
     await executor.close()
     await introspector.close()
@@ -87,7 +134,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Seal API",
         version="0.1.0",
-        description="AI-powered SQL generation and execution.",
+        description="AI-powered SQL generation, chat Q&A, and visualization.",
         lifespan=lifespan,
         **docs_kwargs,
     )
@@ -100,10 +147,11 @@ def create_app() -> FastAPI:
         allow_headers=["Authorization", "Content-Type", "X-API-Key"],
     )
 
-    # Mount routers
     app.include_router(health.router)
     app.include_router(schema.router, prefix="/v1")
     app.include_router(query.router, prefix="/v1")
+    app.include_router(chat.router, prefix="/v1")
+    app.include_router(catalog.router, prefix="/v1")
 
     return app
 

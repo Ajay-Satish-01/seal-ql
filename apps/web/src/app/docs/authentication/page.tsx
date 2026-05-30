@@ -47,9 +47,10 @@ export default function AuthenticationPage() {
             values are treated as unset).
           </li>
           <li>
-            When a key is set, <code>POST /v1/query</code> and <code>GET /v1/schema</code> run
-            through a FastAPI dependency that compares the client header with{' '}
-            <code>secrets.compare_digest</code> (constant-time).
+            When a key is set, all <code>/v1/*</code> routes (including{' '}
+            <code>POST /v1/query</code>, <code>POST /v1/chat</code>, <code>GET /v1/catalog</code>, and{' '}
+            <code>GET /v1/schema</code>) run through a FastAPI dependency that compares the client
+            header with <code>secrets.compare_digest</code> (constant-time).
           </li>
           <li>
             Missing or wrong keys return <strong>401</strong> with a generic message (no hint about

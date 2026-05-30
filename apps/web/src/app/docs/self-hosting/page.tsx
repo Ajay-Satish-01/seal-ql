@@ -6,6 +6,7 @@ import { ParamTable } from '@/components/docs/param-table';
 import { SITE } from '@/lib/constants';
 import { getComposeExample } from '@/lib/compose-example';
 import { LlmConfigSection } from '@/components/docs/llm-config';
+import { curlChat, productionCatalogEnvSnippet } from '@/lib/doc-snippets';
 
 export default function SelfHostingPage() {
   const composeYaml = getComposeExample();
@@ -59,6 +60,13 @@ curl http://localhost:8000/health`}
 
         <LlmConfigSection />
 
+        <h2 className="text-foreground mt-10 text-2xl font-bold">Chat &amp; data catalog</h2>
+        <p>
+          The production compose example mounts <code>./config</code> and enables catalog sync and
+          chat enhancement by default.
+        </p>
+        <CodeBlock language="bash" code={productionCatalogEnvSnippet()} />
+
         <h2 className="text-foreground mt-10 text-2xl font-bold">Other environment variables</h2>
         <p>
           API keys: <Link href="/docs/authentication">Authentication</Link>.
@@ -109,8 +117,36 @@ curl http://localhost:8000/health`}
               type: 'integer',
               description: 'SQL execution timeout (default 30).',
             },
+            {
+              name: 'DATA_CATALOG_PATH',
+              type: 'string',
+              description: 'Catalog YAML path inside the container (mount ./config).',
+            },
+            {
+              name: 'CATALOG_AUTO_SYNC',
+              type: 'boolean',
+              description: 'Regenerate catalog from schema on startup (default true).',
+            },
+            {
+              name: 'CHAT_ENHANCEMENT_ENABLED',
+              type: 'boolean',
+              description: 'Enable schema/RAG/multi-turn enhancers on /v1/chat.',
+            },
+            {
+              name: 'VECTOR_STORE',
+              type: 'string',
+              description: 'none (default), chroma, or custom via VECTOR_STORE_CLASS.',
+            },
           ]}
         />
+
+        <p className="mt-4 text-sm">
+          Mount <code>./config:/app/config</code> on the API service so catalog edits persist. Sample:{' '}
+          <a href="/config/catalog.example.yaml" className="text-primary">
+            catalog.example.yaml
+          </a>
+          .
+        </p>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Production patterns</h2>
         <ul>
@@ -141,7 +177,12 @@ curl -s -X POST http://localhost:8000/v1/query \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: $SEAL_API_KEY" \\
   -d '{"query": "Show total revenue by product category", "database_id": "default"}' \\
-| python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('chart',{}).get('chart_type'), d.get('detail','OK')[:80])"`}
+| python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('chart',{}).get('chart_type'), d.get('detail','OK')[:80])")`}
+        />
+
+        <CodeBlock
+          language="bash"
+          code={`${curlChat(SITE.defaultBaseUrl, 'What tables exist?')} | python3 -m json.tool`}
         />
 
         <p className="mt-8">

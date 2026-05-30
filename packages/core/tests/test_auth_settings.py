@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from seal_core.settings import Settings
 
 
@@ -13,12 +14,13 @@ def test_auth_required_without_key_returns_error() -> None:
 
 
 def test_auth_required_with_key_is_valid() -> None:
-    settings = Settings(auth_required=True, api_key="secret")
+    settings = Settings(auth_required=True, api_key="secret", _env_file=None)
     assert settings.validate_auth_configuration() == []
 
 
-def test_empty_api_key_normalized_to_none() -> None:
-    settings = Settings(api_key="   ")
+def test_empty_api_key_normalized_to_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SEAL_API_KEY", raising=False)
+    settings = Settings(api_key="   ", _env_file=None)
     assert settings.api_key is None
     assert settings.validate_auth_configuration() == []
 

@@ -20,6 +20,9 @@ def _configure_test_env(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None
     monkeypatch.setenv("SEAL_AUTH_REQUIRED", "false")
     monkeypatch.setenv("SEAL_DEV_MODE", "true")
     monkeypatch.setenv("SEAL_DISABLE_DOCS", "false")
+    monkeypatch.setenv("VECTOR_STORE", "none")
+    monkeypatch.setenv("CATALOG_AUTO_SYNC", "false")
+    monkeypatch.setenv("CHAT_ENHANCEMENT_ENABLED", "false")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()

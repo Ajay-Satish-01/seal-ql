@@ -4,6 +4,7 @@ type to visualize the results.
 
 You are given the following database schema context:
 {schema_context}
+{catalog_context}
 {semantic_context}
 
 RULES:

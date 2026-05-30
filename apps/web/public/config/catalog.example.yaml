@@ -1,0 +1,21 @@
+version: 1
+generated_at: "2026-01-01T00:00:00+00:00"
+schema_hash: example
+tables:
+  - schema: public
+    name: orders
+    kind: table
+    columns:
+      - name: id
+        data_type: bigint
+        normalized_type: integer
+        nullable: false
+        is_primary_key: true
+    table_description: "One row per customer order. Use for revenue and volume questions."
+    view_description: null
+  - schema: public
+    name: revenue_daily
+    kind: continuous_aggregate
+    columns: []
+    table_description: null
+    view_description: "Pre-aggregated daily revenue; prefer over raw orders for trends."

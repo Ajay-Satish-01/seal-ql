@@ -2,7 +2,7 @@ import { PageHeader } from '@/components/page-header';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { ArrowRight, Database, Shield, Zap, BarChart, KeyRound } from 'lucide-react';
+import { ArrowRight, Database, Shield, Zap, BarChart, KeyRound, MessageSquare } from 'lucide-react';
 
 export default function DocsPage() {
   return (
@@ -52,6 +52,14 @@ export default function DocsPage() {
             <p className="text-muted-foreground text-sm">
               We actively fetch your database schema (Postgres, DuckDB) and inject only the relevant
               DDL and Semantic Models into the LLM context to save tokens and improve accuracy.
+            </p>
+          </div>
+          <div className="border-border/50 bg-card text-card-foreground rounded-xl border p-5 shadow-sm">
+            <MessageSquare className="text-primary mb-3 h-8 w-8" />
+            <h4 className="mb-2 text-lg font-semibold">Chat &amp; Q&A</h4>
+            <p className="text-muted-foreground text-sm">
+              Multi-turn <code>/v1/chat</code> with session memory, optional charts, SSE streaming,
+              and a global data catalog for business context — no external agent framework required.
             </p>
           </div>
           <div className="border-border/50 bg-card text-card-foreground rounded-xl border p-5 shadow-sm">

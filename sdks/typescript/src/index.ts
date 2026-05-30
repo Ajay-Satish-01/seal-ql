@@ -14,6 +14,12 @@
 export { Seal } from './client.js';
 export { VegaChart, type VegaChartProps } from './react.js';
 export {
+  parseSseEventBlock,
+  splitSseBuffer,
+  flushSseRemainder,
+  type SseParseResult,
+} from './sse.js';
+export {
   SealError,
   SealConnectionError,
   ConnectionError,
@@ -21,8 +27,13 @@ export {
   ServerError,
 } from './errors.js';
 export type {
+  CatalogResponse,
   ChartType,
   ChartSpec,
+  ChatRequest,
+  ChatResponse,
+  ChatStreamEvent,
+  ChatStreamMeta,
   ColumnMetadata,
   SealOptions,
   DatabaseSchema,
