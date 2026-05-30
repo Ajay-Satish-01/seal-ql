@@ -52,6 +52,7 @@
 - `uv run pytest -v`: Run tests safely across all Python workspaces.
 - `pre-commit run --all-files`: Enforce formatting/linting via ruff, prettier, eslint.
 - `pnpm install`: Install TypeScript SDK dependencies (Node.js 24 — see `.nvmrc`, run `nvm use`).
+- `make check-web`: Build TypeScript SDK (`sdks/typescript`) then the docs/demo Next.js app.
 
 ## Workflows
 

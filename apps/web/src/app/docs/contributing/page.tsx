@@ -58,7 +58,11 @@ uv run pytest -v`}
             TypeScript SDK: <code>cd sdks/typescript && pnpm install && pnpm build</code>
           </li>
           <li>
-            Docs site: <code>cd apps/web && pnpm install && pnpm dev</code>
+            Docs site: build the TypeScript SDK first, then the web app —{' '}
+            <code>make check-web</code> or{' '}
+            <code>
+              cd sdks/typescript && pnpm build && cd ../../apps/web && pnpm install && pnpm dev
+            </code>
           </li>
           <li>
             Lint: <code>make lint</code> · full CI: <code>make check</code>

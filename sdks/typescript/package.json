@@ -30,6 +30,7 @@
     "url": "https://github.com/intelligence-connector/intelligence-connector"
   },
   "scripts": {
+    "prepare": "pnpm run build",
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
