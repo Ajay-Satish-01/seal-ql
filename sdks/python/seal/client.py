@@ -120,7 +120,7 @@ class Seal:
         """
         try:
             resp = self._client.get("/health")
-        except httpx.ConnectError as exc:
+        except httpx.RequestError as exc:
             raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
 
         _handle_error(resp)
@@ -146,7 +146,7 @@ class Seal:
                 "/v1/query",
                 json={"query": query, "database_id": database_id},
             )
-        except httpx.ConnectError as exc:
+        except httpx.RequestError as exc:
             raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
 
         _handle_error(resp)
@@ -163,7 +163,7 @@ class Seal:
         """
         try:
             resp = self._client.get("/v1/schema")
-        except httpx.ConnectError as exc:
+        except httpx.RequestError as exc:
             raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
 
         _handle_error(resp)
@@ -228,7 +228,7 @@ class AsyncSeal:
         """
         try:
             resp = await self._client.get("/health")
-        except httpx.ConnectError as exc:
+        except httpx.RequestError as exc:
             raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
 
         _handle_error(resp)
@@ -254,7 +254,7 @@ class AsyncSeal:
                 "/v1/query",
                 json={"query": query, "database_id": database_id},
             )
-        except httpx.ConnectError as exc:
+        except httpx.RequestError as exc:
             raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
 
         _handle_error(resp)
@@ -271,7 +271,7 @@ class AsyncSeal:
         """
         try:
             resp = await self._client.get("/v1/schema")
-        except httpx.ConnectError as exc:
+        except httpx.RequestError as exc:
             raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
 
         _handle_error(resp)

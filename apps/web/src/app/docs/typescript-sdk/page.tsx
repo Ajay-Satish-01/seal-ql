@@ -58,7 +58,10 @@ console.log(result.sql, result.results, result.chart);`}
 import { Seal, VegaChart } from 'seal';
 
 export async function ChartExample() {
-  const client = new Seal({ baseUrl: '${SITE.defaultBaseUrl}' });
+  const client = new Seal({
+    baseUrl: '${SITE.defaultBaseUrl}',
+    apiKey: process.env.SEAL_API_KEY,
+  });
   const result = await client.query('Revenue by category');
 
   if (!result.chart || result.chart.chart_type === 'table') {

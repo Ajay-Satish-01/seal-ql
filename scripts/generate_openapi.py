@@ -10,10 +10,11 @@ from pathlib import Path
 root_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(root_dir / "apps" / "api"))
 
-# Stable generation: include documented routes and avoid production-only doc hiding.
-os.environ.setdefault("SEAL_DISABLE_DOCS", "false")
-os.environ.setdefault("SEAL_AUTH_REQUIRED", "false")
-os.environ.setdefault("SEAL_DEV_MODE", "true")
+# Force deterministic generation regardless of the ambient shell environment:
+# include documented routes and avoid production-only doc hiding.
+os.environ["SEAL_DISABLE_DOCS"] = "false"
+os.environ["SEAL_AUTH_REQUIRED"] = "false"
+os.environ["SEAL_DEV_MODE"] = "true"
 
 import yaml  # noqa: E402
 from seal_core.settings import get_settings  # noqa: E402

@@ -118,10 +118,13 @@ class TestSyncClient:
         transport = httpx.MockTransport(handler)
         client = Seal("http://testserver", api_key="secret-key")
         try:
+            original_headers = client._client.headers
+            # Close the real client before swapping in the mock-transport one (no leak).
+            client._client.close()
             client._client = httpx.Client(
                 base_url="http://testserver",
                 transport=transport,
-                headers=client._client.headers,
+                headers=original_headers,
             )
             client.query("test")
         finally:

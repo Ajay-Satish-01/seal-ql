@@ -26,7 +26,8 @@ function buildPythonSnippet(query: string, baseUrl: string): string {
   const url = escapePythonString(baseUrl);
   return `from seal import Seal
 
-with Seal("${url}") as client:
+# api_key is required when the server sets SEAL_API_KEY (sent as X-API-Key).
+with Seal("${url}", api_key="your-api-key") as client:
     result = client.query("${q}")
 
 print(result.sql)
@@ -43,6 +44,8 @@ function buildTypeScriptSnippet(query: string, baseUrl: string): string {
 
 const client = new Seal({
   baseUrl: '${url}',
+  // apiKey is required when the server sets SEAL_API_KEY (sent as X-API-Key).
+  apiKey: 'your-api-key',
 });
 
 const result = await client.query("${q}");

@@ -51,5 +51,5 @@ uv tool run twine check --strict dist/seal-*
 UV_PUBLISH_TOKEN=... uv publish --package seal
 
 # npm
-cd sdks/typescript && pnpm install --frozen-lockfile && pnpm build && npm publish --access public
+cd sdks/typescript && pnpm install --frozen-lockfile && pnpm build && pnpm publish --access public
 ```

@@ -13,7 +13,7 @@ router = APIRouter()
 async def get_schema(
     _: None = Security(require_api_key),
     introspector: SchemaIntrospector = Depends(get_schema_introspector),  # noqa: B008
-):
+) -> DatabaseSchema:
     """Introspect and return the full database schema."""
     schema = await introspector.introspect()
     return schema

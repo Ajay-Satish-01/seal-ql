@@ -21,7 +21,8 @@ pip install "seal[polars]"
 ```python
 from seal import Seal
 
-with Seal("http://localhost:8000") as client:
+# Pass api_key when the server sets SEAL_API_KEY (sent as the X-API-Key header).
+with Seal("http://localhost:8000", api_key="your-secret") as client:
     schema = client.schema()
     print([t.name for t in schema.tables])
 
@@ -37,7 +38,7 @@ import asyncio
 from seal import AsyncSeal
 
 async def main():
-    async with AsyncSeal("http://localhost:8000") as client:
+    async with AsyncSeal("http://localhost:8000", api_key="your-secret") as client:
         result = await client.query("Count all users")
         print(result.results)
 

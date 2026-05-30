@@ -51,7 +51,7 @@ sdk-python-build: ## Build Python SDK wheel/sdist for PyPI
 	uv build --package seal
 
 sdk-npm-pack: ## Dry-run npm pack for the TypeScript SDK
-	cd sdks/typescript && pnpm install --frozen-lockfile && pnpm build && npm pack --dry-run
+	cd sdks/typescript && pnpm install --frozen-lockfile && pnpm build && pnpm pack --dry-run
 
 build: ## Rebuild all containers
 	docker compose build --no-cache

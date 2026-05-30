@@ -63,7 +63,7 @@ if result.chart:
           language="python"
           code={`from seal import AsyncSeal
 
-async with AsyncSeal("${SITE.defaultBaseUrl}") as client:
+async with AsyncSeal("${SITE.defaultBaseUrl}", api_key="your-secret") as client:
     result = await client.query("Hourly event counts")`}
         />
 
