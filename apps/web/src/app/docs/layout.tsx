@@ -13,6 +13,7 @@ const sidebarGroups = [
     title: 'Getting Started',
     links: [
       { title: 'Quickstart', href: '/docs/quickstart' },
+      { title: 'Integration Guide', href: '/docs/integration-guide' },
       { title: 'Self-Hosting', href: '/docs/self-hosting' },
     ],
   },
@@ -22,11 +23,12 @@ const sidebarGroups = [
       { title: 'API Reference', href: '/docs/api-reference' },
       { title: 'Python SDK', href: '/docs/python-sdk' },
       { title: 'TypeScript SDK', href: '/docs/typescript-sdk' },
+      { title: 'Charts & Analysis', href: '/docs/charts-analysis' },
     ],
   },
   {
-    title: 'Use Cases',
-    links: [{ title: 'Charts & Analysis', href: '/docs/charts-analysis' }],
+    title: 'Examples',
+    links: [{ title: 'Interactive Demo', href: '/demo' }],
   },
 ];
 

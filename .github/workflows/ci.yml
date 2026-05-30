@@ -20,6 +20,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python workspace (OpenAPI + fixture tests)
+        run: uv sync --all-packages --all-extras
+
       - name: Build API container
         run: docker compose build api
 
@@ -28,6 +35,34 @@ jobs:
 
       - name: Ruff format check
         run: docker compose run --rm -T api uv run ruff format --check .
+
+      - name: Verify OpenAPI docs sync
+        run: make verify-openapi-sync
+
+      - name: Validate demo fixtures
+        run: uv run pytest tests/test_response_validation.py -v --tb=short
+
+  # ============================================================
+  # Web: Docs site build
+  # ============================================================
+  web-build:
+    name: "Web — Next.js Build"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+          cache-dependency-path: "apps/web/pnpm-lock.yaml"
+
+      - name: Install and build
+        run: make check-web
 
   # ============================================================
   # Python: Tests via pytest
@@ -86,7 +121,7 @@ jobs:
         env:
           # E2E requires a model, we securely inject secrets so it can run cloud models if available.
           # Otherwise it falls back to a small, fast local Ollama model.
-          LLM_TYPE: ${{ secrets.LLM_TYPE || 'local' }}
+          OLLAMA_PROFILE: ${{ secrets.OLLAMA_PROFILE || 'default' }}
           LLM_MODEL: ${{ secrets.LLM_MODEL || 'ollama/qwen3.5:4b' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -125,13 +160,13 @@ jobs:
           path: /tmp/e2e-test-results.xml
           retention-days: 7
 
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 10.33.2
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "pnpm"
           cache-dependency-path: "sdks/typescript/pnpm-lock.yaml"
 
@@ -156,13 +191,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 10.33.2
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "pnpm"
           cache-dependency-path: "sdks/typescript/pnpm-lock.yaml"
 

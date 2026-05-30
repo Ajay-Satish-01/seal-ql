@@ -4,68 +4,64 @@ The Intelligence Connector provides an easy-to-deploy, Docker-first architecture
 
 ## Architecture
 
-The stack consists of three main components when run locally:
-1. **API**: FastAPI backend running the Query Planner and Executer.
-2. **Postgres**: (TimescaleDB) The default target database for analytics.
-3. **Ollama**: Local LLM execution (default is `llama3.2:1b`).
+The stack consists of:
+
+1. **API** — FastAPI backend (query planner, SQL execution, charts).
+2. **Postgres** — TimescaleDB for analytics (bundled in compose).
+3. **Ollama** — Local LLM (optional; skipped when `OLLAMA_PROFILE=disabled`).
 
 ## Prerequisites
-- Docker & Docker Compose
-- Ensure ports `8000`, `5432`, and `11434` are available.
+
+- Docker and Docker Compose
+- Ports `8000`, `5432`, and (for Ollama) `11434` available
 
 ## Quick Start (Local Development)
 
 ```bash
-# Start all services (builds the image in `dev` mode)
-make up
-
-# Seed the database with mock schema/data
+make up      # starts Ollama when OLLAMA_PROFILE is default
 make seed
-
-# Check the API is healthy
 curl http://localhost:8000/health
 ```
 
-## Production Deployment
-
-The provided `Dockerfile` uses a multi-stage build. By default, `make docker-build` targets the `prod` stage which strips out development dependencies and uses a non-root user.
-
-### 1. Build the Production Image
+For **cloud LLM** (Gemini, OpenAI, Anthropic), set in `.env`:
 
 ```bash
-make docker-build
+OLLAMA_PROFILE=disabled
+LLM_MODEL=gemini/gemini-1.5-flash
+LLM_API_KEY=your-key-here
 ```
 
-### 2. Environment Variables
+Then `make up` (Ollama container is not started).
 
-The `api` container relies on environment variables defined via `pydantic-settings`.
-Key variables to provide in production:
+## Production Deployment
+
+`make docker-build` produces the `prod` image (non-root user).
+
+### Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | Target database connection string (Postgres format). | `postgresql+asyncpg://...` |
-| `DUCKDB_PATH` | Path to duckdb file if using duckdb. | `:memory:` |
-| `LLM_MODEL` | The LLM to use (e.g. `gpt-4o`, `ollama/llama3.2`). | `ollama/llama3.2:1b` |
-| `LLM_BASE_URL` | Base URL for LLM provider (if applicable). | `http://ollama:11434` |
-| `LLM_API_KEY` | API key if using OpenAI/Anthropic/etc. | `None` |
-| `CORS_ORIGINS` | JSON list of allowed origins. | `["http://localhost:3000"]` |
-| `MAX_ROWS` | Row limit for LLM generated SQL. | `10000` |
+| `DATABASE_URL` | Postgres/asyncpg connection string | `postgresql+asyncpg://…` |
+| `OLLAMA_PROFILE` | `default` = local Ollama; `disabled` = cloud LLM | `default` |
+| `LLM_MODEL` | LiteLLM model id (`ollama/…`, `gemini/…`, etc.) | `ollama/llama3.2:1b` |
+| `LLM_BASE_URL` | Ollama URL (ignored when `OLLAMA_PROFILE=disabled`) | `http://ollama:11434` |
+| `LLM_API_KEY` | Cloud API key (or use `GEMINI_API_KEY`, etc.) | — |
+| `CORS_ORIGINS` | JSON array of allowed browser origins | `["http://localhost:3000"]` |
+| `MAX_ROWS` | Row cap for generated SQL | `10000` |
 
-### 3. Running in Production
+The API logs **warnings** at startup for common misconfigurations (e.g. cloud model without `OLLAMA_PROFILE=disabled`, or legacy `LLM_TYPE` in `.env`).
 
-Use your orchestrator of choice (Docker Compose, Kubernetes, ECS, etc).
-
-For a standalone docker run:
+### Standalone `docker run` (cloud)
 
 ```bash
 docker run -d -p 8000:8000 \
-  -e DATABASE_URL="postgresql+asyncpg://prod_user:pass@dbhost/mydb" \
-  -e LLM_MODEL="gpt-4o" \
-  -e LLM_API_KEY="sk-..." \
+  -e OLLAMA_PROFILE=disabled \
+  -e DATABASE_URL="postgresql+asyncpg://user:pass@dbhost/mydb" \
+  -e LLM_MODEL="gemini/gemini-1.5-flash" \
+  -e LLM_API_KEY="your-key" \
   intelligence-connector/api:latest
 ```
 
 ## Health Checks
 
-The production Dockerfile includes a built-in `HEALTHCHECK` running against `http://localhost:8000/health`.
-You can also use this endpoint in your load balancer or orchestration tool.
+The production image health-checks `GET /health`. Use the same endpoint in your load balancer.

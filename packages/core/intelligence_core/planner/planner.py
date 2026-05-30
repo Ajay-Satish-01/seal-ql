@@ -8,7 +8,6 @@ from intelligence_core.llm.client import (
     get_api_key,
     get_async_client,
     get_model,
-    validate_llm_env,
 )
 from intelligence_core.planner.models import QueryPlan
 from intelligence_core.planner.prompts import (
@@ -30,7 +29,6 @@ class QueryPlanner:
     """
 
     def __init__(self, model: str | None = None, api_base: str | None = None) -> None:
-        validate_llm_env()
         self.client = get_async_client()
         self.model = model or get_model()
         self.api_base = api_base or get_api_base()

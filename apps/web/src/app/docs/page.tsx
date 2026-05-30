@@ -69,16 +69,26 @@ export default function DocsPage() {
           dashboard, Intelligence Connector provides the SDKs and APIs to get to production safely.
         </p>
 
-        <div className="not-prose mt-10 flex gap-4">
-          <Link
-            href="/docs/features"
-            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full')}
-          >
-            Explore Features
+        <p className="mt-8 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+          <strong className="text-foreground">No clone required.</strong> Pull the Docker image,
+          install the SDK, and point at your API. See{' '}
+          <Link href="/docs/quickstart" className="text-primary">
+            Quickstart
+          </Link>{' '}
+          or try the{' '}
+          <Link href="/demo" className="text-primary">
+            interactive demo
+          </Link>{' '}
+          first.
+        </p>
+
+        <div className="not-prose mt-10 flex flex-wrap gap-4">
+          <Link href="/demo" className={cn(buttonVariants({ size: 'lg' }), 'rounded-sm')}>
+            Interactive Demo
           </Link>
           <Link
             href="/docs/quickstart"
-            className={cn(buttonVariants({ size: 'lg' }), 'rounded-full')}
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-sm')}
           >
             Quickstart <ArrowRight className="ml-2 h-4 w-4" />
           </Link>

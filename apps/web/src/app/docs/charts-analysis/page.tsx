@@ -1,111 +1,77 @@
+import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { CodeBlock } from '@/components/code-block';
+import { ParamTable } from '@/components/docs/param-table';
 
 export default function ChartsAnalysisPage() {
   return (
     <div className="max-w-3xl">
       <PageHeader
         title="Charts & Analysis"
-        description="Visualize your database results automatically in your frontend."
+        description="How Intelligence Connector chooses chart types and returns Vega-Lite specs."
       />
 
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
         <p>
-          Intelligence Connector does more than just return raw database rows. For every successful
-          query, the Gateway&apos;s Chart Engine analyzes the shape of the result set and
-          automatically generates a complete <strong>Vega-Lite JSON schema</strong>.
+          Every <code>POST /v1/query</code> response may include a <code>chart</code> object. The
+          chart engine applies heuristics on top of the planner&apos;s suggestion (e.g. pie → bar
+          for many categories).
         </p>
 
-        <p>
-          Because we return raw SQL results alongside an industry-standard Vega-Lite schema, you
-          have two flexible options for rendering charts in your application:
-        </p>
+        <h2 className="text-foreground mt-10 text-2xl font-bold">chart_type values</h2>
+        <ParamTable
+          rows={[
+            {
+              name: 'bar, line, pie, scatter, area',
+              type: 'ChartSpec',
+              description: 'Full vega_lite_spec — render with VegaChart or vega-embed.',
+            },
+            {
+              name: 'table',
+              type: 'ChartSpec',
+              description: 'vega_lite_spec is {} — render results as a data grid.',
+            },
+            {
+              name: 'metric_card',
+              type: 'ChartSpec',
+              description:
+                'Single KPI from results; use chart.metadata.y_field for the value column.',
+            },
+          ]}
+        />
 
-        <hr />
-
-        <h2>Option 1: Using Vega-Lite (Recommended)</h2>
-        <p>
-          Vega-Lite is a high-level grammar of interactive graphics. If you use React, the easiest
-          way to render our generated charts is using the <code>react-vega</code> library.
-        </p>
-
-        <h3>1. Install the dependencies</h3>
-        <CodeBlock language="bash" code="npm install react-vega vega vega-lite" />
-
-        <h3>2. Render the chart</h3>
-        <p>
-          You can directly pass the <code>chart</code> object returned from the API into the{' '}
-          <code>VegaLite</code> component.
-        </p>
+        <h2 className="text-foreground mt-10 text-2xl font-bold">ChartSpec shape</h2>
         <CodeBlock
-          language="tsx"
-          code={`import React, { useState } from 'react';
-import { VegaLite } from 'react-vega';
-
-export function DataDashboard() {
-  const [data, setData] = useState(null);
-
-  const askQuestion = async () => {
-    const res = await fetch("http://localhost:8000/query", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: "Revenue by month for the last year" })
-    });
-
-    const json = await res.json();
-    setData(json);
-  };
-
-  return (
-    <div>
-      <button onClick={askQuestion}>Ask Question</button>
-
-      {data && data.chart && (
-        <div className="chart-container">
-          {/* Render the Vega-Lite chart instantly */}
-          <VegaLite spec={data.chart} />
-        </div>
-      )}
-    </div>
-  );
+          language="json"
+          code={`{
+  "chart_type": "bar",
+  "vega_lite_spec": {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "data": { "values": [...] },
+    "mark": { "type": "bar", "tooltip": true },
+    "encoding": { ... }
+  },
+  "metadata": {
+    "requested_chart_type": "bar",
+    "applied_chart_type": "bar",
+    "x_field": "category",
+    "y_field": "total_revenue",
+    "color_field": null
+  }
 }`}
         />
 
-        <hr />
-
-        <h2>Option 2: Using Custom Charting Libraries</h2>
+        <h2 className="text-foreground mt-10 text-2xl font-bold">Custom UI libraries</h2>
         <p>
-          Because the <code>/query</code> API also returns the exact <code>columns</code> and{' '}
-          <code>results</code> arrays, you are not locked into Vega-Lite. You can easily map the raw
-          data into any charting library like <strong>Recharts</strong>, <strong>Chart.js</strong>,
-          or <strong>Tremor</strong>.
+          You can ignore Vega and chart from <code>results</code> + <code>columns</code> using{' '}
+          <code>metadata.x_field</code> / <code>y_field</code> hints. The SQL and rows are always
+          authoritative.
         </p>
 
-        <h3>Example: Recharts Integration</h3>
-        <CodeBlock language="bash" code="npm install recharts" />
-
-        <CodeBlock
-          language="tsx"
-          code={`import { BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
-
-export function CustomRechartsDisplay({ data }) {
-  // data.results looks like: [{ month: "Jan", revenue: 100 }, { month: "Feb", revenue: 200 }]
-
-  return (
-    <BarChart width={600} height={300} data={data.results}>
-      <XAxis dataKey={data.columns[0]} /> {/* e.g. "month" */}
-      <YAxis />
-      <Tooltip />
-      <Bar dataKey={data.columns[1]} fill="#8884d8" /> {/* e.g. "revenue" */}
-    </BarChart>
-  );
-}`}
-        />
-
-        <p className="mt-8">
-          This flexibility allows you to rapidly prototype with Vega-Lite&apos;s automatic
-          configurations, and later build deeply integrated, highly-customized dashboards using your
-          library of choice.
+        <h2 className="text-foreground mt-10 text-2xl font-bold">See it live</h2>
+        <p>
+          <Link href="/demo">Interactive demo</Link> — preset queries with bar, line, pie, table,
+          metric, and scatter outputs.
         </p>
       </div>
     </div>

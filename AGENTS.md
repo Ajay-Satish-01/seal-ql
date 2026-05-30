@@ -42,13 +42,17 @@
 
 ## Commands
 
-- `make up`: Start all local Docker services (API, Postgres, Ollama).
+- `make up`: Start all local Docker services (API, Postgres, Ollama when `OLLAMA_PROFILE` is not `disabled`).
 - `make down`: Stop all Docker services.
 - `make seed`: Inject mock analytics schema into the database.
+- `make sync-docs-assets`: Regenerate OpenAPI + demo fixtures and copy into `apps/web`.
+- `make verify-openapi-sync`: CI check that committed OpenAPI copies match `make openapi`.
+- `make validate-query`: Validate live `POST /v1/query` JSON shape (requires running API).
 - `uv sync --all-packages --all-extras`: Install/sync all Python workspace dependencies.
 - `uv run pytest -v`: Run tests safely across all Python workspaces.
 - `pre-commit run --all-files`: Enforce formatting/linting via ruff, prettier, eslint.
-- `pnpm install`: Install TypeScript SDK dependencies.
+- `pnpm install`: Install TypeScript SDK dependencies (Node.js 24 — see `.nvmrc`, run `nvm use`).
+- `make check-web`: Build TypeScript SDK (`sdks/typescript`) then the docs/demo Next.js app.
 
 ## Workflows
 
