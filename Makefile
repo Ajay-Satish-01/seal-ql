@@ -70,7 +70,8 @@ sync-docs-assets: openapi web-fixtures ## Copy seed.sql and OpenAPI into docs si
 verify-openapi-sync: openapi ## Fail if committed OpenAPI copies differ from generated
 	cp apps/api/openapi.json apps/web/src/data/openapi.json
 	cp apps/api/openapi.json apps/web/public/openapi.json
-	@git diff --exit-code apps/api/openapi.json apps/web/src/data/openapi.json apps/web/public/openapi.json \
+	@git diff --exit-code apps/api/openapi.json apps/api/openapi.yaml \
+		apps/web/src/data/openapi.json apps/web/public/openapi.json \
 		|| (echo "\n❌ OpenAPI out of sync. Run: make sync-docs-assets" && exit 1)
 	@echo "✅ OpenAPI copies are in sync"
 
