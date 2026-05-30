@@ -15,7 +15,7 @@ from app.dependencies import (
 from app.main import create_app
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from seal_core.settings import get_settings
+from seal_core.settings import Settings, get_settings
 from tests.mocks import (
     MockChatService,
     MockDataCatalog,
@@ -50,6 +50,7 @@ def build_client(
     **env: str | None,
 ) -> TestClient:
     """Build a TestClient after env overrides; optionally attach route mocks."""
+    monkeypatch.setitem(Settings.model_config, "env_file", None)
     for key, value in env.items():
         if value is None:
             monkeypatch.delenv(key, raising=False)
