@@ -23,10 +23,9 @@ type ModeTab = 'query' | 'chat' | 'catalog' | 'stream';
 
 interface SdkPanelProps {
   query: string;
-  baseUrl: string;
 }
 
-export function SdkPanel({ query, baseUrl }: SdkPanelProps) {
+export function SdkPanel({ query }: SdkPanelProps) {
   const [lang, setLang] = useState<LangTab>('python');
   const [mode, setMode] = useState<ModeTab>('query');
 
@@ -46,7 +45,7 @@ export function SdkPanel({ query, baseUrl }: SdkPanelProps) {
   ];
 
   const code = (() => {
-    const b = baseUrl || SITE.defaultBaseUrl;
+    const b = SITE.defaultBaseUrl;
     if (mode === 'query') {
       if (lang === 'python') return pythonQuerySnippet(b, query);
       if (lang === 'typescript') return tsQuerySnippet(b, query);
@@ -72,9 +71,9 @@ export function SdkPanel({ query, baseUrl }: SdkPanelProps) {
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground text-xs">
-        Snippets target{' '}
-        <code className="text-foreground">{baseUrl || SITE.defaultBaseUrl}</code>. Change it in{' '}
-        <strong className="text-foreground">Live API connection</strong> below.
+        Snippets target <code className="text-foreground">{SITE.defaultBaseUrl}</code>. Replace with
+        your API URL and set <code className="text-foreground">apiKey</code> when{' '}
+        <code className="text-foreground">SEAL_API_KEY</code> is enabled.
       </p>
 
       <div className="border-border/50 flex flex-wrap gap-1 border-b">
@@ -116,8 +115,8 @@ export function SdkPanel({ query, baseUrl }: SdkPanelProps) {
       <CodeBlock language={blockLang} code={code} />
 
       <p className="text-muted-foreground text-xs leading-relaxed">
-        Query tab matches the preset above. Use live panels below for <strong>Chat</strong> and{' '}
-        <strong>Streaming</strong>. Docs:{' '}
+        Query tab matches the preset above. Chat and stream tabs mirror the simulated panels below.
+        Docs:{' '}
         <a href="/docs/integration-guide" className="text-primary underline-offset-4 hover:underline">
           Integration guide
         </a>

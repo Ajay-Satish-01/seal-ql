@@ -3,32 +3,46 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { demoPresets } from '@/lib/demo-fixtures';
-import { SITE } from '@/lib/constants';
+import {
+  chatResponseFromPreset,
+  chatStreamDemoFromPreset,
+} from '@/lib/demo-chat-fixtures';
+import { chatMessageFromQuery } from '@/lib/doc-snippets';
 import { QueryConsole } from '@/components/demo/query-console';
 import { ResultsPanel } from '@/components/demo/results-panel';
 import { SdkPanel } from '@/components/demo/sdk-panel';
-import { DemoConnection } from '@/components/demo/demo-connection';
-import { ChatConsole } from '@/components/demo/chat-console';
-import { ChatStreamPanel } from '@/components/demo/chat-stream-panel';
+import { ChatDemoPanel } from '@/components/demo/chat-demo-panel';
+import { ChatStreamDemoPanel } from '@/components/demo/chat-stream-demo-panel';
 import { Callout } from '@/components/docs/callout';
 
 export default function DemoPage() {
   const [selectedId, setSelectedId] = useState(demoPresets[0]?.id ?? '');
-  const [baseUrl, setBaseUrl] = useState<string>(SITE.defaultBaseUrl);
-  const [apiKey, setApiKey] = useState('');
 
   const preset = useMemo(
     () => demoPresets.find((p) => p.id === selectedId) ?? demoPresets[0],
     [selectedId],
   );
 
+  const chatMessage = useMemo(
+    () => (preset ? chatMessageFromQuery(preset.query) : ''),
+    [preset],
+  );
+
+  const chatResponse = useMemo(
+    () => (preset ? chatResponseFromPreset(preset) : null),
+    [preset],
+  );
+
+  const streamDemo = useMemo(
+    () => (preset ? chatStreamDemoFromPreset(preset) : null),
+    [preset],
+  );
+
   const handleSelect = (id: string) => {
     setSelectedId(id);
   };
 
-  const liveDisabled = !baseUrl.trim();
-
-  if (!preset) {
+  if (!preset || !chatResponse || !streamDemo) {
     return null;
   }
 
@@ -43,40 +57,32 @@ export default function DemoPage() {
             Query &amp; chat demo
           </h1>
           <p className="text-muted-foreground max-w-2xl text-lg leading-relaxed">
-            Explore NL → validated SQL → results → Vega-Lite charts with sample data, or connect a{' '}
+            Explore NL → validated SQL → results → Vega-Lite charts and sample{' '}
+            <code>/v1/chat</code> responses using pre-generated fixtures. Run a live API with{' '}
+            <Link
+              href="/docs/quickstart"
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              Quickstart
+            </Link>{' '}
+            or{' '}
             <Link
               href="/docs/self-hosting"
               className="text-primary underline-offset-4 hover:underline"
             >
-              Docker-hosted API
-            </Link>{' '}
-            for live <code>/v1/query</code> and <code>/v1/chat</code>. SDK snippets support query,
-            chat, stream, and catalog modes.
+              self-hosting
+            </Link>
+            .
           </p>
         </div>
       </div>
 
       <div className="container mx-auto max-w-7xl px-4 py-10 sm:px-6">
-        <Callout variant="info" title="Simulated vs live">
-          <strong>Query output</strong> uses pre-generated JSON from the same <code>ChartEngine</code>{' '}
-          as production. <strong>Chat panels</strong> call your API when the connection settings below
-          are filled in. Setup:{' '}
-          <Link href="/docs/quickstart" className="text-primary underline-offset-4 hover:underline">
-            Quickstart
-          </Link>
-          ,{' '}
-          <Link href="/docs/chat-qa" className="text-primary underline-offset-4 hover:underline">
-            Chat &amp; Q&amp;A
-          </Link>
-          .
+        <Callout variant="info" title="Simulated output">
+          Query, chart, and chat panels use the same pre-generated JSON as{' '}
+          <code>make sync-docs-assets</code> fixtures — no API connection required. SDK snippets on
+          the right use the default local base URL; point them at your deployment when integrating.
         </Callout>
-
-        <DemoConnection
-          baseUrl={baseUrl}
-          apiKey={apiKey}
-          onBaseUrlChange={setBaseUrl}
-          onApiKeyChange={setApiKey}
-        />
 
         <div className="mt-8 grid gap-8 lg:grid-cols-12">
           <aside className="lg:col-span-3">
@@ -84,7 +90,7 @@ export default function DemoPage() {
           </aside>
           <section className="lg:col-span-5">
             <h2 className="text-foreground mb-4 text-sm font-semibold tracking-wider uppercase">
-              Output
+              Query output
             </h2>
             <ResultsPanel response={preset.response} />
           </section>
@@ -92,13 +98,13 @@ export default function DemoPage() {
             <h2 className="text-foreground mb-4 text-sm font-semibold tracking-wider uppercase">
               Integrate
             </h2>
-            <SdkPanel query={preset.query} baseUrl={baseUrl} />
+            <SdkPanel query={preset.query} />
           </aside>
         </div>
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-2">
-          <ChatConsole baseUrl={baseUrl} apiKey={apiKey} disabled={liveDisabled} />
-          <ChatStreamPanel baseUrl={baseUrl} apiKey={apiKey} disabled={liveDisabled} />
+        <div className="mt-12 grid gap-8 lg:grid-cols-2">
+          <ChatDemoPanel message={chatMessage} response={chatResponse} />
+          <ChatStreamDemoPanel demo={streamDemo} />
         </div>
       </div>
     </main>
