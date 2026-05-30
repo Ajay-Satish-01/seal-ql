@@ -70,9 +70,35 @@ export default function FeaturesPage() {
 
         <hr />
 
+        <h2>Schema-Grounded Chat &amp; Data Catalog</h2>
+        <p>
+          <code>POST /v1/chat</code> provides conversational analytics with session memory, optional
+          charts (<code>include_charts</code>), and SSE streaming (<code>stream=true</code>). A
+          global <strong>data catalog</strong> (auto-synced YAML) adds business descriptions to the
+          planner and prompt enhancers — edit <code>table_description</code> fields after{' '}
+          <code>make sync-catalog</code> or <code>POST /v1/catalog/sync</code>.
+        </p>
+        <ul>
+          <li>
+            <strong>Enhancement chain:</strong> schema-aware context, optional vector RAG (Chroma),{' '}
+            multi-turn summaries — on by default; disable per request with{' '}
+            <code>enhancement: false</code>.
+          </li>
+          <li>
+            <strong>Agent tools:</strong> OpenAI-format manifest with{' '}
+            <code>seal_query</code> and <code>seal_chat</code> — see{' '}
+            <Link href="/docs/agent-frameworks" className="text-primary">
+              Agent frameworks
+            </Link>
+            .
+          </li>
+        </ul>
+
+        <hr />
+
         <h2>API authentication</h2>
         <p>
-          Self-hosted deployments protect <code>/v1/query</code> and <code>/v1/schema</code> with a
+          Self-hosted deployments protect <code>/v1/*</code> routes (query, chat, catalog, schema) with a
           shared <code>X-API-Key</code> header. Production settings require a generated secret (
           <code>SEAL_AUTH_REQUIRED=true</code>, <code>SEAL_DEV_MODE=false</code>), reject
           placeholder keys even if dev mode was left on, optionally hide public Swagger (

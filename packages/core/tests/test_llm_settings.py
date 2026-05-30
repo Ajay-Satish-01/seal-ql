@@ -13,7 +13,6 @@ def _clear_llm_env(monkeypatch: pytest.MonkeyPatch) -> None:
     # Disable .env loading so on-disk values can't leak into Settings under test.
     monkeypatch.setitem(Settings.model_config, "env_file", None)
     for name in (
-        "LLM_TYPE",
         "OLLAMA_PROFILE",
         "LLM_MODEL",
         "LLM_BASE_URL",
@@ -39,7 +38,6 @@ def test_ollama_profile_disabled_uses_cloud_routing(monkeypatch: pytest.MonkeyPa
     monkeypatch.setenv("OLLAMA_PROFILE", "disabled")
     monkeypatch.setenv("LLM_MODEL", "gemini/gemini-1.5-flash")
     monkeypatch.setenv("LLM_API_KEY", "test-key")
-    monkeypatch.setenv("LLM_TYPE", "")
     get_settings.cache_clear()
 
     settings = get_settings()
@@ -55,7 +53,6 @@ def test_local_ollama_when_profile_default(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setenv("OLLAMA_PROFILE", "default")
     monkeypatch.setenv("LLM_MODEL", "llama3.2:1b")
     monkeypatch.delenv("LLM_API_KEY", raising=False)
-    monkeypatch.delenv("LLM_TYPE", raising=False)
 
     settings = get_settings()
     assert not settings.use_cloud_llm()
@@ -81,19 +78,6 @@ def test_warn_cloud_model_without_disabled_profile(monkeypatch: pytest.MonkeyPat
 
     warnings = get_settings().collect_llm_configuration_warnings()
     assert any("OLLAMA_PROFILE" in w and "disabled" in w for w in warnings)
-
-
-def test_warn_legacy_llm_type_field(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("OLLAMA_PROFILE", "disabled")
-    monkeypatch.setenv("LLM_MODEL", "gemini/gemini-1.5-flash")
-    monkeypatch.setenv("LLM_API_KEY", "key")
-    monkeypatch.setenv("LLM_TYPE", "cloud")
-    get_settings.cache_clear()
-
-    settings = get_settings()
-    assert settings.legacy_llm_type == "cloud"
-    warnings = settings.collect_llm_configuration_warnings()
-    assert any("LLM_TYPE" in w for w in warnings)
 
 
 def test_warn_ollama_model_with_disabled_profile(monkeypatch: pytest.MonkeyPatch) -> None:

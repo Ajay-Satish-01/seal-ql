@@ -10,7 +10,7 @@ We use a monorepo architecture managed by modern tooling:
 
 * **Backend (Python)**: Configured as a unified `uv` workspace. The workspace root `pyproject.toml` references:
   * `apps/api` (FastAPI app container)
-  * `packages/core` (Schema schemas & introspectors)
+  * `packages/core` (Planner, chat, catalog, enhancement, vector RAG, introspection)
   * `packages/sql` (AST-based SQL validators)
   * `packages/charts` (Vega-Lite visual generators)
   * `packages/semantic` (Metrics semantic compiler)
@@ -46,6 +46,9 @@ make up
 
 # Seed Postgres with sample analytics data
 make seed
+
+# Optional: sync data catalog YAML from live schema
+make sync-catalog
 ```
 
 ### 3. Pre-commit & Push Hook Installation

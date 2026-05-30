@@ -46,6 +46,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,
+        env_ignore_empty=True,
     )
 
     # ============================================================
@@ -74,7 +75,7 @@ class Settings(BaseSettings):
     )
     llm_model: str = Field(
         default="ollama/llama3.2:1b",
-        description="LiteLLM model identifier (e.g. ollama/llama3.2:1b, gemini/gemini-1.5-flash).",
+        description="LiteLLM model identifier (e.g. ollama/llama3.2:1b, gemini/gemini-2.0-flash).",
     )
     llm_base_url: str = Field(
         default="http://ollama:11434",
@@ -100,11 +101,6 @@ class Settings(BaseSettings):
         default=2,
         description="Retry attempts for LLM structured output validation.",
     )
-    legacy_llm_type: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices("LLM_TYPE", "llm_type"),
-        description="Deprecated env var; kept only to emit a configuration warning.",
-    )
 
     @field_validator("ollama_profile", mode="before")
     @classmethod
@@ -113,12 +109,46 @@ class Settings(BaseSettings):
             return OLLAMA_PROFILE_DEFAULT
         return str(value).strip().lower()
 
-    @field_validator("legacy_llm_type", mode="before")
+    @field_validator(
+        "llm_api_key",
+        "gemini_api_key",
+        "openai_api_key",
+        "anthropic_api_key",
+        mode="before",
+    )
     @classmethod
-    def _normalize_legacy_llm_type(cls, value: object) -> str | None:
-        if value is None or str(value).strip() == "":
+    def _normalize_optional_api_keys(cls, value: object) -> str | None:
+        if value is None:
             return None
-        return str(value).strip()
+        if isinstance(value, str):
+            stripped = value.strip()
+            return stripped if stripped else None
+        text = str(value).strip()
+        return text if text else None
+
+    @field_validator(
+        "data_catalog_path",
+        "semantic_directory",
+        "rag_documents_path",
+        "seal_enhancers",
+        "vector_store_class",
+        "vector_store_config",
+        mode="before",
+    )
+    @classmethod
+    def _empty_str_to_none(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, str) and not value.strip():
+            return None
+        return str(value).strip() if isinstance(value, str) else str(value)
+
+    @field_validator("vector_store", mode="before")
+    @classmethod
+    def _normalize_vector_store(cls, value: object) -> str:
+        if value is None or str(value).strip() == "":
+            return "none"
+        return str(value).strip().lower()
 
     def use_cloud_llm(self) -> bool:
         """True when OLLAMA_PROFILE is disabled (cloud provider, not Ollama)."""
@@ -172,13 +202,6 @@ class Settings(BaseSettings):
         warnings: list[str] = []
         cloud_mode = self.use_cloud_llm()
 
-        if self.legacy_llm_type:
-            warnings.append(
-                f"LLM_TYPE={self.legacy_llm_type!r} is no longer used. "
-                f"Set OLLAMA_PROFILE={OLLAMA_PROFILE_DISABLED!r}, a cloud LLM_MODEL "
-                "(e.g. gemini/…), and LLM_API_KEY or a provider API key."
-            )
-
         if self.ollama_profile not in SUPPORTED_OLLAMA_PROFILES:
             warnings.append(
                 f"OLLAMA_PROFILE={self.ollama_profile!r} is not recognized. "
@@ -189,7 +212,7 @@ class Settings(BaseSettings):
         if cloud_mode and self.is_ollama_model():
             warnings.append(
                 f"OLLAMA_PROFILE=disabled but LLM_MODEL={self.llm_model!r} looks like Ollama. "
-                "Set LLM_MODEL to a cloud id (e.g. gemini/gemini-1.5-flash)."
+                "Set LLM_MODEL to a cloud id (e.g. gemini/gemini-2.0-flash)."
             )
 
         if not cloud_mode and self.is_cloud_model():
@@ -223,6 +246,31 @@ class Settings(BaseSettings):
     def log_llm_configuration_warnings(self) -> None:
         for message in self.collect_llm_configuration_warnings():
             logger.warning("LLM configuration: %s", message)
+
+    def collect_vector_store_configuration_errors(self) -> list[str]:
+        """Fatal misconfiguration for VECTOR_STORE (e.g. chroma without chromadb)."""
+        from seal_core.vector.factory import chroma_is_available
+
+        errors: list[str] = []
+        if self.vector_store.lower() == "chroma" and not chroma_is_available():
+            errors.append(
+                "VECTOR_STORE=chroma but chromadb is not installed. "
+                "Set VECTOR_STORE=none, or install seal-core[chroma] "
+                "(local: uv sync --package seal-core --extra chroma; "
+                "Docker: SEAL_EXTRA=chroma in .env and rebuild the api image)."
+            )
+        return errors
+
+    def log_vector_store_configuration(self) -> None:
+        """Log active vector backend at startup."""
+        if self.vector_store_class:
+            logger.info("Vector store: custom (%s)", self.vector_store_class)
+        elif self.vector_store.lower() == "chroma":
+            logger.info("Vector store: chroma (persist_path=%s)", self.chroma_persist_path)
+        elif self.vector_store.lower() != "none":
+            logger.warning("Vector store: unknown %r, will fall back to noop", self.vector_store)
+        else:
+            logger.info("Vector store: none (RAG disabled)")
 
     # ============================================================
     # Query Safety — Sanitizer
@@ -382,6 +430,91 @@ class Settings(BaseSettings):
     )
 
     # ============================================================
+    # Data catalog (auto-generated YAML)
+    # ============================================================
+
+    data_catalog_path: str | None = Field(
+        default="config/catalog.yaml",
+        description="Path to auto-generated data catalog YAML.",
+    )
+    catalog_auto_sync: bool = Field(
+        default=True,
+        description="Sync catalog from database schema on API startup.",
+    )
+    catalog_prune_removed: bool = Field(
+        default=True,
+        description="Remove catalog entries for relations no longer in the database.",
+    )
+    data_catalog_strict: bool = Field(
+        default=False,
+        description="Fail startup if catalog references unknown tables.",
+    )
+
+    # ============================================================
+    # Chat / enhancement
+    # ============================================================
+
+    chat_enhancement_enabled: bool = Field(
+        default=True,
+        description="Enable prompt enhancement orchestrator for /v1/chat.",
+    )
+    chat_session_ttl_seconds: int = Field(default=3600, description="Session TTL in seconds.")
+    chat_max_history_messages: int = Field(default=20, description="Max messages per session.")
+    chat_summarize_after_messages: int = Field(
+        default=12,
+        description="Summarize conversation when history exceeds this count.",
+    )
+    chat_recent_messages: int = Field(
+        default=6,
+        description="Recent messages kept verbatim at answer stage.",
+    )
+    chat_answer_preview_rows: int = Field(
+        default=20,
+        description="Result rows fed to the LLM as grounding facts at answer stage.",
+    )
+    chat_max_context_tables: int = Field(
+        default=8,
+        description="Max tables in focused schema/catalog context.",
+    )
+    seal_enhancers: str | None = Field(
+        default=None,
+        description="Comma-separated dotted paths to extra PromptEnhancer classes.",
+    )
+
+    # ============================================================
+    # Vector RAG
+    # ============================================================
+
+    vector_store: str = Field(
+        default="none",
+        description="Vector store backend: none, chroma, or custom via VECTOR_STORE_CLASS.",
+    )
+    vector_store_class: str | None = Field(
+        default=None,
+        description="Dotted path to custom VectorStore implementation.",
+    )
+    vector_store_config: str | None = Field(
+        default=None,
+        description="Optional JSON config for custom vector store.",
+    )
+    chroma_persist_path: str = Field(
+        default="/app/data/chroma",
+        description="Chroma persistence directory.",
+    )
+    embedding_model: str = Field(
+        default="text-embedding-3-small",
+        description="LiteLLM embedding model identifier.",
+    )
+    rag_documents_path: str | None = Field(
+        default=None,
+        description="Optional directory of documents to index for RAG.",
+    )
+    rag_top_k: int = Field(default=5, description="Vector search top-k.")
+    rag_max_context_tokens: int = Field(default=1500, description="Max RAG text in prompt.")
+    rag_embed_batch_size: int = Field(default=32, description="Embedding batch size.")
+    rag_embed_max_concurrent: int = Field(default=4, description="Max concurrent embedding calls.")
+
+    # ============================================================
     # Postgres (used by docker-compose, not directly by app code)
     # ============================================================
 
@@ -401,3 +534,26 @@ def get_settings() -> Settings:
 def validate_llm_configuration() -> None:
     """Log LLM configuration warnings once (delegates to Settings)."""
     get_settings().log_llm_configuration_warnings()
+
+
+def validate_vector_store_configuration() -> None:
+    """Raise if VECTOR_STORE cannot be satisfied (e.g. chroma without chromadb)."""
+    settings = get_settings()
+    errors = settings.collect_vector_store_configuration_errors()
+    if errors:
+        raise RuntimeError("; ".join(errors))
+    settings.log_vector_store_configuration()
+
+
+def settings_env_names() -> list[str]:
+    """Canonical uppercase environment variable names accepted by :class:`Settings`."""
+    alias_overrides: dict[str, str] = {
+        "api_key": "SEAL_API_KEY",
+        "auth_required": "SEAL_AUTH_REQUIRED",
+        "disable_public_docs": "SEAL_DISABLE_DOCS",
+        "dev_mode": "SEAL_DEV_MODE",
+    }
+    names = {
+        alias_overrides.get(field_name, field_name.upper()) for field_name in Settings.model_fields
+    }
+    return sorted(names)

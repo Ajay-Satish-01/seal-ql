@@ -14,6 +14,8 @@ export default function ApiReferencePage() {
   const health = endpoints.find((e) => e.path === '/health');
   const schema = endpoints.find((e) => e.path === '/v1/schema');
   const query = endpoints.find((e) => e.path === '/v1/query');
+  const chat = endpoints.find((e) => e.path === '/v1/chat');
+  const catalog = endpoints.find((e) => e.path === '/v1/catalog');
 
   return (
     <div className="max-w-3xl">
@@ -106,6 +108,69 @@ export default function ApiReferencePage() {
               ]}
             />
             <CodeBlock language="json" code={schemaToExample('QueryResponse')} />
+          </EndpointBlock>
+        ) : null}
+
+        {catalog ? (
+          <EndpointBlock
+            method={catalog.method}
+            path={catalog.path}
+            summary={catalog.summary}
+            description={catalog.description}
+          >
+            <p>
+              Global auto-generated data catalog (business descriptions). Used by chat and query
+              planners. See <Link href="/docs/data-catalog">Data catalog</Link>.
+            </p>
+            <h4 className="text-foreground mt-6 mb-2 text-sm font-semibold">Response</h4>
+            <CodeBlock language="json" code={schemaToExample('CatalogResponse')} />
+          </EndpointBlock>
+        ) : null}
+
+        {chat ? (
+          <EndpointBlock
+            method={chat.method}
+            path={chat.path}
+            summary={chat.summary}
+            description={chat.description}
+          >
+            <ParamTable
+              title="Request body"
+              rows={[
+                { name: 'message', type: 'string', required: true, description: 'User message.' },
+                {
+                  name: 'session_id',
+                  type: 'string',
+                  required: false,
+                  description: 'Conversation session for follow-ups.',
+                },
+                {
+                  name: 'include_charts',
+                  type: 'boolean',
+                  required: false,
+                  description: 'Attach Vega-Lite chart when SQL runs.',
+                },
+                {
+                  name: 'stream',
+                  type: 'boolean',
+                  required: false,
+                  description: 'SSE stream for final answer.',
+                },
+                {
+                  name: 'enhancement',
+                  type: 'boolean',
+                  required: false,
+                  description: 'Override CHAT_ENHANCEMENT_ENABLED.',
+                },
+              ]}
+            />
+            <CodeBlock language="json" code={schemaToExample('ChatRequest')} />
+            <h4 className="text-foreground mt-6 mb-2 text-sm font-semibold">Response (JSON)</h4>
+            <CodeBlock language="json" code={schemaToExample('ChatResponse')} />
+            <p className="mt-4">
+              Examples: <Link href="/docs/chat-qa">Chat & Q&A</Link>,{' '}
+              <Link href="/docs/chat-streaming">Streaming</Link>.
+            </p>
           </EndpointBlock>
         ) : null}
 

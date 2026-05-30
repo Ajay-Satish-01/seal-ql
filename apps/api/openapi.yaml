@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Seal API
-  description: AI-powered SQL generation and execution.
+  description: AI-powered SQL generation, chat Q&A, and visualization.
   version: 0.1.0
 paths:
   /health:
@@ -69,8 +69,129 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - APIKeyHeader: []
+  /v1/chat:
+    post:
+      summary: Chat
+      description: Schema-grounded conversational Q&A with optional charts and streaming.
+      operationId: chat_v1_chat_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyHeader: []
+  /v1/catalog:
+    get:
+      summary: Get Catalog
+      description: Return the loaded global data catalog.
+      operationId: get_catalog_v1_catalog_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogResponse'
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
+      security:
+      - APIKeyHeader: []
+  /v1/catalog/sync:
+    post:
+      summary: Sync Catalog Route
+      description: Re-sync catalog YAML from live database schema.
+      operationId: sync_catalog_route_v1_catalog_sync_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogSyncResponse'
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
+      security:
+      - APIKeyHeader: []
 components:
   schemas:
+    CatalogResponse:
+      properties:
+        version:
+          type: integer
+          title: Version
+        generated_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Generated At
+        schema_hash:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Schema Hash
+        tables:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Tables
+      type: object
+      required:
+      - version
+      title: CatalogResponse
+    CatalogSyncResponse:
+      properties:
+        added:
+          type: integer
+          title: Added
+        updated:
+          type: integer
+          title: Updated
+        preserved:
+          type: integer
+          title: Preserved
+        removed:
+          type: integer
+          title: Removed
+        path:
+          type: string
+          title: Path
+      type: object
+      required:
+      - added
+      - updated
+      - preserved
+      - removed
+      - path
+      title: CatalogSyncResponse
     ChartSpec:
       properties:
         chart_type:
@@ -106,6 +227,66 @@ components:
       - metric_card
       title: ChartType
       description: Supported chart types for visualization.
+    ChatMessageSchema:
+      properties:
+        role:
+          type: string
+          title: Role
+          description: user, assistant, or system
+        content:
+          type: string
+          title: Content
+          description: Message content.
+      type: object
+      required:
+      - role
+      - content
+      title: ChatMessageSchema
+    ChatRequest:
+      properties:
+        message:
+          type: string
+          title: Message
+          description: Latest user message.
+        session_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Session Id
+          description: Conversation session id.
+        messages:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ChatMessageSchema'
+            type: array
+          - type: 'null'
+          title: Messages
+          description: Optional full history override.
+        stream:
+          type: boolean
+          title: Stream
+          description: Stream final answer as SSE when true.
+          default: false
+        include_charts:
+          type: boolean
+          title: Include Charts
+          description: When true, attach Vega-Lite chart if SQL runs.
+          default: false
+        enhancement:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Enhancement
+          description: Override CHAT_ENHANCEMENT_ENABLED for this request.
+        database_id:
+          type: string
+          title: Database Id
+          description: Target database identifier.
+          default: default
+      type: object
+      required:
+      - message
+      title: ChatRequest
     ColumnInfo:
       properties:
         name:

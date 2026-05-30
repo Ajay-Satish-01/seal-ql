@@ -1,48 +1,62 @@
 # 🌌 Seal - AI Assistant Rules (GitHub Copilot)
 
-These are the global rules for AI assistants (Cursor, Claude, Windsurf, Copilot, Gemini) interacting with the Seal codebase.
+Global rules for AI assistants working in the Seal codebase.
 
 ## 🏛️ Project Overview
-This project is an AI-powered SQL query generation, validation, and visualization SDK. It enables natural language querying over databases with client/server safety and native visual chart rendering.
+
+AI-powered SQL generation, validation, and visualization with **schema-grounded chat Q&A**, a **global data catalog**, optional **vector RAG**, and **agent-compatible HTTP tools**.
 
 ## 🛠️ Tech Stack & Tooling
-- **Python**: 3.11+ using `uv` for workspace and dependency management.
-- **TypeScript**: Using `pnpm` for the TypeScript SDK.
-- **Backend API**: FastAPI (located in `apps/api/`).
-- **Core LLM Logic**: LiteLLM + Instructor + Ollama (located in `packages/core/`).
-- **SQL Validation**: SQLGlot (located in `packages/sql/`).
-- **Databases**: Postgres (TimescaleDB) and DuckDB.
-- **Linting & Formatting**:
-  - Python: `ruff`
-  - TypeScript: `prettier` & `eslint`
+
+- **Python**: 3.11+ with `uv` workspaces
+- **TypeScript**: `pnpm` for SDK and `apps/web`
+- **Backend**: FastAPI (`apps/api/`) — `/v1/query`, `/v1/chat`, `/v1/catalog`
+- **Core**: LiteLLM + Instructor; chat in `packages/core/seal_core/chat/`; catalog in `catalog/`; enhancers in `enhancement/`; vectors in `vector/`
+- **SQL**: SQLGlot (`packages/sql/`)
+- **Databases**: Postgres (TimescaleDB), DuckDB
+- **Lint**: `ruff`, `prettier`, `eslint`
 
 ## 📂 Architecture Mapping
-- **`apps/api/`**: The FastAPI backend service.
-- **`packages/core/`**: Core Models, Introspection & Planner.
-- **`packages/sql/`**: Dialect Validators & AST Safety checkers.
-- **`packages/charts/`**: Vega-Lite Spec Generators.
-- **`packages/semantic/`**: Semantic metrics registries.
-- **`sdks/python/`**: Python SDK wrapper.
-- **`sdks/typescript/`**: TypeScript SDK wrapper.
-- **`scripts/`**: Contains database seed scripts (`seed.sql`).
+
+| Path | Responsibility |
+| ---- | -------------- |
+| `apps/api/` | Routes, lifespan (catalog sync, enhancer chain, chat service) |
+| `packages/core/seal_core/pipeline/` | Shared NL → SQL execution for query + chat |
+| `packages/core/seal_core/chat/` | ChatService, sessions, streaming SSE |
+| `packages/core/seal_core/catalog/` | YAML catalog sync + registry |
+| `packages/core/seal_core/enhancement/` | PromptEnhancer orchestrator |
+| `packages/sql/` | AST validation |
+| `packages/charts/` | Vega-Lite specs |
+| `config/` | `catalog.example.yaml`, `seal-tools.openai.json` |
+| `sdks/python`, `sdks/typescript` | Client SDKs |
 
 ## 📋 Standard Operating Procedures
 
-### 1. Modifying Python Code
-- Always run commands via `uv`. E.g., `uv run pytest -v` or `uv run ruff check .`
-- Ensure any new package dependencies are added using `uv add` to the correct workspace package.
-- Respect the strict quality gate: run `pre-commit run --all-files` to ensure `ruff` formatting passes.
+### Python
 
-### 2. Modifying TypeScript Code
-- Navigate to `sdks/typescript/` and use `pnpm` for all operations.
-- Run `pnpm install` if dependencies are modified.
-- Validate with `eslint` and `prettier`.
+- Use `uv run` for tests and tools (`uv run pytest -v`, `uv run ruff check .`)
+- Add deps with `uv add` to the correct workspace package
+- All LLM-generated SQL must pass `packages/sql/` validation
 
-### 3. Running Services locally
-- Instruct the user to run `make up` to spin up the API, Postgres, and Ollama containers via Docker Compose.
-- If database schema testing is needed, mention `make seed` to populate TimescaleDB hypertables.
+### TypeScript
 
-### 4. Code Generation Rules
-- **Safety First**: Any dynamically generated SQL must pass through the `SQLGlot` AST validator to prevent destructive statements (`DROP`, `DELETE`, etc.).
-- **Type Safety**: Maintain strict type hints in Python (Pydantic/Instructor) and TypeScript interfaces.
-- **LLM Context**: When modifying LLM prompts, consider the context limits and keep instructions clear for the LiteLLM/Ollama integrations.
+- SDK: `cd sdks/typescript && pnpm install`
+- Docs app: `make check-web` or `cd apps/web && pnpm build`
+
+### Local services
+
+- `make up` → API, Postgres, Ollama (if profile default)
+- `make seed` → analytics seed schema
+- `make sync-catalog` → refresh `config/catalog.yaml`
+
+### Chat / catalog changes
+
+- Preserve user descriptions on catalog re-sync (merge, do not overwrite `table_description`)
+- Default `VECTOR_STORE=none`; Chroma only via optional extra
+- Chat streaming: `seal.meta` event then OpenAI-style chunks, then `[DONE]`
+
+### Code generation rules
+
+- **Safety**: Block destructive SQL; enforce LIMIT
+- **Types**: Pydantic + strict Python hints; TS types mirror OpenAPI
+- **Docs**: Update README, SETUP, DEPLOYMENT, AGENTS.md, and `apps/web` doc pages when adding API surface

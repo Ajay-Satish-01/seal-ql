@@ -15,6 +15,7 @@ Async usage:
         result = await client.query("Show me monthly revenue")
 """
 
+from seal._sse import ChatStreamEvent
 from seal.client import AsyncSeal, Seal
 from seal.exceptions import (
     ConnectionError,
@@ -24,8 +25,10 @@ from seal.exceptions import (
     ServerError,
 )
 from seal.models import (
+    CatalogResponse,
     ChartSpec,
     ChartType,
+    ChatResponse,
     ColumnMetadata,
     DatabaseSchema,
     HealthResponse,
@@ -43,6 +46,9 @@ __all__ = [
     "ChartType",
     "HealthResponse",
     "DatabaseSchema",
+    "ChatResponse",
+    "CatalogResponse",
+    "ChatStreamEvent",
     # Exceptions
     "SealError",
     "SealConnectionError",

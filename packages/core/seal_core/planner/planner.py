@@ -34,8 +34,43 @@ class QueryPlanner:
         self.api_base = api_base or get_api_base()
         self.api_key = get_api_key()
 
+    def _catalog_context(
+        self,
+        data_catalog: Any | None,
+        table_names: list[str] | None,
+    ) -> str:
+        if data_catalog is None:
+            return ""
+        return data_catalog.to_prompt_context(table_names=table_names)
+
+    def _schema_context(
+        self,
+        schema: DatabaseSchema,
+        table_names: list[str] | None,
+    ) -> str:
+        if not table_names:
+            return schema.to_prompt_context()
+        tables = [t for t in schema.tables if t.name.lower() in {n.lower() for n in table_names}]
+        subset = DatabaseSchema(
+            dialect=schema.dialect,
+            tables=tables,
+            relationships=[
+                r
+                for r in schema.relationships
+                if r.from_table.lower() in {n.lower() for n in table_names}
+                or r.to_table.lower() in {n.lower() for n in table_names}
+            ],
+            has_timescaledb=schema.has_timescaledb,
+        )
+        return subset.to_prompt_context()
+
     async def generate_plan(
-        self, schema: DatabaseSchema, question: str, semantic_registry: Any | None = None
+        self,
+        schema: DatabaseSchema,
+        question: str,
+        semantic_registry: Any | None = None,
+        data_catalog: Any | None = None,
+        table_names: list[str] | None = None,
     ) -> QueryPlan:
         """
         Generates a QueryPlan for the given natural language question and database schema.
@@ -51,13 +86,17 @@ class QueryPlanner:
         Raises:
             Exception: If the LLM fails to generate a valid plan.
         """
-        schema_context = schema.to_prompt_context()
+        schema_context = self._schema_context(schema, table_names)
         semantic_context = ""
         if semantic_registry is not None:
             semantic_context = semantic_registry.get_context_string()
+        catalog_context = self._catalog_context(data_catalog, table_names)
 
         system_prompt = PLANNER_SYSTEM_PROMPT.format(
-            schema_context=schema_context, dialect=schema.dialect, semantic_context=semantic_context
+            schema_context=schema_context,
+            catalog_context=catalog_context,
+            dialect=schema.dialect,
+            semantic_context=semantic_context,
         )
         user_prompt = PLANNER_USER_PROMPT.format(question=question)
 
@@ -92,7 +131,17 @@ class QueryPlanner:
             logger.error(f"Failed to generate QueryPlan: {str(e)}")
             raise
 
-    async def repair_plan(self, question: str, original_sql: str, error_message: str) -> QueryPlan:
+    async def repair_plan(
+        self,
+        question: str,
+        original_sql: str,
+        error_message: str,
+        *,
+        schema: DatabaseSchema | None = None,
+        semantic_registry: Any | None = None,
+        data_catalog: Any | None = None,
+        table_names: list[str] | None = None,
+    ) -> QueryPlan:
         """
         Attempts to repair a failed SQL query using the LLM.
 
@@ -104,8 +153,22 @@ class QueryPlanner:
         Returns:
             A new, repaired QueryPlan.
         """
-        system_prompt = REPAIR_SYSTEM_PROMPT.format(
-            question=question, original_sql=original_sql, error_message=error_message
+        extra = ""
+        if schema is not None:
+            catalog_context = self._catalog_context(data_catalog, table_names)
+            semantic_context = ""
+            if semantic_registry is not None:
+                semantic_context = semantic_registry.get_context_string()
+            extra = (
+                f"\n\nSchema context:\n{self._schema_context(schema, table_names)}"
+                f"{catalog_context}{semantic_context}"
+            )
+
+        system_prompt = (
+            REPAIR_SYSTEM_PROMPT.format(
+                question=question, original_sql=original_sql, error_message=error_message
+            )
+            + extra
         )
 
         messages: list[dict[str, Any]] = [

@@ -1,0 +1,57 @@
+{
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "seal_get_schema",
+        "description": "Discover database tables, columns, foreign keys, and Timescale metadata.",
+        "parameters": { "type": "object", "properties": {}, "additionalProperties": false }
+      },
+      "x-seal": { "method": "GET", "path": "/v1/schema" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "seal_get_catalog",
+        "description": "Read the global data catalog with business descriptions per table or view.",
+        "parameters": { "type": "object", "properties": {}, "additionalProperties": false }
+      },
+      "x-seal": { "method": "GET", "path": "/v1/catalog" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "seal_query",
+        "description": "Translate natural language to safe SQL, execute, and return results with a Vega-Lite chart.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": { "type": "string", "description": "Natural language question" },
+            "database_id": { "type": "string", "default": "default" }
+          },
+          "required": ["query"]
+        }
+      },
+      "x-seal": { "method": "POST", "path": "/v1/query" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "seal_chat",
+        "description": "Conversational schema-grounded Q&A with optional charts, sessions, and streaming.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "message": { "type": "string" },
+            "session_id": { "type": "string" },
+            "include_charts": { "type": "boolean", "default": false },
+            "stream": { "type": "boolean", "default": false },
+            "enhancement": { "type": "boolean" }
+          },
+          "required": ["message"]
+        }
+      },
+      "x-seal": { "method": "POST", "path": "/v1/chat" }
+    }
+  ]
+}

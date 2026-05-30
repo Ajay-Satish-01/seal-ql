@@ -19,6 +19,17 @@ const sidebarGroups = [
     ],
   },
   {
+    title: 'Chat & Q&A',
+    links: [
+      { title: 'Chat overview', href: '/docs/chat-qa' },
+      { title: 'Data catalog', href: '/docs/data-catalog' },
+      { title: 'Prompt enhancement', href: '/docs/prompt-enhancement' },
+      { title: 'Vector RAG', href: '/docs/vector-rag' },
+      { title: 'Streaming', href: '/docs/chat-streaming' },
+      { title: 'Agent frameworks', href: '/docs/agent-frameworks' },
+    ],
+  },
+  {
     title: 'Integration',
     links: [
       { title: 'API Reference', href: '/docs/api-reference' },

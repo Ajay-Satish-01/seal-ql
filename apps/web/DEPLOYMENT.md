@@ -26,7 +26,15 @@ next build
 
 ## Environment variables
 
-Optional frontend env vars can be added in the Vercel dashboard. The demo uses static fixtures; no API URL is required for the docs site alone.
+Optional frontend env vars can be added in the Vercel dashboard.
+
+| Variable | Purpose |
+| -------- | ------- |
+| `NEXT_PUBLIC_*` | Only if you add client-side defaults (not required today) |
+
+The **query demo** uses static fixtures by default. The **chat panels** on `/demo` call a live API when the user sets base URL and API key in the UI — no server env required for static doc pages.
+
+Chat and catalog documentation is fully static; OpenAPI is copied from `apps/api` during `make sync-docs-assets`.
 
 ## Custom domain
 

@@ -5,7 +5,7 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![Code Style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-An **AI-powered SQL query generation, validation, and visualization SDK** enabling natural language querying over multi-dialect databases with robust client/server safety and native visual chart rendering.
+An **AI-powered SQL query generation, validation, and visualization SDK** with **schema-grounded conversational Q&A** — natural language over multi-dialect databases, zero-trust SQL safety, optional Vega-Lite charts, and agent-framework-compatible HTTP tools.
 
 ```ts
 import { Seal } from "seal";
@@ -15,10 +15,16 @@ const client = new Seal({
   apiKey: process.env.SEAL_API_KEY,
 });
 
+// One-shot analytics (always returns a chart when applicable)
 const result = await client.query("Monthly revenue trends by region");
-console.log(result.sql);    // Validated, safe SQL
-console.log(result.results);  // Executed rows
-console.log(result.chart);    // Vega-Lite chart spec (when applicable)
+console.log(result.sql, result.results, result.chart);
+
+// Multi-turn Q&A with optional charts and streaming
+const chat = await client.chat("What drove revenue last quarter?", {
+  includeCharts: true,
+  sessionId: "user-123",
+});
+console.log(chat.message, chat.sql);
 ```
 
 ---
@@ -34,14 +40,23 @@ console.log(result.chart);    // Vega-Lite chart spec (when applicable)
                             ▼
        ┌─────────────────────────────────────────┐
        │             API Gateway                 │
-       │          (FastAPI / Uvicorn)            │
+       │   /v1/query · /v1/chat · /v1/catalog   │
        └────────────────────┬────────────────────┘
                             │
+              ┌─────────────┴─────────────┐
+              ▼                           ▼
+       ┌──────────────┐           ┌──────────────────┐
+       │ ChatService  │           │ Query Planner    │
+       │ + Enhancers  │           │ (LiteLLM +       │
+       │ + Sessions   │           │  Instructor)     │
+       └──────┬───────┘           └────────┬─────────┘
+              │                            │
+              └─────────────┬──────────────┘
                             ▼
        ┌─────────────────────────────────────────┐
-       │            Query Planner (LLM)          │
-       │     (LiteLLM + Instructor + Ollama)    │
+       │     Shared SQL pipeline + Data catalog   │
        └────────────────────┬────────────────────┘
+                            ▼
                             │
                             ▼
        ┌─────────────────────────────────────────┐
@@ -66,6 +81,8 @@ console.log(result.chart);    // Vega-Lite chart spec (when applicable)
 
 ## 🚀 Key Features
 
+* **Schema-Grounded Chat (Q&A)**: `POST /v1/chat` with session memory, prompt enhancement (schema + optional vector RAG + multi-turn), SSE streaming, and optional charts via `include_charts`.
+* **Global Data Catalog**: Auto-synced YAML (`config/catalog.yaml`) with business descriptions injected into query, chat, and planner paths; `GET /v1/catalog` and `POST /v1/catalog/sync`.
 * **Advanced Schema Introspection**: Deep introspection covering normal tables, database views, materialized views, foreign/primary key constraints, and TimescaleDB-specific features (hypertables, continuous aggregations) with automatic extension detection.
 * **Semantic Metric Layer**: Map raw schema structures to business logic with declarative YAML metric/dimension models to enhance LLM context accuracy.
 * **Self-Healing Repair Loops**: Automatic validation and execution error recovery that feeds exact dialect errors back into the LLM planner for multi-turn SQL correction.
@@ -123,6 +140,21 @@ Seed Postgres with a production-grade analytics schema (containing normal tables
 
 ```bash
 make seed
+```
+
+Optional: sync the data catalog from the live schema (also runs on API startup when `CATALOG_AUTO_SYNC=true`):
+
+```bash
+make sync-catalog
+```
+
+Try chat (requires `SEAL_API_KEY` in `.env` when auth is enabled):
+
+```bash
+curl -s -X POST http://localhost:8000/v1/chat \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $SEAL_API_KEY" \
+  -d '{"message":"What tables exist?"}' | jq .
 ```
 
 ---
@@ -191,24 +223,43 @@ pre-commit run --all-files
 ├── apps
 │   └── api/                     # FastAPI back-end service
 ├── packages
-│   ├── core/                    # Core Models, Introspection & Planner
+│   ├── core/                    # Planner, chat, catalog, enhancement, vector RAG
 │   ├── sql/                     # Dialect Validators & AST Safety checkers
 │   ├── charts/                  # Vega-Lite Spec Generators
 │   └── semantic/                # Semantic metrics registries
+├── config
+│   ├── catalog.example.yaml     # Sample data catalog (descriptions)
+│   └── seal-tools.openai.json   # OpenAI tool manifest for agents
+├── docs
+│   ├── chat-enhancement.md      # Prompt enhancer chain (contributors)
+│   └── integrations/            # Vector stores, agent frameworks, custom enhancers
 ├── sdks
 │   ├── python/                  # Python SDK wrapper
 │   └── typescript/              # TypeScript SDK wrapper
 ├── scripts
-│   └── seed.sql                 # TimescaleDB & Postgres analytics schema seed
+│   ├── seed.sql                 # TimescaleDB & Postgres analytics schema seed
+│   └── sync_catalog.py          # CLI catalog sync
 ├── pyproject.toml               # Master uv Workspace Configuration
 └── docker-compose.yml           # Core Docker services manifest
 ```
 
 ---
 
+## 📡 API surface
+
+| Endpoint | Purpose |
+| -------- | ------- |
+| `POST /v1/query` | Natural language → validated SQL, results, chart |
+| `POST /v1/chat` | Conversational Q&A (`session_id`, `include_charts`, `stream`, `enhancement`) |
+| `GET /v1/catalog` | Global data catalog (business descriptions) |
+| `POST /v1/catalog/sync` | Re-sync catalog YAML from live schema |
+| `GET /v1/schema` | Introspected database schema |
+
+User-facing guides live on the docs site (`apps/web`, `/docs/chat-qa`) or in [SETUP.md](SETUP.md) and [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## 📦 Publishing
 
-Self-host with Docker (`seal/api`), or install the SDKs from PyPI/npm as `seal`. See [RELEASING.md](RELEASING.md) and [SETUP.md](SETUP.md).
+Self-host with Docker (`seal/api`), or install the SDKs from PyPI/npm as `seal`. See [RELEASING.md](RELEASING.md), [SETUP.md](SETUP.md), and [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## 📜 License
 

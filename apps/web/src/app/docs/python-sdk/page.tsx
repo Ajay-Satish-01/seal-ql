@@ -3,6 +3,12 @@ import { PageHeader } from '@/components/page-header';
 import { CodeBlock } from '@/components/code-block';
 import { Callout } from '@/components/docs/callout';
 import { SITE } from '@/lib/constants';
+import {
+  pythonCatalogSnippet,
+  pythonChatSnippet,
+  pythonChatStreamSnippet,
+  pythonQuerySnippet,
+} from '@/lib/doc-snippets';
 
 export default function PythonSDKPage() {
   return (
@@ -45,17 +51,24 @@ with Seal(
         <h2 className="text-foreground mt-10 text-2xl font-bold">Basic usage</h2>
         <CodeBlock
           language="python"
-          code={`from seal import Seal
+          code={pythonQuerySnippet(SITE.defaultBaseUrl, 'Show total revenue by product category')}
+        />
 
-with Seal("${SITE.defaultBaseUrl}", api_key="your-secret") as client:
-    schema = client.schema()
-    result = client.query("Show total revenue by product category")
-
-print(result.sql)
-print(result.results)
-if result.chart:
-    print(result.chart.chart_type)
-    print(result.chart.vega_lite_spec)`}
+        <h2 className="text-foreground mt-10 text-2xl font-bold">Chat &amp; catalog</h2>
+        <CodeBlock
+          language="python"
+          code={pythonCatalogSnippet(SITE.defaultBaseUrl)}
+        />
+        <CodeBlock
+          language="python"
+          code={pythonChatSnippet(SITE.defaultBaseUrl, 'Revenue by region?', {
+            sessionId: 'user-1',
+            includeCharts: true,
+          })}
+        />
+        <CodeBlock
+          language="python"
+          code={pythonChatStreamSnippet(SITE.defaultBaseUrl, 'Summarize that')}
         />
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Async client</h2>
@@ -64,7 +77,11 @@ if result.chart:
           code={`from seal import AsyncSeal
 
 async with AsyncSeal("${SITE.defaultBaseUrl}", api_key="your-secret") as client:
-    result = await client.query("Hourly event counts")`}
+    result = await client.query("Hourly event counts")
+    chat = await client.chat("Follow-up question?")
+    async for event in client.chat_stream("Stream this answer"):
+        if event["type"] == "delta":
+            print(event["content"], end="")`}
         />
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Errors</h2>
@@ -75,6 +92,7 @@ async with AsyncSeal("${SITE.defaultBaseUrl}", api_key="your-secret") as client:
 
         <p>
           <Link href="/demo">Demo</Link> ·{' '}
+          <Link href="/docs/chat-qa">Chat &amp; Q&amp;A</Link> ·{' '}
           <Link href="/docs/integration-guide">Integration Guide</Link>
         </p>
       </div>

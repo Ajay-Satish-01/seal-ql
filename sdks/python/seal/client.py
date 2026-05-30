@@ -26,16 +26,20 @@ Usage (context manager):
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Iterator
 
 import httpx
 
+from seal._sse import ChatStreamEvent, parse_sse_stream
 from seal.exceptions import (
     QueryError,
     SealConnectionError,
     ServerError,
 )
-from seal.models import DatabaseSchema, HealthResponse, QueryResponse
+from seal.models import CatalogResponse, ChatResponse, DatabaseSchema, HealthResponse, QueryResponse
 
 _DEFAULT_TIMEOUT = 120.0  # seconds — queries can be slow due to LLM
 
@@ -169,6 +173,70 @@ class Seal:
         _handle_error(resp)
         return DatabaseSchema.model_validate(resp.json())
 
+    def catalog(self) -> CatalogResponse:
+        """Fetch the global data catalog."""
+        try:
+            resp = self._client.get("/v1/catalog")
+        except httpx.RequestError as exc:
+            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+        _handle_error(resp)
+        return CatalogResponse.model_validate(resp.json())
+
+    def chat(
+        self,
+        message: str,
+        *,
+        session_id: str | None = None,
+        include_charts: bool = False,
+        stream: bool = False,
+        enhancement: bool | None = None,
+    ) -> ChatResponse:
+        """Send a conversational message to /v1/chat."""
+        if stream:
+            raise ValueError("Use chat_stream() when stream=True")
+        body: dict[str, Any] = {
+            "message": message,
+            "include_charts": include_charts,
+            "stream": False,
+        }
+        if session_id:
+            body["session_id"] = session_id
+        if enhancement is not None:
+            body["enhancement"] = enhancement
+        try:
+            resp = self._client.post("/v1/chat", json=body)
+        except httpx.RequestError as exc:
+            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+        _handle_error(resp)
+        return ChatResponse.model_validate(resp.json())
+
+    def chat_stream(
+        self,
+        message: str,
+        *,
+        session_id: str | None = None,
+        include_charts: bool = False,
+        enhancement: bool | None = None,
+    ) -> Iterator[ChatStreamEvent]:
+        """Stream chat answer events from /v1/chat (SSE)."""
+        body: dict[str, Any] = {
+            "message": message,
+            "include_charts": include_charts,
+            "stream": True,
+        }
+        if session_id:
+            body["session_id"] = session_id
+        if enhancement is not None:
+            body["enhancement"] = enhancement
+        try:
+            with self._client.stream("POST", "/v1/chat", json=body) as resp:
+                if resp.status_code >= 400:
+                    resp.read()
+                    _handle_error(resp)
+                yield from parse_sse_stream(resp.iter_lines())
+        except httpx.RequestError as exc:
+            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+
 
 # ============================================================
 # Async Client
@@ -276,3 +344,72 @@ class AsyncSeal:
 
         _handle_error(resp)
         return DatabaseSchema.model_validate(resp.json())
+
+    async def catalog(self) -> CatalogResponse:
+        try:
+            resp = await self._client.get("/v1/catalog")
+        except httpx.RequestError as exc:
+            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+        _handle_error(resp)
+        return CatalogResponse.model_validate(resp.json())
+
+    async def chat(
+        self,
+        message: str,
+        *,
+        session_id: str | None = None,
+        include_charts: bool = False,
+        enhancement: bool | None = None,
+    ) -> ChatResponse:
+        body: dict[str, Any] = {
+            "message": message,
+            "include_charts": include_charts,
+            "stream": False,
+        }
+        if session_id:
+            body["session_id"] = session_id
+        if enhancement is not None:
+            body["enhancement"] = enhancement
+        try:
+            resp = await self._client.post("/v1/chat", json=body)
+        except httpx.RequestError as exc:
+            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+        _handle_error(resp)
+        return ChatResponse.model_validate(resp.json())
+
+    async def chat_stream(
+        self,
+        message: str,
+        *,
+        session_id: str | None = None,
+        include_charts: bool = False,
+        enhancement: bool | None = None,
+    ) -> AsyncIterator[ChatStreamEvent]:
+        """Stream chat answer events from /v1/chat (SSE)."""
+        body: dict[str, Any] = {
+            "message": message,
+            "include_charts": include_charts,
+            "stream": True,
+        }
+        if session_id:
+            body["session_id"] = session_id
+        if enhancement is not None:
+            body["enhancement"] = enhancement
+        try:
+            async with self._client.stream("POST", "/v1/chat", json=body) as resp:
+                if resp.status_code >= 400:
+                    await resp.aread()
+                    _handle_error(resp)
+                buffer: list[str] = []
+                async for line in resp.aiter_lines():
+                    if line == "":
+                        for event in parse_sse_stream(iter(buffer)):
+                            yield event
+                        buffer = []
+                    else:
+                        buffer.append(line)
+                if buffer:
+                    for event in parse_sse_stream(iter(buffer)):
+                        yield event
+        except httpx.RequestError as exc:
+            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc

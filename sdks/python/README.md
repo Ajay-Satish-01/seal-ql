@@ -29,6 +29,26 @@ with Seal("http://localhost:8000", api_key="your-secret") as client:
     result = client.query("Show me revenue by month")
     print(result.sql)
     print(result.results)
+
+    catalog = client.catalog()
+    print(catalog.tables)
+
+    chat = client.chat(
+        "What drove revenue last month?",
+        include_charts=True,
+        session_id="user-1",
+    )
+    print(chat.message, chat.sql)
+```
+
+## Chat streaming (SSE)
+
+```python
+for event in client.chat_stream("Summarize orders by region", include_charts=True):
+    if event["type"] == "meta":
+        print(event["data"].get("sql"))
+    elif event["type"] == "delta":
+        print(event["content"], end="", flush=True)
 ```
 
 ## Asynchronous Client
@@ -41,6 +61,10 @@ async def main():
     async with AsyncSeal("http://localhost:8000", api_key="your-secret") as client:
         result = await client.query("Count all users")
         print(result.results)
+
+        async for event in client.chat_stream("Hello"):
+            if event["type"] == "delta":
+                print(event["content"], end="")
 
 asyncio.run(main())
 ```

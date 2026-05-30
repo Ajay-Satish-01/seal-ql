@@ -65,6 +65,47 @@ export interface QueryRequest {
   database_id?: string;
 }
 
+export interface ChatRequest {
+  message: string;
+  session_id?: string;
+  include_charts?: boolean;
+  stream?: boolean;
+  enhancement?: boolean;
+  database_id?: string;
+}
+
+export interface ChatResponse {
+  session_id: string;
+  message: string;
+  sources?: string[];
+  sql?: string | null;
+  results?: Record<string, unknown>[] | null;
+  columns?: ColumnMetadata[] | null;
+  chart?: ChartSpec | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CatalogResponse {
+  version: number;
+  generated_at?: string | null;
+  schema_hash?: string | null;
+  tables: Record<string, unknown>[];
+}
+
+/** Payload on SSE `seal.meta` before streamed answer tokens. */
+export interface ChatStreamMeta {
+  session_id: string;
+  sources?: string[];
+  sql?: string | null;
+  chart?: ChartSpec | null;
+  enhancement?: Record<string, unknown>;
+}
+
+export type ChatStreamEvent =
+  | { type: 'meta'; data: ChatStreamMeta }
+  | { type: 'delta'; content: string }
+  | { type: 'done' };
+
 // ============================================================
 // Client Options
 // ============================================================

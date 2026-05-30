@@ -95,6 +95,36 @@ export function schemaToExample(schemaName: string): string {
       },
     },
     HealthResponse: { status: 'ok' },
+    ChatRequest: {
+      message: 'What tables are in the database?',
+      session_id: null,
+      include_charts: false,
+      stream: false,
+      enhancement: null,
+      database_id: 'default',
+    },
+    ChatResponse: {
+      session_id: '550e8400-e29b-41d4-a716-446655440000',
+      message: 'The database includes products, orders, and events_hourly among others.',
+      sources: ['products', 'orders'],
+      sql: null,
+      results: null,
+      columns: null,
+      chart: null,
+      metadata: { used_sql: false, enhancement: { applied: ['schema_aware', 'multi_turn'] } },
+    },
+    CatalogResponse: {
+      version: 1,
+      generated_at: '2026-01-01T00:00:00Z',
+      schema_hash: 'abc123',
+      tables: [
+        {
+          name: 'orders',
+          kind: 'table',
+          table_description: 'Customer purchase transactions',
+        },
+      ],
+    },
   };
 
   const example = examples[schemaName] ?? { note: `See ${schemaName} in OpenAPI components` };

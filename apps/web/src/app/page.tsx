@@ -5,10 +5,94 @@ import { cn } from '@/lib/utils';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ArrowRight, Database, Shield, Zap, Code2, Container, KeyRound } from 'lucide-react';
+import {
+  ArrowRight,
+  Database,
+  Shield,
+  Zap,
+  Code2,
+  Container,
+  KeyRound,
+  MessageSquare,
+  FileJson,
+  Sparkles,
+  Radio,
+  Bot,
+  Layers,
+} from 'lucide-react';
 import { SealLogo } from '@/components/seal-logo';
+import { ArchitectureFlow } from '@/components/home/architecture-flow';
 import { motion, Variants } from 'framer-motion';
 import { SITE } from '@/lib/constants';
+
+const PRODUCTION_FEATURES = [
+  {
+    icon: MessageSquare,
+    title: 'Schema-Grounded Chat',
+    desc: 'Multi-turn Q&A with session memory, optional charts, and a shared SQL pipeline with /v1/query.',
+    href: '/docs/chat-qa',
+  },
+  {
+    icon: FileJson,
+    title: 'YAML Data Catalog',
+    desc: 'Global catalog.yaml auto-synced from live DDL — enrich tables with business descriptions.',
+    href: '/docs/data-catalog',
+  },
+  {
+    icon: Sparkles,
+    title: 'Prompt Enhancement',
+    desc: 'Schema-aware, multi-turn, and optional vector RAG enhancers run before SQL generation.',
+    href: '/docs/prompt-enhancement',
+  },
+  {
+    icon: Layers,
+    title: 'Vector RAG',
+    desc: 'Optional Chroma index over catalog metadata — semantic retrieval when VECTOR_STORE=chroma.',
+    href: '/docs/vector-rag',
+  },
+  {
+    icon: Radio,
+    title: 'SSE Streaming',
+    desc: 'Token-by-token answers via stream=true — seal.meta events, then deltas, then done.',
+    href: '/docs/chat-streaming',
+  },
+  {
+    icon: Bot,
+    title: 'Agent Tool Manifest',
+    desc: 'OpenAI-compatible seal-tools.json for query, chat, catalog, and schema from any agent framework.',
+    href: '/docs/agent-frameworks',
+  },
+  {
+    icon: Shield,
+    title: 'Zero-Trust Safety',
+    desc: 'SQLGlot AST validation blocks destructive SQL and enforces row limits.',
+    href: '/docs/features',
+  },
+  {
+    icon: KeyRound,
+    title: 'API Key Auth',
+    desc: 'Protect /v1/* with X-API-Key. Your backend holds the secret — not end-user browsers.',
+    href: '/docs/authentication',
+  },
+  {
+    icon: Database,
+    title: 'Deep Introspection',
+    desc: 'Postgres, TimescaleDB hypertables, materialized views, and DuckDB.',
+    href: '/docs/features',
+  },
+  {
+    icon: Zap,
+    title: 'Self-Healing SQL',
+    desc: 'Dialect errors feed back into the planner for automatic repair.',
+    href: '/docs/features',
+  },
+  {
+    icon: Code2,
+    title: 'Vega-Lite Charts',
+    desc: 'Chart engine returns typed specs your UI can render immediately.',
+    href: '/docs/charts-analysis',
+  },
+] as const;
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -57,9 +141,12 @@ export default function Home() {
             variants={itemVariants}
             className="text-muted-foreground mb-10 max-w-2xl text-lg leading-relaxed md:text-xl"
           >
-            Self-host with Docker. Integrate via Python or TypeScript SDKs. Every query passes a
-            zero-trust SQLGlot boundary and returns Vega-Lite specs — no clone required to get
-            started.
+            Self-host with Docker. Conversational Q&A with RAG, optional charts, and agent-tool
+            compatible APIs. Every query passes a zero-trust SQLGlot boundary — see{' '}
+            <Link href="/docs/chat-qa" className="text-primary underline-offset-4 hover:underline">
+              Chat &amp; Q&A
+            </Link>
+            .
           </motion.p>
 
           <motion.div variants={itemVariants} className="flex flex-col flex-wrap gap-3 sm:flex-row">
@@ -121,40 +208,18 @@ export default function Home() {
             <h2 className="font-heading text-3xl font-semibold md:text-4xl">
               Built for production data apps
             </h2>
-            <p className="text-muted-foreground mx-auto mt-3 max-w-xl">
-              Audit the validator on GitHub. Deploy from Docker Hub. Ship in minutes.
+            <p className="text-muted-foreground mx-auto mt-3 max-w-2xl">
+              Catalog YAML, vector RAG, conversational chat, SSE streaming, and agent tools — on the
+              same validated SQL path. Deploy from Docker Hub or develop from source.
             </p>
           </motion.div>
 
+          <motion.div variants={itemVariants}>
+            <ArchitectureFlow />
+          </motion.div>
+
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                icon: Shield,
-                title: 'Zero-Trust Safety',
-                desc: 'SQLGlot AST validation blocks destructive SQL and enforces row limits.',
-              },
-              {
-                icon: KeyRound,
-                title: 'API Key Auth',
-                desc: 'Protect /v1/* with X-API-Key. Your backend holds the secret — not end-user browsers.',
-                href: '/docs/authentication',
-              },
-              {
-                icon: Database,
-                title: 'Deep Introspection',
-                desc: 'Postgres, TimescaleDB hypertables, materialized views, and DuckDB.',
-              },
-              {
-                icon: Zap,
-                title: 'Self-Healing SQL',
-                desc: 'Dialect errors feed back into the planner for automatic repair.',
-              },
-              {
-                icon: Code2,
-                title: 'Vega-Lite Charts',
-                desc: 'Chart engine returns typed specs your UI can render immediately.',
-              },
-            ].map(({ icon: Icon, title, desc, href }) => (
+            {PRODUCTION_FEATURES.map(({ icon: Icon, title, desc, href }) => (
               <motion.div key={title} variants={itemVariants}>
                 <Card className="border-border/60 bg-card/60 h-full rounded-sm backdrop-blur-sm">
                   <CardHeader>
