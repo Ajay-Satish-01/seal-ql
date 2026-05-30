@@ -33,10 +33,29 @@ export class IntelligenceConnector {
   // Private helpers
   // ============================================================
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const url = `${this.baseUrl}${path}`;
+  private requestSignal(): { signal: AbortSignal; cleanup?: () => void } {
+    // AbortSignal.timeout uses the same implementation as Node's fetch (undici).
+    // jsdom's AbortController signal is rejected by fetch with "not an instance of AbortSignal".
+    if (typeof AbortSignal.timeout === 'function') {
+      return { signal: AbortSignal.timeout(this.timeout) };
+    }
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeout);
+    return { signal: controller.signal, cleanup: () => clearTimeout(timer) };
+  }
+
+  private static isTimeoutError(error: unknown): boolean {
+    // AbortSignal.timeout() rejects with "TimeoutError"; the AbortController
+    // fallback aborts with "AbortError". We only ever abort on timeout, so both map here.
+    if (error instanceof DOMException || error instanceof Error) {
+      return error.name === 'TimeoutError' || error.name === 'AbortError';
+    }
+    return false;
+  }
+
+  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+    const url = `${this.baseUrl}${path}`;
+    const { signal, cleanup } = this.requestSignal();
 
     let response: Response;
     try {
@@ -44,17 +63,16 @@ export class IntelligenceConnector {
         method,
         headers: this.headers,
         body: body ? JSON.stringify(body) : undefined,
-        signal: controller.signal,
+        signal,
       });
     } catch (error: unknown) {
-      clearTimeout(timer);
-      if (error instanceof DOMException && error.name === 'AbortError') {
+      if (IntelligenceConnector.isTimeoutError(error)) {
         throw new ConnectionError(`Request to ${url} timed out after ${this.timeout}ms`);
       }
       const message = error instanceof Error ? error.message : String(error);
       throw new ConnectionError(`Cannot connect to ${url}: ${message}`);
     } finally {
-      clearTimeout(timer);
+      cleanup?.();
     }
 
     if (!response.ok) {

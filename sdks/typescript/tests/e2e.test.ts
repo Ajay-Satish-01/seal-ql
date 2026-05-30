@@ -1,3 +1,4 @@
+/** @vitest-environment node */
 /**
  * End-to-end tests for the TypeScript SDK against a live Docker stack.
  *
@@ -7,28 +8,19 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { IntelligenceConnector } from '../src/client.js';
-import * as net from 'net';
 
 const API_URL = 'http://localhost:8000';
 
-function isApiReachable(): Promise<boolean> {
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-    socket.setTimeout(2000);
-    socket
-      .connect(8000, 'localhost', () => {
-        socket.destroy();
-        resolve(true);
-      })
-      .on('error', () => {
-        socket.destroy();
-        resolve(false);
-      })
-      .on('timeout', () => {
-        socket.destroy();
-        resolve(false);
-      });
-  });
+async function isApiReachable(): Promise<boolean> {
+  // Verify the live service is actually our API (not just something on the port).
+  try {
+    const res = await fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) return false;
+    const body = (await res.json()) as { status?: string };
+    return body.status === 'ok';
+  } catch {
+    return false;
+  }
 }
 
 describe('E2E Tests', async () => {

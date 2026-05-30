@@ -298,9 +298,9 @@
     {
       "id": "product-performance",
       "label": "Product performance table",
-      "query": "Top products with revenue and units sold",
+      "query": "Top products by revenue and order count",
       "response": {
-        "sql": "SELECT product_name, category, total_revenue, units_sold FROM product_performance ORDER BY total_revenue DESC LIMIT 10",
+        "sql": "SELECT product_name, category, total_revenue, total_orders FROM product_performance ORDER BY total_revenue DESC LIMIT 10",
         "columns": [
           {
             "name": "product_name",
@@ -318,7 +318,7 @@
             "nullable": true
           },
           {
-            "name": "units_sold",
+            "name": "total_orders",
             "type": "int8",
             "nullable": true
           }
@@ -328,19 +328,19 @@
             "product_name": "Wireless Headphones",
             "category": "Electronics",
             "total_revenue": 18500.0,
-            "units_sold": 92
+            "total_orders": 92
           },
           {
             "product_name": "Running Shoes",
             "category": "Sports",
             "total_revenue": 14200.0,
-            "units_sold": 71
+            "total_orders": 71
           },
           {
             "product_name": "Desk Lamp",
             "category": "Home",
             "total_revenue": 8900.0,
-            "units_sold": 178
+            "total_orders": 178
           }
         ],
         "chart": {

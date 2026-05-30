@@ -139,7 +139,7 @@ class Settings(BaseSettings):
     def resolved_llm_model(self) -> str:
         """LiteLLM model string with ollama/ prefix applied only for bare local names."""
         # Already provider-qualified (ollama/…, gemini/…, openai/…, etc.) or cloud mode.
-        if self.use_cloud_llm() or "/" in self.llm_model:
+        if self.use_cloud_llm() or self.is_ollama_model() or self.is_cloud_model():
             return self.llm_model
         return f"ollama/{self.llm_model}"
 
@@ -152,7 +152,13 @@ class Settings(BaseSettings):
 
     @property
     def llm_planner_api_key(self) -> str | None:
-        """Explicit API key for Instructor/LiteLLM in cloud mode."""
+        """Explicit API key passed to Instructor/LiteLLM in cloud mode.
+
+        Only the generic ``LLM_API_KEY`` is returned here. Provider-specific keys
+        (``GEMINI_API_KEY`` / ``OPENAI_API_KEY`` / ``ANTHROPIC_API_KEY``) are read
+        directly from the environment by LiteLLM, so returning None for those is
+        expected — has_cloud_api_credentials() still validates their presence.
+        """
         if self.use_cloud_llm():
             return self.llm_api_key
         return None

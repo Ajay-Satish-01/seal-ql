@@ -158,39 +158,39 @@ def build_presets() -> list[dict]:
             "product_name": "Wireless Headphones",
             "category": "Electronics",
             "total_revenue": 18500.0,
-            "units_sold": 92,
+            "total_orders": 92,
         },
         {
             "product_name": "Running Shoes",
             "category": "Sports",
             "total_revenue": 14200.0,
-            "units_sold": 71,
+            "total_orders": 71,
         },
         {
             "product_name": "Desk Lamp",
             "category": "Home",
             "total_revenue": 8900.0,
-            "units_sold": 178,
+            "total_orders": 178,
         },
     ]
     table = _response(
-        query="Top products with revenue and units sold",
+        query="Top products by revenue and order count",
         label="Product performance table",
         preset_id="product-performance",
         sql=(
-            "SELECT product_name, category, total_revenue, units_sold "
+            "SELECT product_name, category, total_revenue, total_orders "
             "FROM product_performance ORDER BY total_revenue DESC LIMIT 10"
         ),
         columns=[
             ColumnMetadata("product_name", "varchar"),
             ColumnMetadata("category", "varchar"),
             ColumnMetadata("total_revenue", "numeric"),
-            ColumnMetadata("units_sold", "int8"),
+            ColumnMetadata("total_orders", "int8"),
         ],
         rows=product_rows,
         plan=QueryPlan(
             sql=(
-                "SELECT product_name, category, total_revenue, units_sold "
+                "SELECT product_name, category, total_revenue, total_orders "
                 "FROM product_performance LIMIT 10000"
             ),
             chart_type=ChartType.TABLE,
