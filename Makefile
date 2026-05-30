@@ -79,7 +79,6 @@ validate-query: ## Validate live POST /v1/query (ARGS="base_url query")
 	uv run python scripts/validate_query_response.py $(ARGS)
 
 check-web: ## Build the docs/demo Next.js app
-	cd sdks/typescript && pnpm install --frozen-lockfile && pnpm build
 	cd apps/web && pnpm install --frozen-lockfile && pnpm build
 
 # ============================================================

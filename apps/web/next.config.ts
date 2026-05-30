@@ -1,12 +1,11 @@
+import path from 'node:path';
 import type { NextConfig } from 'next';
+
+const repoRoot = path.resolve(__dirname, '../..');
 
 const nextConfig: NextConfig = {
   transpilePackages: ['intelligence-sdk'],
-  // Tells Turbopack where the actual workspace root is, avoiding traversal of the user's home directory
-  experimental: {},
-  turbopack: {
-    root: '../../',
-  },
+  outputFileTracingRoot: repoRoot,
 };
 
 export default nextConfig;

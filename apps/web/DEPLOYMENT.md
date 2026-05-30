@@ -1,30 +1,33 @@
 # Deploying to Vercel
 
-The Intelligence Connector documentation site (`apps/web`) is built with Next.js and is optimized for deployment on Vercel.
+The documentation site (`apps/web`) depends on the local TypeScript SDK at `sdks/typescript` (`link:../../sdks/typescript`). Vercel must see the full repository and compile `dist/` before `next build`.
 
-## Vercel GUI Deployment Steps
+## Vercel project settings
 
-Since this is a monorepo structure, follow these steps to deploy the frontend correctly using the Vercel Dashboard:
+1. **Import** the `intelligence_connector` GitHub repository.
+2. **Root Directory**: `apps/web` (Next.js auto-detected).
+3. **Include source files outside of the Root Directory**: enable this in Root Directory settings so `../../sdks/typescript` is available during install/build.
+4. **Node.js version**: 24 (from `apps/web/.nvmrc` / `engines` in `package.json`).
+5. **Install Command**: `pnpm install --frozen-lockfile` (default; see `vercel.json`).
+6. **Build Command**: `pnpm run build` — runs `build:sdk` (TypeScript SDK) then `next build`.
 
-1. **Import Project**
-   - Log into [Vercel](https://vercel.com).
-   - Click **Add New...** > **Project**.
-   - Import the `intelligence_connector` GitHub repository.
+## What `pnpm build` does
 
-2. **Configure Monorepo Settings**
-   - In the "Configure Project" step, click on **Root Directory**.
-   - Select `apps/web` as the root directory. Vercel will automatically detect that this is a Next.js project.
+```bash
+# 1. Install + compile intelligence-sdk → sdks/typescript/dist/
+pnpm --dir ../../sdks/typescript install --frozen-lockfile
+pnpm --dir ../../sdks/typescript run build
 
-3. **Build Settings**
-   - **Framework Preset**: Next.js (Auto-detected).
-   - **Build Command**: `pnpm build` (Auto-detected).
-   - **Output Directory**: `.next` (Auto-detected).
-   - **Install Command**: `pnpm install` (Auto-detected).
+# 2. Next.js production build
+next build
+```
 
-4. **Environment Variables**
-   - (Optional) Add any required frontend environment variables here.
+`dist/` is gitignored; Vercel always builds it on deploy. Do not skip the SDK build step.
 
-5. **Deploy**
-   - Click **Deploy**. Vercel will install the dependencies using `pnpm` and build the Next.js application.
+## Environment variables
 
-Your site will be live with a `.vercel.app` domain, and you can map a custom domain to it from the project settings.
+Optional frontend env vars can be added in the Vercel dashboard. The demo uses static fixtures; no API URL is required for the docs site alone.
+
+## Custom domain
+
+After deploy, map a domain under **Project → Settings → Domains**.

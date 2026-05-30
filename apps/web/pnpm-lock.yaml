@@ -21,8 +21,8 @@ importers:
         specifier: ^12.40.0
         version: 12.40.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       intelligence-sdk:
-        specifier: file:../../sdks/typescript
-        version: file:../../sdks/typescript(react@19.2.4)(vega-embed@6.29.0(vega-lite@5.23.0(vega@5.33.1))(vega@5.33.1))(vega-lite@5.23.0(vega@5.33.1))(vega@5.33.1)
+        specifier: link:../../sdks/typescript
+        version: link:../../sdks/typescript
       lucide-react:
         specifier: ^1.17.0
         version: 1.17.0(react@19.2.4)
@@ -1983,23 +1983,6 @@ packages:
 
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
-
-  intelligence-sdk@file:../../sdks/typescript:
-    resolution: {directory: ../../sdks/typescript, type: directory}
-    peerDependencies:
-      react: ^18.0.0
-      vega: ^5.30.0
-      vega-embed: ^6.26.0
-      vega-lite: ^5.20.0
-    peerDependenciesMeta:
-      react:
-        optional: true
-      vega:
-        optional: true
-      vega-embed:
-        optional: true
-      vega-lite:
-        optional: true
 
   internal-slot@1.1.0:
     resolution: {integrity: sha512-4gd7VpWNQNB4UKKCFFVcp1AVv+FMOgs9NKzjHKusc8jTMhd5eL1NqQqOpE0KzMds804/yHlglp3uxgluOqAPLw==}
@@ -5420,13 +5403,6 @@ snapshots:
   imurmurhash@0.1.4: {}
 
   inherits@2.0.4: {}
-
-  intelligence-sdk@file:../../sdks/typescript(react@19.2.4)(vega-embed@6.29.0(vega-lite@5.23.0(vega@5.33.1))(vega@5.33.1))(vega-lite@5.23.0(vega@5.33.1))(vega@5.33.1):
-    optionalDependencies:
-      react: 19.2.4
-      vega: 5.33.1
-      vega-embed: 6.29.0(vega-lite@5.23.0(vega@5.33.1))(vega@5.33.1)
-      vega-lite: 5.23.0(vega@5.33.1)
 
   internal-slot@1.1.0:
     dependencies:
