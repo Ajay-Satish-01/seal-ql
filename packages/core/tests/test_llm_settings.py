@@ -9,9 +9,17 @@ from intelligence_core.settings import get_settings
 
 
 def _clear_llm_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Override .env so tests only see explicit monkeypatched values."""
+    """Isolate tests from .env and CI/docker env (e.g. LLM_BASE_URL=localhost)."""
     monkeypatch.setenv("LLM_TYPE", "")
-    for name in ("LLM_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"):
+    for name in (
+        "OLLAMA_PROFILE",
+        "LLM_MODEL",
+        "LLM_BASE_URL",
+        "LLM_API_KEY",
+        "GEMINI_API_KEY",
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+    ):
         monkeypatch.delenv(name, raising=False)
     get_settings.cache_clear()
 
