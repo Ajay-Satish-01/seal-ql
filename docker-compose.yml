@@ -8,8 +8,10 @@ services:
         # Set SEAL_EXTRA=chroma in .env when VECTOR_STORE=chroma (make up sets this automatically)
         SEAL_EXTRA: ${SEAL_EXTRA:-}
     image: seal/api:latest
+    # Optional locally: copy .env.example → .env (CI creates it via scripts/ci-prepare-env.sh)
     env_file:
-      - .env
+      - path: .env
+        required: false
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
