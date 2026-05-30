@@ -1,13 +1,13 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
-from intelligence_charts.engine import ChartEngine
-from intelligence_core.planner.planner import QueryPlanner
-from intelligence_core.schema.introspector import SchemaIntrospector
-from intelligence_semantic.registry import SemanticRegistry
-from intelligence_sql.executor import QueryExecutor
-from intelligence_sql.sanitizer import SQLSanitizer
-from intelligence_sql.validator import SQLValidator
+from fastapi import APIRouter, Depends, HTTPException, Security
+from seal_charts.engine import ChartEngine
+from seal_core.planner.planner import QueryPlanner
+from seal_core.schema.introspector import SchemaIntrospector
+from seal_semantic.registry import SemanticRegistry
+from seal_sql.executor import QueryExecutor
+from seal_sql.sanitizer import SQLSanitizer
+from seal_sql.validator import SQLValidator
 
 from app.dependencies import (
     get_query_executor,
@@ -15,15 +15,19 @@ from app.dependencies import (
     get_schema_introspector,
     get_semantic_registry,
 )
+from app.errors import public_query_error_detail, public_server_error_detail
+from app.openapi_responses import UNAUTHORIZED_RESPONSE
 from app.schemas import QueryRequest, QueryResponse
+from app.security import require_api_key
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/query", response_model=QueryResponse)
+@router.post("/query", response_model=QueryResponse, responses=UNAUTHORIZED_RESPONSE)
 async def execute_query(
     request: QueryRequest,
+    _: None = Security(require_api_key),
     introspector: SchemaIntrospector = Depends(get_schema_introspector),  # noqa: B008
     planner: QueryPlanner = Depends(get_query_planner),  # noqa: B008
     executor: QueryExecutor = Depends(get_query_executor),  # noqa: B008
@@ -64,7 +68,7 @@ async def execute_query(
             except Exception as e:
                 if current_attempt >= max_attempts:
                     logger.error(f"Failed after {max_attempts} attempts. Last error: {str(e)}")
-                    raise HTTPException(status_code=400, detail=f"Query failed: {str(e)}") from e
+                    raise HTTPException(status_code=400, detail=public_query_error_detail()) from e
 
                 logger.debug(
                     f"Attempt {current_attempt} failed. Attempting repair. Error: {str(e)}"
@@ -93,4 +97,4 @@ async def execute_query(
         raise
     except Exception as e:
         logger.exception("Failed to execute query")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=public_server_error_detail()) from e

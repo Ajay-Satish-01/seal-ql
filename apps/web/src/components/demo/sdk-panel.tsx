@@ -24,9 +24,10 @@ interface SdkPanelProps {
 function buildPythonSnippet(query: string, baseUrl: string): string {
   const q = escapePythonString(query);
   const url = escapePythonString(baseUrl);
-  return `from intelligence_connector import IntelligenceConnector
+  return `from seal import Seal
 
-with IntelligenceConnector("${url}") as client:
+# api_key is required when the server sets SEAL_API_KEY (sent as X-API-Key).
+with Seal("${url}", api_key="your-api-key") as client:
     result = client.query("${q}")
 
 print(result.sql)
@@ -39,10 +40,12 @@ if result.chart:
 function buildTypeScriptSnippet(query: string, baseUrl: string): string {
   const q = escapePythonString(query);
   const url = escapeTsString(baseUrl);
-  return `import { IntelligenceConnector, VegaChart } from 'intelligence-sdk';
+  return `import { Seal, VegaChart } from 'seal';
 
-const client = new IntelligenceConnector({
+const client = new Seal({
   baseUrl: '${url}',
+  // apiKey is required when the server sets SEAL_API_KEY (sent as X-API-Key).
+  apiKey: 'your-api-key',
 });
 
 const result = await client.query("${q}");

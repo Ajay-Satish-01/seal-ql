@@ -21,7 +21,7 @@
 
 ## Docker
 
-- Make sure this is docker first since we will be building this and hosting it in dockerhub and people will download the image and use self host it and connect to it using our sdk
+- Make sure this is docker first since we will be building this and hosting it on Docker Hub (`seal/api`) and people will download the image, self-host it, and connect using the Seal SDKs
 - This will have multiple services ( Postgres, Ollama, API, etc)
 
 ## SDKs
@@ -51,6 +51,7 @@
 - `uv sync --all-packages --all-extras`: Install/sync all Python workspace dependencies.
 - `uv run pytest -v`: Run tests safely across all Python workspaces.
 - `pre-commit run --all-files`: Enforce formatting/linting via ruff, prettier, eslint.
+- Keep **pre-commit Ruff** (`.pre-commit-config.yaml` `rev`) aligned with **`uv.lock`** so `pre-commit` and `make check` do not fight over import formatting.
 - `pnpm install`: Install TypeScript SDK dependencies (Node.js 24 — see `.nvmrc`, run `nvm use`).
 - `make check-web`: Build TypeScript SDK (`sdks/typescript`) then the docs/demo Next.js app.
 
@@ -74,10 +75,12 @@
 
 ## Release Process
 
-- Verify pre-commit hooks pass locally.
-- Run the full test suite (`make seed` followed by `uv run pytest`).
-- Ensure TypeScript SDK builds via `pnpm build`.
-- SDK versions must align with the API protocol schema versions.
+See `RELEASING.md` and `SETUP.md`. Summary:
+
+- Bump `0.1.0` in `sdks/python/pyproject.toml`, `sdks/typescript/package.json`, and `apps/api/pyproject.toml`.
+- Run `make check`; commit `uv.lock` (required for reproducible Docker builds).
+- Push git tag `v0.1.0` to trigger `.github/workflows/release.yml` (Docker Hub, PyPI, npm).
+- SDK versions must align with the API OpenAPI schema version.
 
 ## Invariants
 

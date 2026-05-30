@@ -1,4 +1,4 @@
--- Seed data for intelligence_connector demo
+-- Seed data for Seal demo
 -- Creates a realistic e-commerce dataset with:
 --   - Regular tables (orders, products, customers)
 --   - Materialized views (product_performance)

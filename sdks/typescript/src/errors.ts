@@ -1,32 +1,40 @@
 /**
- * Custom error classes for the Intelligence Connector SDK.
+ * Custom error classes for the Seal SDK.
  */
 
-export class IntelligenceConnectorError extends Error {
+export class SealError extends Error {
   public readonly statusCode?: number;
 
   constructor(message: string, statusCode?: number) {
     super(message);
-    this.name = 'IntelligenceConnectorError';
+    this.name = 'SealError';
     this.statusCode = statusCode;
   }
 }
 
-export class ConnectionError extends IntelligenceConnectorError {
+export class SealConnectionError extends SealError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SealConnectionError';
+  }
+}
+
+/** @deprecated Use {@link SealConnectionError} */
+export class ConnectionError extends SealConnectionError {
   constructor(message: string) {
     super(message);
     this.name = 'ConnectionError';
   }
 }
 
-export class QueryError extends IntelligenceConnectorError {
+export class QueryError extends SealError {
   constructor(message: string, statusCode?: number) {
     super(message, statusCode);
     this.name = 'QueryError';
   }
 }
 
-export class ServerError extends IntelligenceConnectorError {
+export class ServerError extends SealError {
   constructor(message: string, statusCode?: number) {
     super(message, statusCode);
     this.name = 'ServerError';

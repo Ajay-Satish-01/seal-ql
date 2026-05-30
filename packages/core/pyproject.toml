@@ -1,7 +1,7 @@
 [project]
-name = "intelligence-core"
+name = "seal-core"
 version = "0.1.0"
-description = "Schema introspection and query planning for Intelligence Connector"
+description = "Schema introspection and query planning for Seal"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.10.0",

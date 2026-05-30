@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ThemeToggle } from './theme-toggle';
+import { SealLogo } from './seal-logo';
 import { SITE } from '@/lib/constants';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -9,7 +10,11 @@ export function Navbar() {
     <header className="border-border/40 bg-background/70 sticky top-0 z-50 w-full border-b backdrop-blur-xl">
       <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-8">
-          <Link href="/" className="font-heading text-lg font-semibold tracking-tight">
+          <Link
+            href="/"
+            className="font-heading flex items-center gap-2.5 text-lg font-semibold tracking-tight"
+          >
+            <SealLogo size={36} />
             {SITE.name}
           </Link>
           <nav className="hidden items-center gap-6 md:flex">

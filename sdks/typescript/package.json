@@ -1,13 +1,15 @@
 {
-  "name": "intelligence-sdk",
+  "name": "seal",
   "version": "0.1.0",
-  "description": "TypeScript SDK for Intelligence Connector",
+  "description": "TypeScript SDK for Seal — natural language queries and Vega-Lite charts",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "packageManager": "pnpm@10.33.2",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     ".": {
@@ -25,12 +27,25 @@
     "database"
   ],
   "license": "MIT",
+  "author": "Seal Contributors",
+  "homepage": "https://github.com/seal/seal/tree/main/sdks/typescript",
+  "bugs": {
+    "url": "https://github.com/seal/seal/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/intelligence-connector/intelligence-connector"
+    "url": "git+https://github.com/seal/seal.git",
+    "directory": "sdks/typescript"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=20"
   },
   "scripts": {
-    "prepare": "pnpm run build",
+    "prepublishOnly": "pnpm run build",
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",

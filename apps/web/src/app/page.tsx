@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ArrowRight, Database, Shield, Zap, Code2, Container } from 'lucide-react';
+import { ArrowRight, Database, Shield, Zap, Code2, Container, KeyRound } from 'lucide-react';
+import { SealLogo } from '@/components/seal-logo';
 import { motion, Variants } from 'framer-motion';
 import { SITE } from '@/lib/constants';
 
@@ -34,12 +35,13 @@ export default function Home() {
           initial="hidden"
           animate="visible"
         >
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="mb-6 flex items-center gap-4">
+            <SealLogo size={56} className="hidden sm:block" />
             <Badge
               variant="outline"
-              className="border-primary/50 text-primary mb-6 rounded-sm px-3 py-1 font-mono text-xs tracking-widest uppercase"
+              className="border-primary/50 text-primary rounded-sm px-3 py-1 font-mono text-xs tracking-widest uppercase"
             >
-              Open source · Image-first
+              Seal · Open source · Image-first
             </Badge>
           </motion.div>
 
@@ -47,6 +49,7 @@ export default function Home() {
             variants={itemVariants}
             className="font-heading mb-6 max-w-3xl text-4xl leading-[1.1] font-semibold tracking-tight md:text-6xl"
           >
+            <span className="sm:hidden">Seal — </span>
             Natural language to <span className="text-primary">validated SQL</span> and charts
           </motion.h1>
 
@@ -123,12 +126,18 @@ export default function Home() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 icon: Shield,
                 title: 'Zero-Trust Safety',
                 desc: 'SQLGlot AST validation blocks destructive SQL and enforces row limits.',
+              },
+              {
+                icon: KeyRound,
+                title: 'API Key Auth',
+                desc: 'Protect /v1/* with X-API-Key. Your backend holds the secret — not end-user browsers.',
+                href: '/docs/authentication',
               },
               {
                 icon: Database,
@@ -145,14 +154,22 @@ export default function Home() {
                 title: 'Vega-Lite Charts',
                 desc: 'Chart engine returns typed specs your UI can render immediately.',
               },
-            ].map(({ icon: Icon, title, desc }) => (
+            ].map(({ icon: Icon, title, desc, href }) => (
               <motion.div key={title} variants={itemVariants}>
                 <Card className="border-border/60 bg-card/60 h-full rounded-sm backdrop-blur-sm">
                   <CardHeader>
                     <div className="bg-primary/10 mb-3 flex h-10 w-10 items-center justify-center rounded-sm">
                       <Icon className="text-primary h-5 w-5" />
                     </div>
-                    <CardTitle className="font-heading text-lg">{title}</CardTitle>
+                    <CardTitle className="font-heading text-lg">
+                      {href ? (
+                        <Link href={href} className="hover:text-primary transition-colors">
+                          {title}
+                        </Link>
+                      ) : (
+                        title
+                      )}
+                    </CardTitle>
                     <CardDescription className="text-base">{desc}</CardDescription>
                   </CardHeader>
                 </Card>

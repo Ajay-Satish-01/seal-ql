@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import pytest
-from intelligence_core.llm import client as llm_client
-from intelligence_core.llm.client import get_api_base, get_api_key, get_model
-from intelligence_core.settings import Settings, get_settings
+from seal_core.llm import client as llm_client
+from seal_core.llm.client import get_api_base, get_api_key, get_model
+from seal_core.settings import Settings, get_settings
 
 
 def _clear_llm_env(monkeypatch: pytest.MonkeyPatch) -> None:

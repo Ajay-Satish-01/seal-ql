@@ -1,4 +1,4 @@
-# Pre-commit hooks for intelligence_connector
+# Pre-commit hooks for Seal
 # Install: make setup  (or: pre-commit install && pre-commit install --hook-type pre-push)
 # Run manually: pre-commit run --all-files
 #
@@ -10,9 +10,10 @@ repos:
   # Python — Ruff (formatting + linting)
   # ============================================================
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.6
+    # Keep in sync with uv.lock (make check runs `uv run ruff` in Docker).
+    rev: v0.15.14
     hooks:
-      - id: ruff
+      - id: ruff-check
         name: "ruff lint"
         args: [--fix, --exit-non-zero-on-fix]
         types_or: [python, pyi]
@@ -37,6 +38,8 @@ repos:
       - id: check-merge-conflict
       - id: check-added-large-files
         args: [--maxkb=500]
+        # Lockfiles are expected to exceed 500KB in uv workspaces.
+        exclude: ^uv\.lock$
       - id: debug-statements
 
   # ============================================================

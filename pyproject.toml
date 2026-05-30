@@ -1,14 +1,14 @@
 [project]
-name = "intelligence-connector"
+name = "seal-workspace"
 version = "0.1.0"
-description = "AI-powered SQL query generation, validation, and visualization SDK"
+description = "Seal — AI-powered SQL query generation, validation, and visualization"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 
 [dependency-groups]
 dev = [
-    "ruff>=0.8.0",
+    "ruff>=0.15.14",
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
 ]
@@ -59,3 +59,7 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "TCH"]
+
+[tool.ruff.lint.per-file-ignores]
+# Pytest fixtures need these imports at runtime (not type-checking only). Ruff 0.15+ uses TC00x codes.
+"**/tests/**" = ["TC002", "TC003"]

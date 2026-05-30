@@ -6,10 +6,10 @@ import json
 
 import httpx
 import pytest
-from intelligence_connector import (
-    AsyncIntelligenceConnector,
-    IntelligenceConnector,
+from seal import (
+    AsyncSeal,
     QueryError,
+    Seal,
     ServerError,
 )
 
@@ -53,11 +53,11 @@ def _mock_transport(
 
 
 class TestSyncClient:
-    """Tests for IntelligenceConnector (sync)."""
+    """Tests for Seal (sync)."""
 
     def test_health(self):
         transport = httpx.MockTransport(_mock_transport(200, _HEALTH_RESPONSE))
-        client = IntelligenceConnector.__new__(IntelligenceConnector)
+        client = Seal.__new__(Seal)
         client._base_url = "http://testserver"
         client._client = httpx.Client(base_url="http://testserver", transport=transport)
 
@@ -67,7 +67,7 @@ class TestSyncClient:
 
     def test_query(self):
         transport = httpx.MockTransport(_mock_transport(200, _QUERY_RESPONSE))
-        client = IntelligenceConnector.__new__(IntelligenceConnector)
+        client = Seal.__new__(Seal)
         client._base_url = "http://testserver"
         client._client = httpx.Client(base_url="http://testserver", transport=transport)
 
@@ -79,7 +79,7 @@ class TestSyncClient:
 
     def test_schema(self):
         transport = httpx.MockTransport(_mock_transport(200, _SCHEMA_RESPONSE))
-        client = IntelligenceConnector.__new__(IntelligenceConnector)
+        client = Seal.__new__(Seal)
         client._base_url = "http://testserver"
         client._client = httpx.Client(base_url="http://testserver", transport=transport)
 
@@ -90,7 +90,7 @@ class TestSyncClient:
 
     def test_query_error_400(self):
         transport = httpx.MockTransport(_mock_transport(400, {"detail": "Validation failed"}))
-        client = IntelligenceConnector.__new__(IntelligenceConnector)
+        client = Seal.__new__(Seal)
         client._base_url = "http://testserver"
         client._client = httpx.Client(base_url="http://testserver", transport=transport)
 
@@ -100,7 +100,7 @@ class TestSyncClient:
 
     def test_server_error_500(self):
         transport = httpx.MockTransport(_mock_transport(500, {"detail": "Internal error"}))
-        client = IntelligenceConnector.__new__(IntelligenceConnector)
+        client = Seal.__new__(Seal)
         client._base_url = "http://testserver"
         client._client = httpx.Client(base_url="http://testserver", transport=transport)
 
@@ -108,9 +108,47 @@ class TestSyncClient:
             client.query("query")
         client.close()
 
+    def test_api_key_sent_on_v1_requests(self) -> None:
+        captured: list[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured.append(request)
+            return httpx.Response(200, json=_QUERY_RESPONSE)
+
+        transport = httpx.MockTransport(handler)
+        client = Seal("http://testserver", api_key="secret-key")
+        try:
+            original_headers = client._client.headers
+            # Close the real client before swapping in the mock-transport one (no leak).
+            client._client.close()
+            client._client = httpx.Client(
+                base_url="http://testserver",
+                transport=transport,
+                headers=original_headers,
+            )
+            client.query("test")
+        finally:
+            client.close()
+
+        assert captured
+        assert captured[0].headers["x-api-key"] == "secret-key"
+
+    def test_query_error_401(self) -> None:
+        transport = httpx.MockTransport(
+            _mock_transport(401, {"detail": "Invalid or missing API key"})
+        )
+        client = Seal.__new__(Seal)
+        client._base_url = "http://testserver"
+        client._client = httpx.Client(base_url="http://testserver", transport=transport)
+
+        with pytest.raises(QueryError, match="Invalid or missing API key") as exc_info:
+            client.query("query")
+        assert exc_info.value.status_code == 401
+        client.close()
+
     def test_context_manager(self):
         transport = httpx.MockTransport(_mock_transport(200, _HEALTH_RESPONSE))
-        with IntelligenceConnector.__new__(IntelligenceConnector) as client:
+        with Seal.__new__(Seal) as client:
             client._base_url = "http://testserver"
             client._client = httpx.Client(base_url="http://testserver", transport=transport)
             result = client.health()
@@ -123,12 +161,12 @@ class TestSyncClient:
 
 
 class TestAsyncClient:
-    """Tests for AsyncIntelligenceConnector."""
+    """Tests for AsyncSeal."""
 
     @pytest.mark.asyncio
     async def test_health(self):
         transport = httpx.MockTransport(_mock_transport(200, _HEALTH_RESPONSE))
-        client = AsyncIntelligenceConnector.__new__(AsyncIntelligenceConnector)
+        client = AsyncSeal.__new__(AsyncSeal)
         client._base_url = "http://testserver"
         client._client = httpx.AsyncClient(base_url="http://testserver", transport=transport)
 
@@ -139,7 +177,7 @@ class TestAsyncClient:
     @pytest.mark.asyncio
     async def test_query(self):
         transport = httpx.MockTransport(_mock_transport(200, _QUERY_RESPONSE))
-        client = AsyncIntelligenceConnector.__new__(AsyncIntelligenceConnector)
+        client = AsyncSeal.__new__(AsyncSeal)
         client._base_url = "http://testserver"
         client._client = httpx.AsyncClient(base_url="http://testserver", transport=transport)
 
@@ -151,7 +189,7 @@ class TestAsyncClient:
     @pytest.mark.asyncio
     async def test_query_error_400(self):
         transport = httpx.MockTransport(_mock_transport(400, {"detail": "Validation failed"}))
-        client = AsyncIntelligenceConnector.__new__(AsyncIntelligenceConnector)
+        client = AsyncSeal.__new__(AsyncSeal)
         client._base_url = "http://testserver"
         client._client = httpx.AsyncClient(base_url="http://testserver", transport=transport)
 
@@ -162,7 +200,7 @@ class TestAsyncClient:
     @pytest.mark.asyncio
     async def test_server_error_500(self):
         transport = httpx.MockTransport(_mock_transport(500, {"detail": "Internal error"}))
-        client = AsyncIntelligenceConnector.__new__(AsyncIntelligenceConnector)
+        client = AsyncSeal.__new__(AsyncSeal)
         client._base_url = "http://testserver"
         client._client = httpx.AsyncClient(base_url="http://testserver", transport=transport)
 
@@ -180,7 +218,7 @@ class TestModels:
     """Verify models parse correctly from raw JSON."""
 
     def test_query_response_with_chart(self):
-        from intelligence_connector.models import QueryResponse
+        from seal.models import QueryResponse
 
         data = {
             "sql": "SELECT name FROM users LIMIT 5",
@@ -199,7 +237,7 @@ class TestModels:
         assert len(resp.results) == 2
 
     def test_query_response_no_chart(self):
-        from intelligence_connector.models import QueryResponse
+        from seal.models import QueryResponse
 
         data = {
             "sql": "SELECT 1",

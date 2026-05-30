@@ -26,9 +26,16 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Intelligence Connector',
+  title: {
+    default: 'Seal',
+    template: '%s · Seal',
+  },
   description:
-    'Open-source AI SQL generation with zero-trust validation and Vega-Lite charts. Run via Docker, integrate with Python or TypeScript SDKs.',
+    'Open-source AI SQL gateway: natural language to validated SQL and Vega-Lite charts. Self-host with Docker, secure with API keys, integrate via Python or TypeScript SDKs.',
+  icons: {
+    icon: [{ url: '/seal-logo.svg', type: 'image/svg+xml' }],
+    apple: '/seal-logo.svg',
+  },
 };
 
 export default function RootLayout({

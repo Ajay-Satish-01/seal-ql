@@ -11,9 +11,6 @@ build/
 # Environment
 .env
 
-# uv
-uv.lock
-
 # Node
 node_modules/
 *.tsbuildinfo
@@ -38,7 +35,7 @@ htmlcov/
 
 # Generated SDK code
 sdks/typescript/src/generated/
-sdks/python/intelligence_connector/generated/
+sdks/python/seal/generated/
 
 # DuckDB
 *.duckdb

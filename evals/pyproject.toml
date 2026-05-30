@@ -1,12 +1,12 @@
 [project]
-name = "intelligence-evals"
+name = "seal-evals"
 version = "0.1.0"
-description = "Evaluation harness for Intelligence Connector"
+description = "Evaluation harness for Seal"
 requires-python = ">=3.11"
 dependencies = [
-    "intelligence-core",
-    "intelligence-sql",
-    "intelligence-charts",
+    "seal-core",
+    "seal-sql",
+    "seal-charts",
 ]
 
 [project.optional-dependencies]
@@ -15,6 +15,6 @@ dev = [
 ]
 
 [tool.uv.sources]
-intelligence-core = { workspace = true }
-intelligence-sql = { workspace = true }
-intelligence-charts = { workspace = true }
+seal-core = { workspace = true }
+seal-sql = { workspace = true }
+seal-charts = { workspace = true }

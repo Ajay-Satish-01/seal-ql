@@ -8,6 +8,14 @@ help: ## Show this help
 # ============================================================
 
 up: ## Start the entire dev stack
+	@if [ ! -f .env ]; then \
+		echo "❌ Missing .env — run: cp .env.example .env"; \
+		exit 1; \
+	fi
+	@if ! grep -qE '^SEAL_API_KEY=.+' .env 2>/dev/null; then \
+		echo "❌ Set SEAL_API_KEY in .env (see .env.example; use: openssl rand -hex 32)"; \
+		exit 1; \
+	fi
 	@if [ "$${OLLAMA_PROFILE:-default}" = "disabled" ]; then \
 		docker compose up --build -d; \
 	else \
@@ -26,11 +34,24 @@ up: ## Start the entire dev stack
 down: ## Stop the stack
 	docker compose down
 
-docker-build: ## Build the production Docker image
-	docker build --target prod -t intelligence-connector/api:latest -f apps/api/Dockerfile .
+VERSION ?= 0.1.0
+IMAGE ?= seal/api
 
-docker-push: docker-build ## Push the production Docker image to DockerHub
-	docker push intelligence-connector/api:latest
+docker-build: ## Build the production Docker image (VERSION=0.1.0)
+	docker build --target prod \
+		-t $(IMAGE):$(VERSION) \
+		-t $(IMAGE):latest \
+		-f apps/api/Dockerfile .
+
+docker-push: docker-build ## Push the production Docker image to Docker Hub
+	docker push $(IMAGE):$(VERSION)
+	docker push $(IMAGE):latest
+
+sdk-python-build: ## Build Python SDK wheel/sdist for PyPI
+	uv build --package seal
+
+sdk-npm-pack: ## Dry-run npm pack for the TypeScript SDK
+	cd sdks/typescript && pnpm install --frozen-lockfile && pnpm build && pnpm pack --dry-run
 
 build: ## Rebuild all containers
 	docker compose build --no-cache
@@ -124,7 +145,7 @@ check: ## Run all checks (lint + format check + tests) — same as CI
 	@echo "\n📋 8/9 — TS SDK tests..."
 	cd sdks/typescript && pnpm test
 	@echo "\n📋 9/9 — Prod Image Build..."
-	docker build --target prod -t intelligence-connector/api:test -f apps/api/Dockerfile .
+	docker build --target prod -t seal/api:test -f apps/api/Dockerfile .
 	@echo "\n═══════════════════════════════════════"
 	@echo "  ✅ All checks passed!"
 	@echo "═══════════════════════════════════════"
@@ -142,6 +163,6 @@ setup: ## First-time setup: install pre-commit hooks
 	@echo "   - pre-push: pytest"
 
 seed: ## Re-run the database seed script
-	docker compose exec -T postgres psql -U postgres -d intelligence_connector < scripts/seed.sql
+	docker compose exec -T postgres psql -U postgres -d seal < scripts/seed.sql
 
 ci: check ## Alias for 'check' — mirrors CI pipeline locally

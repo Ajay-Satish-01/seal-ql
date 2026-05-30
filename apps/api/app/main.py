@@ -6,12 +6,12 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from intelligence_core.llm.client import validate_llm_env
-from intelligence_core.planner.planner import QueryPlanner
-from intelligence_core.schema.introspector import get_introspector
-from intelligence_core.settings import get_settings
-from intelligence_semantic.registry import SemanticRegistry
-from intelligence_sql.executor import QueryExecutor
+from seal_core.llm.client import validate_llm_env
+from seal_core.planner.planner import QueryPlanner
+from seal_core.schema.introspector import get_introspector
+from seal_core.settings import get_settings
+from seal_semantic.registry import SemanticRegistry
+from seal_sql.executor import QueryExecutor
 
 from app.routes import health, query, schema
 
@@ -32,6 +32,13 @@ async def lifespan(app: FastAPI):
         settings.ollama_profile,
     )
     validate_llm_env()
+
+    auth_errors = settings.validate_auth_configuration()
+    if auth_errors:
+        for message in auth_errors:
+            logger.error(message)
+        raise RuntimeError("; ".join(auth_errors))
+    settings.log_auth_configuration_warnings()
 
     # Extract dialect from database url (e.g. postgresql:// -> postgres)
     dialect = "postgres" if "postgres" in settings.database_url else "duckdb"
@@ -69,19 +76,28 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     settings = get_settings()
 
+    docs_kwargs: dict[str, str | None] = {}
+    if settings.effective_disable_public_docs():
+        docs_kwargs = {
+            "docs_url": None,
+            "redoc_url": None,
+            "openapi_url": None,
+        }
+
     app = FastAPI(
-        title="Intelligence Connector API",
+        title="Seal API",
         version="0.1.0",
         description="AI-powered SQL generation and execution.",
         lifespan=lifespan,
+        **docs_kwargs,
     )
 
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-API-Key"],
     )
 
     # Mount routers

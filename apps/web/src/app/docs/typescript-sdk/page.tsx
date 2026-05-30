@@ -16,7 +16,7 @@ export default function TypeScriptSDKPage() {
         <h2 className="text-foreground mt-4 text-2xl font-bold">Installation</h2>
         <CodeBlock
           language="bash"
-          code={`npm install intelligence-sdk
+          code={`npm install seal
 npm install react react-dom vega vega-lite vega-embed`}
         />
 
@@ -25,13 +25,22 @@ npm install react react-dom vega vega-lite vega-embed`}
           to your deployment URL.
         </Callout>
 
+        <h2 className="text-foreground mt-10 text-2xl font-bold">API key</h2>
+        <p>
+          When the server has <code>SEAL_API_KEY</code> set, pass <code>apiKey</code> (sent as{' '}
+          <code>X-API-Key</code>). If you also pass custom <code>headers</code>,{' '}
+          <code>apiKey</code> wins over any <code>X-API-Key</code> in that object. See{' '}
+          <Link href="/docs/authentication">Authentication</Link>.
+        </p>
+
         <h2 className="text-foreground mt-10 text-2xl font-bold">Client</h2>
         <CodeBlock
           language="typescript"
-          code={`import { IntelligenceConnector } from 'intelligence-sdk';
+          code={`import { Seal } from 'seal';
 
-const client = new IntelligenceConnector({
+const client = new Seal({
   baseUrl: '${SITE.defaultBaseUrl}',
+  apiKey: process.env.SEAL_API_KEY,
 });
 
 const result = await client.query('Orders by region');
@@ -46,10 +55,13 @@ console.log(result.sql, result.results, result.chart);`}
           language="tsx"
           code={`'use client';
 
-import { IntelligenceConnector, VegaChart } from 'intelligence-sdk';
+import { Seal, VegaChart } from 'seal';
 
 export async function ChartExample() {
-  const client = new IntelligenceConnector({ baseUrl: '${SITE.defaultBaseUrl}' });
+  const client = new Seal({
+    baseUrl: '${SITE.defaultBaseUrl}',
+    apiKey: process.env.SEAL_API_KEY,
+  });
   const result = await client.query('Revenue by category');
 
   if (!result.chart || result.chart.chart_type === 'table') {
@@ -63,7 +75,7 @@ export async function ChartExample() {
         <h2 className="text-foreground mt-10 text-2xl font-bold">Errors</h2>
         <p>
           <code>QueryError</code>, <code>ServerError</code>, <code>ConnectionError</code> from{' '}
-          <code>intelligence-sdk</code>.
+          <code>seal</code>.
         </p>
 
         <p>

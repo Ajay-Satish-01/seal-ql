@@ -1,1 +1,1 @@
-"""FastAPI application for Intelligence Connector."""
+"""FastAPI application for Seal."""

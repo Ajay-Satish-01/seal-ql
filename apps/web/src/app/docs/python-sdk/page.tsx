@@ -9,12 +9,12 @@ export default function PythonSDKPage() {
     <div className="max-w-3xl">
       <PageHeader
         title="Python SDK"
-        description="Integrate Intelligence Connector from Python applications."
+        description="Integrate Seal from Python applications."
       />
 
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
         <h2 className="text-foreground mt-4 text-2xl font-bold">Installation</h2>
-        <CodeBlock language="bash" code="pip install intelligence-connector" />
+        <CodeBlock language="bash" code="pip install seal" />
         <p>
           Monorepo contributors: <code>uv sync --all-packages --all-extras</code> from the repo
           root.
@@ -25,12 +25,29 @@ export default function PythonSDKPage() {
           then point the client at your <code>baseUrl</code>.
         </Callout>
 
+        <h2 className="text-foreground mt-10 text-2xl font-bold">API key</h2>
+        <p>
+          When the server has <code>SEAL_API_KEY</code> set, pass <code>api_key=</code> (sent as{' '}
+          <code>X-API-Key</code>). See <Link href="/docs/authentication">Authentication</Link>.
+        </p>
+        <CodeBlock
+          language="python"
+          code={`import os
+from seal import Seal
+
+with Seal(
+    "${SITE.defaultBaseUrl}",
+    api_key=os.environ["SEAL_API_KEY"],
+) as client:
+    client.schema()`}
+        />
+
         <h2 className="text-foreground mt-10 text-2xl font-bold">Basic usage</h2>
         <CodeBlock
           language="python"
-          code={`from intelligence_connector import IntelligenceConnector
+          code={`from seal import Seal
 
-with IntelligenceConnector("${SITE.defaultBaseUrl}") as client:
+with Seal("${SITE.defaultBaseUrl}", api_key="your-secret") as client:
     schema = client.schema()
     result = client.query("Show total revenue by product category")
 
@@ -44,9 +61,9 @@ if result.chart:
         <h2 className="text-foreground mt-10 text-2xl font-bold">Async client</h2>
         <CodeBlock
           language="python"
-          code={`from intelligence_connector import AsyncIntelligenceConnector
+          code={`from seal import AsyncSeal
 
-async with AsyncIntelligenceConnector("${SITE.defaultBaseUrl}") as client:
+async with AsyncSeal("${SITE.defaultBaseUrl}", api_key="your-secret") as client:
     result = await client.query("Hourly event counts")`}
         />
 

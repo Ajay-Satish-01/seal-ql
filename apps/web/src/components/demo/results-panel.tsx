@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { QueryResponse } from 'intelligence-sdk';
+import type { QueryResponse } from 'seal';
 import { CodeBlock } from '@/components/code-block';
 import { ChartPanel } from './chart-panel';
 import { ChevronDown, ChevronRight } from 'lucide-react';

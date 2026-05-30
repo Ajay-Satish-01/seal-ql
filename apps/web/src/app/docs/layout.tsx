@@ -15,6 +15,7 @@ const sidebarGroups = [
       { title: 'Quickstart', href: '/docs/quickstart' },
       { title: 'Integration Guide', href: '/docs/integration-guide' },
       { title: 'Self-Hosting', href: '/docs/self-hosting' },
+      { title: 'Authentication', href: '/docs/authentication' },
     ],
   },
   {

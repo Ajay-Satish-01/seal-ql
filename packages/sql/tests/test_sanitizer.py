@@ -1,7 +1,7 @@
 """Tests for the SQL sanitizer module."""
 
 import pytest
-from intelligence_sql.sanitizer import (
+from seal_sql.sanitizer import (
     DEFAULT_MAX_JOINS,
     DEFAULT_MAX_ROWS,
     DEFAULT_MAX_SUBQUERY_DEPTH,

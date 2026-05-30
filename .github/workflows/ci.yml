@@ -227,6 +227,70 @@ jobs:
           fi
 
   # ============================================================
+  # Packages: Verify publishable artifacts build
+  # ============================================================
+  package-check:
+    name: "Packages — SDK & Docker artifacts"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Build Python SDK
+        run: uv build --package seal
+
+      - name: Validate Python distribution
+        run: uv tool run twine check --strict dist/seal-*
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: sdks/typescript/pnpm-lock.yaml
+
+      - name: Validate npm package
+        working-directory: sdks/typescript
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          npm pack --dry-run
+
+      - name: Build production Docker image
+        run: docker build --target prod -t seal/api:ci -f apps/api/Dockerfile .
+
+      - name: Verify prod image healthcheck script
+        run: docker run --rm seal/api:ci test -f /app/scripts/healthcheck.py
+
+      - name: Verify live healthcheck against running API
+        run: |
+          docker compose up -d postgres api
+          for i in $(seq 1 45); do
+            if docker compose exec -T api python /app/scripts/healthcheck.py; then
+              echo "Healthcheck passed"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs api
+          exit 1
+        env:
+          SEAL_API_KEY: dev-local-change-me
+          SEAL_DEV_MODE: "true"
+          LLM_MODEL: ollama/qwen3.5:4b
+          LLM_BASE_URL: http://localhost:11434
+
+      - name: Stop compose after healthcheck
+        if: always()
+        run: docker compose down -v
+
+  # ============================================================
   # Docker: Verify the full stack builds and starts
   # ============================================================
   docker-build:

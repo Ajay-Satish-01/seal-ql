@@ -2,9 +2,9 @@
 
 from typing import Any
 
-from intelligence_charts.models import ChartSpec
-from intelligence_sql.result import ColumnMetadata
 from pydantic import BaseModel, Field
+from seal_charts.models import ChartSpec
+from seal_sql.result import ColumnMetadata
 
 
 class QueryRequest(BaseModel):

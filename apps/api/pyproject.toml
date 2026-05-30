@@ -1,15 +1,15 @@
 [project]
-name = "intelligence-connector-api"
+name = "seal-api"
 version = "0.1.0"
-description = "FastAPI application for the Intelligence Connector SDK"
+description = "FastAPI application for the Seal SDK"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn>=0.34.0",
     "pydantic>=2.10.0",
-    "intelligence-core",
-    "intelligence-sql",
-    "intelligence-charts",
+    "seal-core",
+    "seal-sql",
+    "seal-charts",
     "python-dotenv>=1.2.2",
 ]
 
@@ -22,7 +22,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-intelligence-core = { workspace = true }
-intelligence-sql = { workspace = true }
-intelligence-charts = { workspace = true }
-intelligence-semantic = { workspace = true }
+seal-core = { workspace = true }
+seal-sql = { workspace = true }
+seal-charts = { workspace = true }
+seal-semantic = { workspace = true }

@@ -1,7 +1,7 @@
 """Tests for schema introspection — models and introspectors."""
 
 import pytest
-from intelligence_core.schema.models import (
+from seal_core.schema.models import (
     ColumnInfo,
     ColumnType,
     ContinuousAggregateInfo,
@@ -271,7 +271,7 @@ class TestDuckDBIntrospector:
 
     @pytest.mark.asyncio
     async def test_introspect_empty_database(self):
-        from intelligence_core.schema.duckdb import DuckDBIntrospector
+        from seal_core.schema.duckdb import DuckDBIntrospector
 
         introspector = DuckDBIntrospector(":memory:")
         schema = await introspector.introspect()
@@ -283,7 +283,7 @@ class TestDuckDBIntrospector:
     @pytest.mark.asyncio
     async def test_introspect_with_tables(self):
         import duckdb
-        from intelligence_core.schema.duckdb import DuckDBIntrospector
+        from seal_core.schema.duckdb import DuckDBIntrospector
 
         # Create a test database with known schema
         conn = duckdb.connect(":memory:")

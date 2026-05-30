@@ -1,6 +1,6 @@
-# 🌌 Intelligence Connector - AI Assistant Rules (GitHub Copilot)
+# 🌌 Seal - AI Assistant Rules (GitHub Copilot)
 
-These are the global rules for AI assistants (Cursor, Claude, Windsurf, Copilot, Gemini) interacting with the Intelligence Connector codebase.
+These are the global rules for AI assistants (Cursor, Claude, Windsurf, Copilot, Gemini) interacting with the Seal codebase.
 
 ## 🏛️ Project Overview
 This project is an AI-powered SQL query generation, validation, and visualization SDK. It enables natural language querying over databases with client/server safety and native visual chart rendering.

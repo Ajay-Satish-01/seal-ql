@@ -14,7 +14,7 @@ export default function ContributingPage() {
 
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
         <Callout variant="warning" title="Not the default install path">
-          If you only want to <em>use</em> Intelligence Connector, follow{' '}
+          If you only want to <em>use</em> Seal, follow{' '}
           <Link href="/docs/self-hosting">Self-Hosting</Link> (Docker) and the{' '}
           <Link href="/docs/integration-guide">Integration Guide</Link> (SDK). Clone when you need
           to change core code.
@@ -24,14 +24,18 @@ export default function ContributingPage() {
         <CodeBlock
           language="bash"
           code={`git clone ${SITE.github}.git
-cd intelligence-connector
-cp .env.example .env   # Ollama (default) or OLLAMA_PROFILE=disabled + cloud API keys
-make up
+cd seal
+cp .env.example .env
+# .env.example sets SEAL_DEV_MODE=true and a placeholder SEAL_API_KEY for local dev.
+# For anything shared or production-like, run: openssl rand -hex 32
+make up    # fails fast if SEAL_API_KEY is missing in .env
 make seed
 uv run pytest -v`}
         />
         <p>
-          See <code>.env.example</code> and{' '}
+          See <code>.env.example</code> (auth + LLM vars) and{' '}
+          <Link href="/docs/authentication">Authentication</Link> for{' '}
+          <code>SEAL_AUTH_REQUIRED</code> / <code>SEAL_DEV_MODE</code>. LLM:{' '}
           <Link href="/docs/self-hosting#llm-configuration">LLM configuration</Link> for LiteLLM{' '}
           <code>LLM_MODEL</code> ids and <code>OLLAMA_PROFILE</code> (Ollama vs cloud).
         </p>
@@ -75,16 +79,19 @@ uv run pytest -v`}
         <p>Updates OpenAPI spec, demo fixtures, and copies seed SQL into the docs site.</p>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Releases</h2>
-        <p>Align per release:</p>
+        <p>
+          See <code>RELEASING.md</code> in the repository root. Push a <code>v*</code> git tag to
+          trigger the Release workflow (Docker Hub, PyPI, npm). Align per release:
+        </p>
         <ul>
           <li>
-            Docker image <code>intelligence-connector/api:&lt;tag&gt;</code>
+            Docker image <code>seal/api:&lt;version&gt;</code>
           </li>
           <li>
-            PyPI <code>intelligence-connector</code> and npm <code>intelligence-sdk</code>
+            PyPI <code>seal</code> and npm <code>seal</code>
           </li>
           <li>
-            Committed <code>apps/api/openapi.json</code>
+            Committed <code>uv.lock</code> and <code>apps/api/openapi.json</code>
           </li>
         </ul>
       </div>

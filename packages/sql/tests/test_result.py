@@ -6,7 +6,7 @@ import datetime
 import decimal
 
 import pytest
-from intelligence_sql.result import ColumnMetadata, QueryResult, _serialize_value
+from seal_sql.result import ColumnMetadata, QueryResult, _serialize_value
 
 # ---------------------------------------------------------------------------
 # ColumnMetadata

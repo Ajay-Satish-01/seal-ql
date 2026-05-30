@@ -2,30 +2,30 @@ import { PageHeader } from '@/components/page-header';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { ArrowRight, Database, Shield, Zap, BarChart } from 'lucide-react';
+import { ArrowRight, Database, Shield, Zap, BarChart, KeyRound } from 'lucide-react';
 
 export default function DocsPage() {
   return (
     <div className="max-w-3xl">
       <PageHeader
-        title="What is Intelligence Connector?"
+        title="What is Seal?"
         description="A unified, secure, and intelligent gateway between Natural Language and your Databases."
       />
 
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
         <p className="text-lg">
-          Intelligence Connector is a comprehensive SDK and API gateway designed to streamline and
+          Seal is a comprehensive SDK and API gateway designed to streamline and
           secure natural language database querying for modern AI applications. It serves as the
           critical safety and translation layer between your LLMs and your relational databases.
         </p>
 
         <h3 className="text-foreground mt-8 mb-4 text-xl font-semibold">
-          Why use Intelligence Connector?
+          Why use Seal?
         </h3>
         <p>
           Building reliable text-to-SQL applications is notoriously difficult. Developers face
           hallucinated schemas, destructive SQL injections (`DROP TABLE`), malformed syntax, and a
-          lack of visual data representation. Intelligence Connector solves these problems
+          lack of visual data representation. Seal solves these problems
           systematically:
         </p>
 
@@ -62,11 +62,25 @@ export default function DocsPage() {
               frontend to instantly render beautiful, dynamic charts without manual processing.
             </p>
           </div>
+          <div className="border-border/50 bg-card text-card-foreground rounded-xl border p-5 shadow-sm md:col-span-2">
+            <KeyRound className="text-primary mb-3 h-8 w-8" />
+            <h4 className="mb-2 text-lg font-semibold">API authentication</h4>
+            <p className="text-muted-foreground text-sm">
+              Self-host with <code>SEAL_API_KEY</code> and <code>X-API-Key</code>. Production uses{' '}
+              <code>SEAL_AUTH_REQUIRED</code>, <code>SEAL_DEV_MODE=false</code>, and optional{' '}
+              <code>SEAL_DISABLE_DOCS</code>. End users should call your backend, not hold the shared
+              key — see{' '}
+              <Link href="/docs/authentication" className="text-primary">
+                Authentication
+              </Link>
+              .
+            </p>
+          </div>
         </div>
 
         <p>
           Whether you are building an internal analytics copilot or a customer-facing data
-          dashboard, Intelligence Connector provides the SDKs and APIs to get to production safely.
+          dashboard, Seal provides the SDKs and APIs to get to production safely.
         </p>
 
         <p className="mt-8 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm">

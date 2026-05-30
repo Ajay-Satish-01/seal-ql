@@ -46,6 +46,6 @@ describe('VegaChart', () => {
     const { container } = render(<VegaChart spec={spec} />);
     const div = container.firstChild as HTMLDivElement;
     expect(div).not.toBeNull();
-    expect(div.className).toContain('intelligence-vega-chart');
+    expect(div.className).toContain('seal-vega-chart');
   });
 });

@@ -1,6 +1,6 @@
 # 👥 Contributors & Developer Guide
 
-Thank you for contributing to the **Intelligence Connector**! This document outlines our repository architecture, coding guidelines, development workflow, and the processes we use to write, test, and merge code.
+Thank you for contributing to the **Seal**! This document outlines our repository architecture, coding guidelines, development workflow, and the processes we use to write, test, and merge code.
 
 ---
 
@@ -27,8 +27,8 @@ To establish a complete, working developer environment:
 ### 1. Repository Setup & Dependencies
 ```bash
 # Clone the repository
-git clone https://github.com/Ajay-Satish-01/intelligence.git
-cd intelligence_connector
+git clone https://github.com/seal/seal.git
+cd seal
 
 # Initialize Python virtual environment & sync workspace
 uv sync --all-packages --all-extras
@@ -107,7 +107,7 @@ We enforce strict formatting rules to maintain maximum readability and zero boil
 
 ## 🧠 Semantic Metrics, Repair Loops, & Evals
 
-Intelligence Connector features self-correcting query mechanisms and domain-aware schema reasoning to provide robust and accurate SQL generation.
+Seal features self-correcting query mechanisms and domain-aware schema reasoning to provide robust and accurate SQL generation.
 
 ### 📊 Semantic Metric Layers
 **Purpose**: To bridge the gap between raw database schemas and business logic.
@@ -134,10 +134,10 @@ Intelligence Connector features self-correcting query mechanisms and domain-awar
 - To run evals:
   ```bash
   # DuckDB in-memory evaluation
-  uv run python evals/intelligence_evals/runner.py :memory:
+  uv run python evals/seal_evals/runner.py :memory:
 
   # TimescaleDB/Postgres evaluation (in docker)
-  docker compose exec api uv run python evals/intelligence_evals/runner.py postgresql+asyncpg://postgres:postgres@postgres:5432/intelligence_connector
+  docker compose exec api uv run python evals/seal_evals/runner.py postgresql+asyncpg://postgres:postgres@postgres:5432/seal
   ```
 
 ---

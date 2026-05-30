@@ -1,24 +1,30 @@
 /**
- * Intelligence Connector TypeScript SDK
+ * Seal TypeScript SDK
  *
  * @example
  * ```ts
- * import { IntelligenceConnector } from "intelligence-sdk";
+ * import { Seal } from "seal";
  *
- * const client = new IntelligenceConnector({ baseUrl: "http://localhost:8000" });
+ * const client = new Seal({ baseUrl: "http://localhost:8000" });
  * const result = await client.query("Show me monthly revenue");
  * console.log(result.sql);
  * ```
  */
 
-export { IntelligenceConnector } from './client.js';
+export { Seal } from './client.js';
 export { VegaChart, type VegaChartProps } from './react.js';
-export { IntelligenceConnectorError, ConnectionError, QueryError, ServerError } from './errors.js';
+export {
+  SealError,
+  SealConnectionError,
+  ConnectionError,
+  QueryError,
+  ServerError,
+} from './errors.js';
 export type {
   ChartType,
   ChartSpec,
   ColumnMetadata,
-  ConnectorOptions,
+  SealOptions,
   DatabaseSchema,
   HealthResponse,
   QueryRequest,

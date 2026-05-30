@@ -20,7 +20,7 @@ from typing import Any
 
 import duckdb
 import pytest
-from intelligence_sql.executor import (
+from seal_sql.executor import (
     DEFAULT_MAX_RETRIES,
     DEFAULT_RETRY_BASE_DELAY,
     DEFAULT_ROW_CAP,
@@ -30,7 +30,7 @@ from intelligence_sql.executor import (
     QueryExecutor,
     QueryTimeoutError,
 )
-from intelligence_sql.result import QueryResult
+from seal_sql.result import QueryResult
 
 # ---------------------------------------------------------------------------
 # ExecutionConfig

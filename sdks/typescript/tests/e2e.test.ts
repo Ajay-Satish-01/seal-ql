@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { IntelligenceConnector } from '../src/client.js';
+import { Seal } from '../src/client.js';
 
 const API_URL = 'http://localhost:8000';
 
@@ -29,10 +29,10 @@ describe('E2E Tests', async () => {
   // Conditionally skip all tests if the API is not reachable.
   const testFn = reachable ? it : it.skip;
 
-  let client: IntelligenceConnector;
+  let client: Seal;
 
   beforeAll(() => {
-    client = new IntelligenceConnector({
+    client = new Seal({
       baseUrl: API_URL,
       timeout: 180_000,
     });

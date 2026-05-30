@@ -1,10 +1,11 @@
+import os
+
 import pytest
 from app.main import app
 from fastapi.testclient import TestClient
-from intelligence_core.settings import get_settings
+from seal_core.settings import get_settings
 
 # We use TestClient, but we DON'T override dependencies, so it uses the real Docker stack!
-client = TestClient(app)
 
 
 def is_docker_running() -> bool:
@@ -29,11 +30,21 @@ def is_docker_running() -> bool:
 )
 def test_e2e_live_query():
     """Test a full query end-to-end against the local Docker stack."""
+    # Require the key explicitly — a missing env var should error, not silently pass.
+    api_headers = {"X-API-Key": os.environ["SEAL_API_KEY"]}
+
     # Note: TestClient calls lifespan events (startup/shutdown) automatically!
     with TestClient(app) as live_client:
-        response = live_client.post("/v1/query", json={"query": "Show me 2 products"})
+        response = live_client.post(
+            "/v1/query",
+            json={"query": "Show me 2 products"},
+            headers=api_headers,
+        )
 
-        # If the LLM or DB fails, this might be a 500, but ideally it works.
+        # Auth regressions must surface as failures, not skips.
+        assert response.status_code != 401, f"Unexpected 401 (auth regression): {response.text}"
+
+        # A weak local model or DB hiccup can still 5xx; skip only in that case.
         if response.status_code != 200:
             pytest.skip(f"Skipping live query due to weak model failure: {response.text}")
 

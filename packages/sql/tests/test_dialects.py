@@ -1,7 +1,7 @@
 """Tests for the dialect mapping module."""
 
 import pytest
-from intelligence_sql.dialects import (
+from seal_sql.dialects import (
     Dialect,
     is_supported_dialect,
     to_sqlglot_dialect,
