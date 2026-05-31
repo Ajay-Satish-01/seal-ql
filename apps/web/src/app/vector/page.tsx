@@ -1,5 +1,6 @@
 'use client';
 
+import { DatabaseScopeBanner } from '@/components/dashboard/database-scope-banner';
 import { PageShell } from '@/components/dashboard/page-shell';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -28,6 +29,7 @@ export default function VectorPage() {
       title="Vector index"
       description="POST /v1/vector/reindex when VECTOR_STORE is chroma (or another backend)."
     >
+      <DatabaseScopeBanner feature="Vector reindex" />
       <Card className="console-panel space-y-4 p-4">
         <p className="text-muted-foreground text-sm">
           Rebuild embeddings from the live schema and catalog. Requires vector store configuration

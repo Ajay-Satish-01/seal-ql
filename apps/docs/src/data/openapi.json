@@ -25,18 +25,18 @@
         }
       }
     },
-    "/v1/schema": {
+    "/v1/databases": {
       "get": {
-        "summary": "Get Schema",
-        "description": "Introspect and return the full database schema.",
-        "operationId": "get_schema_v1_schema_get",
+        "summary": "List Databases",
+        "description": "List registered database identifiers (for clients and the dashboard).",
+        "operationId": "list_databases_v1_databases_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DatabaseSchema"
+                  "$ref": "#/components/schemas/DatabasesListResponse"
                 }
               }
             }
@@ -57,6 +57,75 @@
             "APIKeyHeader": []
           }
         ]
+      }
+    },
+    "/v1/schema": {
+      "get": {
+        "summary": "Get Schema",
+        "description": "Introspect and return the full database schema.",
+        "operationId": "get_schema_v1_schema_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "database_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Target database identifier.",
+              "default": "default",
+              "title": "Database Id"
+            },
+            "description": "Target database identifier."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatabaseSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid or missing API key"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown database_id",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "unknown_database_id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/query": {
@@ -91,6 +160,16 @@
               "application/json": {
                 "example": {
                   "detail": "Invalid or missing API key"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown database_id",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "unknown_database_id"
                 }
               }
             }
@@ -143,6 +222,16 @@
               "application/json": {
                 "example": {
                   "detail": "Invalid or missing API key"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown database_id",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "unknown_database_id"
                 }
               }
             }
@@ -722,8 +811,9 @@
           },
           "database_id": {
             "type": "string",
+            "minLength": 1,
             "title": "Database Id",
-            "description": "Target database identifier.",
+            "description": "Registered database identifier (default: 'default').",
             "default": "default"
           }
         },
@@ -899,6 +989,33 @@
         "title": "ContinuousAggregateInfo",
         "description": "TimescaleDB continuous aggregate metadata.\n\nContinuous aggregates are materialized views that are incrementally updated\nby TimescaleDB in the background. They're ideal for time-series analytics\nbecause the LLM can query them directly for pre-aggregated data."
       },
+      "DatabaseInfo": {
+        "properties": {
+          "database_id": {
+            "type": "string",
+            "title": "Database Id",
+            "description": "Registered identifier passed as database_id."
+          },
+          "dialect": {
+            "type": "string",
+            "title": "Dialect",
+            "description": "SQL dialect (postgres, duckdb, \u2026)."
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default",
+            "description": "True for the primary DATABASE_URL backend."
+          }
+        },
+        "type": "object",
+        "required": [
+          "database_id",
+          "dialect",
+          "is_default"
+        ],
+        "title": "DatabaseInfo",
+        "description": "One entry in the configured database registry."
+      },
       "DatabaseSchema": {
         "properties": {
           "dialect": {
@@ -935,6 +1052,21 @@
         ],
         "title": "DatabaseSchema",
         "description": "Complete schema for an entire database connection.\n\nThis is the top-level model passed to the query planner and SQL validator.\nIt contains all tables (including views, matviews, hypertables, continuous\naggregates), their columns, and relationships."
+      },
+      "DatabasesListResponse": {
+        "properties": {
+          "databases": {
+            "items": {
+              "$ref": "#/components/schemas/DatabaseInfo"
+            },
+            "type": "array",
+            "title": "Databases",
+            "description": "Sorted list of configured database_id values."
+          }
+        },
+        "type": "object",
+        "title": "DatabasesListResponse",
+        "description": "Registered databases available for routing."
       },
       "HTTPValidationError": {
         "properties": {
@@ -1019,8 +1151,9 @@
           },
           "database_id": {
             "type": "string",
+            "minLength": 1,
             "title": "Database Id",
-            "description": "The identifier for the target database.",
+            "description": "Registered database identifier (default: 'default').",
             "default": "default"
           }
         },

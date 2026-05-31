@@ -4,8 +4,18 @@
       "type": "function",
       "function": {
         "name": "seal_get_schema",
-        "description": "Discover database tables, columns, foreign keys, and Timescale metadata.",
-        "parameters": { "type": "object", "properties": {}, "additionalProperties": false }
+        "description": "Discover database tables, columns, foreign keys, and Timescale metadata for a configured database_id.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "database_id": {
+              "type": "string",
+              "default": "default",
+              "description": "Registered database id from SEAL_DATABASES_PATH or SEAL_DATABASES"
+            }
+          },
+          "additionalProperties": false
+        }
       },
       "x-seal": { "method": "GET", "path": "/v1/schema" }
     },
@@ -44,6 +54,7 @@
           "properties": {
             "message": { "type": "string" },
             "session_id": { "type": "string" },
+            "database_id": { "type": "string", "default": "default" },
             "include_charts": { "type": "boolean", "default": false },
             "stream": { "type": "boolean", "default": false },
             "enhancement": { "type": "boolean" }

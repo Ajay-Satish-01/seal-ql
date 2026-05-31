@@ -63,6 +63,12 @@ export default function ConfigurationPage() {
                 Postgres instead.
               </p>
               <p>
+                To register additional backends (warehouse, DuckDB file, read replica), see{' '}
+                <Link href="/docs/multi-database">Multi-database routing</Link> — a step-by-step guide
+                with examples. Each request passes <code>database_id</code> (default{' '}
+                <code>&quot;default&quot;</code>).
+              </p>
+              <p>
                 After changing the URL, restart the API container. Workspace and catalog files do not
                 move with the database — run <code>make seed</code> or your own migrations on the
                 new instance.

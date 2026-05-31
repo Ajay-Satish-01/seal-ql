@@ -28,6 +28,7 @@ const sidebarGroups = [
     title: 'Configuration',
     links: [
       { title: 'Configuration reference', href: '/docs/configuration' },
+      { title: 'Multi-database routing', href: '/docs/multi-database' },
       { title: 'Workspace settings', href: '/docs/workspace' },
       { title: 'Data catalog', href: '/docs/data-catalog' },
       { title: 'Guardrails', href: '/docs/guardrails' },

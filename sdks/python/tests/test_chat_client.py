@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 from seal import Seal
@@ -50,6 +52,26 @@ class TestChatClient:
         client._client = httpx.Client(base_url="http://testserver", transport=transport)
         result = client.chat("Hi")
         assert result.message == "Hello"
+        client.close()
+
+    def test_chat_sends_database_id(self) -> None:
+        captured: dict[str, object] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["body"] = json.loads(request.content)
+            return httpx.Response(200, json=_CHAT_RESPONSE)
+
+        transport = httpx.MockTransport(handler)
+        client = Seal.__new__(Seal)
+        client._base_url = "http://testserver"
+        client._client = httpx.Client(base_url="http://testserver", transport=transport)
+        client.chat("Hi", database_id="analytics")
+        assert captured["body"] == {
+            "message": "Hi",
+            "include_charts": False,
+            "stream": False,
+            "database_id": "analytics",
+        }
         client.close()
 
     def test_parse_sse(self) -> None:

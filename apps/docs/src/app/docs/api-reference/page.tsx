@@ -55,7 +55,11 @@ export default function ApiReferencePage() {
           >
             <p>
               Returns full database introspection (tables, columns, relationships, TimescaleDB
-              metadata).
+              metadata) for a registered <code>database_id</code>.
+            </p>
+            <p>
+              Query parameter <code>database_id</code> (default <code>&quot;default&quot;</code>).
+              See <Link href="/docs/multi-database">Multi-database routing</Link>.
             </p>
           </EndpointBlock>
         ) : null}
@@ -80,7 +84,8 @@ export default function ApiReferencePage() {
                   name: 'database_id',
                   type: 'string',
                   required: false,
-                  description: 'Target database id (default: "default").',
+                  description:
+                    'Registered database id (default: "default"). Resolved before guardrails; unknown id → HTTP 404.',
                 },
               ]}
             />
@@ -103,7 +108,7 @@ export default function ApiReferencePage() {
                 {
                   name: 'metadata',
                   type: 'object',
-                  description: 'row_count, execution_time_ms, truncated, warnings.',
+                  description: 'database_id, row_count, execution_time_ms, truncated, warnings.',
                 },
               ]}
             />
@@ -143,6 +148,13 @@ export default function ApiReferencePage() {
                   type: 'string',
                   required: false,
                   description: 'Conversation session for follow-ups.',
+                },
+                {
+                  name: 'database_id',
+                  type: 'string',
+                  required: false,
+                  description:
+                    'Registered database id (default: "default"). Must match pinned session on follow-ups or HTTP 400 session_database_id_mismatch.',
                 },
                 {
                   name: 'include_charts',

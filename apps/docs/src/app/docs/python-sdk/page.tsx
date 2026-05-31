@@ -53,6 +53,23 @@ with Seal(
           language="python"
           code={pythonQuerySnippet(SITE.defaultBaseUrl, 'Show total revenue by product category')}
         />
+        <p>
+          Named backends use the keyword <code>database_id=</code> on every method that touches a
+          database:
+        </p>
+        <CodeBlock
+          language="python"
+          code={`result = client.query("Total orders", database_id="default")
+schema = client.schema(database_id="analytics")
+reply = client.chat("What tables exist?", database_id="analytics")
+for event in client.chat_stream("Summarize", database_id="analytics"):
+    if event["type"] == "meta":
+        print(event["data"].get("database_id"), event["data"].get("sql"))`}
+        />
+        <p>
+          See <Link href="/docs/multi-database">Multi-database routing</Link> for YAML/JSON config,
+          DuckDB paths, and chat session pinning.
+        </p>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Chat &amp; catalog</h2>
         <CodeBlock

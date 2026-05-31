@@ -8,6 +8,7 @@ from typing import Any
 from seal_core.catalog.models import DataCatalog
 from seal_core.catalog.registry import DataCatalogRegistry
 from seal_core.chat.models import ChatMessage
+from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
 from seal_core.planner.models import ChartType, QueryPlan
 from seal_core.schema.models import DatabaseSchema
 from seal_sql.result import ColumnMetadata, QueryResult
@@ -67,6 +68,33 @@ class MockExecutor:
         )
 
 
+class TrackingMockExecutor(MockExecutor):
+    def __init__(self, *, database_id: str) -> None:
+        self.database_id = database_id
+        self.calls: list[str] = []
+
+    async def execute(self, sql: str) -> QueryResult:
+        self.calls.append(sql)
+        return await super().execute(sql)
+
+
+def make_mock_database_registry(
+    *,
+    extra: dict[str, DatabaseBundle] | None = None,
+) -> DatabaseRegistry:
+    default_bundle = DatabaseBundle(
+        database_id="default",
+        dialect="postgres",
+        url="mock://default",
+        introspector=MockIntrospector(),
+        executor=MockExecutor(),
+    )
+    bundles = {"default": default_bundle}
+    if extra:
+        bundles.update(extra)
+    return DatabaseRegistry(bundles)
+
+
 class MockSemanticRegistry:
     def get_context_string(self) -> str:
         return ""
@@ -79,6 +107,8 @@ class MockDataCatalog(DataCatalogRegistry):
 
 
 class MockChatService:
+    last_database_id: str | None = None
+
     async def handle_json(
         self,
         *,
@@ -87,16 +117,17 @@ class MockChatService:
         messages_override: list[ChatMessage] | None,
         include_charts: bool,
         enhancement_enabled: bool | None,
-        schema: Any,
+        database_id: str = "default",
     ) -> Any:
         from seal_core.chat.service import ChatResult
 
+        MockChatService.last_database_id = database_id
         sid = session_id or "test-session"
         return ChatResult(
             session_id=sid,
             message=f"Echo: {message}",
             sources=["mock_table"],
-            metadata={"used_sql": False, "enhancement": {}},
+            metadata={"used_sql": False, "enhancement": {}, "database_id": database_id},
         )
 
     async def handle_stream(
@@ -107,8 +138,13 @@ class MockChatService:
         messages_override: list[ChatMessage] | None,
         include_charts: bool,
         enhancement_enabled: bool | None,
-        schema: Any,
+        database_id: str = "default",
     ) -> AsyncIterator[str]:
-        yield 'event: seal.meta\ndata: {"session_id":"test-session"}\n\n'
+        MockChatService.last_database_id = database_id
+        meta = (
+            f'event: seal.meta\ndata: {{"session_id":"test-session",'
+            f'"database_id":"{database_id}"}}\n\n'
+        )
+        yield meta
         yield 'data: {"choices":[{"delta":{"content":"Hi"}}]}\n\n'
         yield "data: [DONE]\n\n"

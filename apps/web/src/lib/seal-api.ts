@@ -3,8 +3,28 @@ import { authHeaders, normalizeBaseUrl } from '@/lib/connection';
 import type { ChartSpec } from 'seal';
 
 export type ConnectionProbeResult =
-  | { ok: true; tableCount: number }
+  | { ok: true; tableCount: number; databases: DatabaseInfo[] }
   | { ok: false; message: string };
+
+export interface DatabaseInfo {
+  database_id: string;
+  dialect: string;
+  is_default: boolean;
+}
+
+export interface DatabasesListResponse {
+  databases: DatabaseInfo[];
+}
+
+export interface SchemaTable {
+  name: string;
+  schema?: string;
+  columns?: Array<{ name: string; type: string }>;
+}
+
+export interface DatabaseSchemaResponse {
+  tables: SchemaTable[];
+}
 
 /** Verify the API is reachable and the API key (if any) works for /v1/catalog. */
 export async function probeApiConnection(
@@ -35,7 +55,17 @@ export async function probeApiConnection(
 
     const body = (await catalog.json()) as { tables?: unknown[] };
     const tableCount = Array.isArray(body.tables) ? body.tables.length : 0;
-    return { ok: true, tableCount };
+
+    let databases: DatabaseInfo[] = [
+      { database_id: 'default', dialect: 'postgres', is_default: true },
+    ];
+    try {
+      databases = await getDatabases(url, apiKey.trim(), signal);
+    } catch {
+      // Older API without /v1/databases — still connected.
+    }
+
+    return { ok: true, tableCount, databases };
   } catch (error) {
     if ((error as Error).name === 'AbortError') {
       return { ok: false, message: 'Connection check cancelled' };
@@ -91,16 +121,46 @@ async function readError(res: Response): Promise<never> {
   throw new Error(formatApiError(res.status, detail));
 }
 
+export async function getDatabases(
+  baseUrl: string,
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<DatabaseInfo[]> {
+  const res = await fetch(`${normalizeBaseUrl(baseUrl)}/v1/databases`, {
+    headers: authHeaders(apiKey),
+    signal,
+  });
+  if (!res.ok) await readError(res);
+  const body = (await res.json()) as DatabasesListResponse;
+  return body.databases ?? [];
+}
+
+export async function getSchema(
+  baseUrl: string,
+  apiKey: string,
+  databaseId: string,
+  signal?: AbortSignal,
+): Promise<DatabaseSchemaResponse> {
+  const id = encodeURIComponent(databaseId.trim() || 'default');
+  const res = await fetch(`${normalizeBaseUrl(baseUrl)}/v1/schema?database_id=${id}`, {
+    headers: authHeaders(apiKey),
+    signal,
+  });
+  if (!res.ok) await readError(res);
+  return res.json() as Promise<DatabaseSchemaResponse>;
+}
+
 export async function postQuery(
   baseUrl: string,
   query: string,
   apiKey: string,
+  databaseId: string,
   signal?: AbortSignal,
 ): Promise<QueryResponse> {
   const res = await fetch(`${normalizeBaseUrl(baseUrl)}/v1/query`, {
     method: 'POST',
     headers: authHeaders(apiKey),
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, database_id: databaseId.trim() || 'default' }),
     signal,
   });
   if (!res.ok) await readError(res);

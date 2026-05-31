@@ -202,6 +202,10 @@ make sync-catalog`,
         <h2 className="mt-12">Next reads</h2>
         <ul>
           <li>
+            <Link href="/docs/multi-database">Multi-database routing</Link> — register DuckDB or
+            extra Postgres backends and pass <code>database_id</code> on query, chat, and schema
+          </li>
+          <li>
             <Link href="/docs/workspace">Workspace settings</Link> — guardrails and limits in Postgres
           </li>
           <li>

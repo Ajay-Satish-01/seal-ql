@@ -78,6 +78,28 @@ export default function FeaturesPage() {
           <li>Dialect-aware validation in <code>packages/sql</code></li>
         </ul>
 
+        <h2 id="multi-database">Multi-database routing</h2>
+        <p>
+          Register named backends at startup; clients pass <code>database_id</code> on query, chat,
+          and schema requests.
+        </p>
+        <ul>
+          <li>
+            <code>DATABASE_URL</code> → id <code>default</code>
+          </li>
+          <li>
+            Optional <code>config/databases.yaml</code> or <code>SEAL_DATABASES</code> JSON for
+            additional ids
+          </li>
+          <li>
+            Unknown id → HTTP 404 <code>unknown_database_id</code>
+          </li>
+          <li>
+            Global catalog and vector index remain on default —{' '}
+            <Link href="/docs/multi-database">Multi-database routing</Link>
+          </li>
+        </ul>
+
         <h2 id="guardrails">LLM guardrails</h2>
         <p>
           Scope classification runs before planners, SQL, and vector RAG on query and chat paths.

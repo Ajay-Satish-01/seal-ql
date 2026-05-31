@@ -11,19 +11,19 @@ from seal_core.catalog.registry import DataCatalogRegistry
 from seal_core.catalog.sync import sync_catalog
 from seal_core.chat.service import ChatService
 from seal_core.chat.sessions import SessionStore
+from seal_core.database.config import DatabaseConfigError
+from seal_core.database.registry import build_database_registry
 from seal_core.enhancement.orchestrator import build_default_orchestrator
 from seal_core.llm.client import validate_llm_env
 from seal_core.planner.planner import QueryPlanner
-from seal_core.schema.introspector import get_introspector
 from seal_core.settings import get_settings, validate_vector_store_configuration
 from seal_core.vector.factory import get_vector_store
 from seal_core.vector.indexer import VectorIndexBuilder
 from seal_core.workspace.bootstrap import apply_workspace_on_startup
 from seal_core.workspace.store import create_workspace_store
 from seal_semantic.registry import SemanticRegistry
-from seal_sql.executor import QueryExecutor
 
-from app.routes import catalog, chat, health, query, schema, vector, workspace
+from app.routes import catalog, chat, databases, health, query, schema, vector, workspace
 
 load_dotenv()
 
@@ -50,13 +50,11 @@ async def lifespan(app: FastAPI):
     settings.log_auth_configuration_warnings()
     validate_vector_store_configuration()
 
-    dialect = "postgres" if "postgres" in settings.database_url else "duckdb"
-
-    logger.info("Initializing Schema Introspector for dialect: %s", dialect)
-    introspector = get_introspector(dialect, settings.database_url)
-
-    logger.info("Initializing Query Executor")
-    executor = QueryExecutor(dialect, settings.database_url)
+    try:
+        database_registry = build_database_registry(settings)
+    except DatabaseConfigError as exc:
+        raise RuntimeError(f"Database configuration error: {exc}") from exc
+    default_bundle = database_registry.default
 
     logger.info("Initializing Query Planner")
     planner = QueryPlanner()
@@ -68,7 +66,7 @@ async def lifespan(app: FastAPI):
     if settings.data_catalog_path:
         catalog_path = Path(settings.data_catalog_path)
         if settings.catalog_auto_sync:
-            schema = await introspector.introspect()
+            schema = await default_bundle.introspector.introspect()
             await sync_catalog(
                 schema,
                 catalog_path,
@@ -76,7 +74,7 @@ async def lifespan(app: FastAPI):
             )
         data_catalog.load(catalog_path)
         if settings.data_catalog_strict:
-            schema = await introspector.introspect()
+            schema = await default_bundle.introspector.introspect()
             errors = data_catalog.validate_against_schema(schema)
             if errors:
                 raise RuntimeError("; ".join(errors))
@@ -84,7 +82,7 @@ async def lifespan(app: FastAPI):
     vector_store = get_vector_store(settings)
     if settings.vector_store.lower() != "none" or settings.vector_store_class:
         try:
-            schema = await introspector.introspect()
+            schema = await default_bundle.introspector.introspect()
             builder = VectorIndexBuilder(vector_store)
             await builder.build(schema, data_catalog)
         except Exception as e:
@@ -100,15 +98,14 @@ async def lifespan(app: FastAPI):
 
     chat_service = ChatService(
         planner=planner,
-        executor=executor,
+        registry=database_registry,
         sessions=SessionStore(),
         orchestrator=orchestrator,
         catalog=data_catalog,
         semantic_registry=semantic_registry,
     )
 
-    app.state.introspector = introspector
-    app.state.executor = executor
+    app.state.database_registry = database_registry
     app.state.planner = planner
     app.state.semantic_registry = semantic_registry
     app.state.data_catalog = data_catalog
@@ -124,8 +121,7 @@ async def lifespan(app: FastAPI):
 
     logger.info("Closing database connections...")
     await workspace_store.close()
-    await executor.close()
-    await introspector.close()
+    await database_registry.close()
 
 
 def create_app() -> FastAPI:
@@ -161,6 +157,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health.router)
+    app.include_router(databases.router, prefix="/v1")
     app.include_router(schema.router, prefix="/v1")
     app.include_router(query.router, prefix="/v1")
     app.include_router(chat.router, prefix="/v1")

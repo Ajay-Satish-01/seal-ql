@@ -12,7 +12,7 @@
 - `sdks/python/`, `sdks/typescript/`: SDK wrappers (`query`, `chat`, `chatStream`, `catalog`)
 - `config/`: `catalog.example.yaml`, `seal-tools.openai.json`
 - `scripts/`: `seed.sql`, `migrate_app.sql`, `sync_catalog.py`
-- `docs/`: Contributor docs (`how-seal-works.md`, `guardrails.md`, `chat-enhancement.md`, `workspace-api.md`, `integrations/`)
+- `docs/`: Contributor docs (`how-seal-works.md`, `multi-database.md`, `guardrails.md`, `chat-enhancement.md`, `workspace-api.md`, `integrations/`)
 
 ## Architecture
 

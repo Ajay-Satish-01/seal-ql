@@ -4,6 +4,9 @@ const STORAGE_VERSION = 'v1';
 const STORAGE_PREFIX = `seal-dashboard:${STORAGE_VERSION}:connection`;
 const STORAGE_URL = `${STORAGE_PREFIX}:url`;
 const STORAGE_KEY = `${STORAGE_PREFIX}:api_key`;
+const STORAGE_DATABASE = `${STORAGE_PREFIX}:database_id`;
+
+export const DEFAULT_DATABASE_ID = 'default';
 const LEGACY_URL_KEYS = ['seal_api_url:v1', 'seal_api_url'] as const;
 const LEGACY_KEY_KEYS = ['seal_api_key:v1', 'seal_api_key'] as const;
 
@@ -50,10 +53,25 @@ export function getStoredApiKey(): string {
   return localStorage.getItem(STORAGE_KEY) || '';
 }
 
+export function getStoredDatabaseId(): string {
+  if (typeof window === 'undefined') return DEFAULT_DATABASE_ID;
+  migrateLegacyStorage();
+  return localStorage.getItem(STORAGE_DATABASE) || DEFAULT_DATABASE_ID;
+}
+
 export function saveConnection(apiUrl: string, apiKey: string): void {
   migrateLegacyStorage();
   localStorage.setItem(STORAGE_URL, apiUrl.trim().replace(/\/+$/, ''));
   localStorage.setItem(STORAGE_KEY, apiKey.trim());
+}
+
+export function saveDatabaseId(databaseId: string): void {
+  migrateLegacyStorage();
+  const trimmed = databaseId.trim();
+  localStorage.setItem(
+    STORAGE_DATABASE,
+    trimmed.length > 0 ? trimmed : DEFAULT_DATABASE_ID,
+  );
 }
 
 export function authHeaders(apiKey: string): Record<string, string> {

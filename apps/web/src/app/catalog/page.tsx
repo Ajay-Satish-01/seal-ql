@@ -1,5 +1,6 @@
 'use client';
 
+import { DatabaseScopeBanner } from '@/components/dashboard/database-scope-banner';
 import { PageShell } from '@/components/dashboard/page-shell';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -96,6 +97,7 @@ export default function CatalogPage() {
         </div>
       }
     >
+      <DatabaseScopeBanner feature="Catalog sync and YAML" />
       <div className="space-y-3">
         {tables.map((table, i) => (
           <Card

@@ -11,11 +11,12 @@ import type { ChartSpec } from 'seal';
 import { useState, useTransition } from 'react';
 
 export default function QueryPage() {
-  const { apiUrl, apiKey } = useConnection();
+  const { apiUrl, apiKey, databaseId } = useConnection();
   const [query, setQuery] = useState('How many orders per month?');
   const [sql, setSql] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, unknown>[]>([]);
   const [chart, setChart] = useState<ChartSpec | null>(null);
+  const [resolvedDatabaseId, setResolvedDatabaseId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function runQuery() {
@@ -26,11 +27,14 @@ export default function QueryPage() {
     }
     startTransition(async () => {
       try {
-        const res = await postQuery(apiUrl, text, apiKey.trim());
+        const res = await postQuery(apiUrl, text, apiKey.trim(), databaseId);
         setSql(res.sql);
         setResults(res.results);
         setChart(res.chart);
-        notifySuccess(`Query returned ${res.results.length} row(s)`);
+        const metaDb =
+          typeof res.metadata?.database_id === 'string' ? res.metadata.database_id : databaseId;
+        setResolvedDatabaseId(metaDb);
+        notifySuccess(`Query returned ${res.results.length} row(s) on "${metaDb}"`);
       } catch (e) {
         notifyErrorFrom(e, 'Query failed');
       }
@@ -40,7 +44,7 @@ export default function QueryPage() {
   return (
     <PageShell
       title="Query"
-      description="POST /v1/query — natural language to validated SQL, results, and Vega-Lite chart."
+      description={`POST /v1/query — NL → SQL on database "${databaseId}".`}
     >
       <Card className="console-panel space-y-4 p-4">
         <label
@@ -60,6 +64,12 @@ export default function QueryPage() {
           {isPending ? 'Running…' : 'Run query'}
         </Button>
       </Card>
+
+      {resolvedDatabaseId && (
+        <p className="text-muted-foreground font-mono text-xs">
+          database_id: {resolvedDatabaseId}
+        </p>
+      )}
 
       {sql && (
         <Card className="console-panel p-4">

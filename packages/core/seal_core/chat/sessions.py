@@ -18,6 +18,7 @@ class SessionState:
     messages: list[ChatMessage] = field(default_factory=list)
     summary: str | None = None
     summary_through_index: int = 0
+    database_id: str | None = None
     updated_at: float = field(default_factory=time.time)
 
 

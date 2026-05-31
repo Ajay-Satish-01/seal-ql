@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from seal_core.enhancement.default_only import default_database_only
 from seal_core.settings import get_settings
 from seal_core.vector.embeddings import embed_text
 from seal_core.vector.noop_store import NoopVectorStore
@@ -24,6 +25,8 @@ class VectorRagEnhancer:
         if not ctx.in_scope:
             return False
         if isinstance(self._store, NoopVectorStore):
+            return False
+        if not default_database_only(ctx, feature="Vector RAG"):
             return False
         return not len(ctx.user_message.strip()) < 3
 

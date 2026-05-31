@@ -31,12 +31,19 @@ export default function HowItWorksPage() {
           <strong><code>POST /v1/query</code></strong> is stateless analytics: one natural-language
           question in, SQL + rows + Vega-Lite chart out. There is no session memory and no enhancement
           chain — only guardrails, introspection, planner, validation, execution, and chart generation.
+          Optional <code>database_id</code> selects a registered backend (default{' '}
+          <code>&quot;default&quot;</code> from <code>DATABASE_URL</code>).
         </p>
         <p>
           <strong><code>POST /v1/chat</code></strong> is conversational: server-side{' '}
-          <code>session_id</code>, optional SSE streaming, optional charts, and the default{' '}
+          <code>session_id</code>, optional SSE streaming, optional charts, optional{' '}
+          <code>database_id</code>, and the default{' '}
           <strong>enhancement chain</strong> (schema focus, vector RAG, multi-turn summaries) before
           decision and answer models run.
+        </p>
+        <p>
+          <Link href="/docs/multi-database">Multi-database routing</Link> explains registry config,
+          shared catalog limits, and deployment patterns.
         </p>
 
         <h2>Guardrails (scope gate)</h2>
@@ -67,9 +74,10 @@ export default function HowItWorksPage() {
         </ol>
         <p>
           <strong>Out-of-scope query</strong> → HTTP 400, detail <code>query_out_of_scope</code>, no
-          planner. <strong>Out-of-scope chat</strong> → HTTP 200 with a short refusal from{' '}
+          planner.           <strong>Out-of-scope chat</strong> → HTTP 200 with a short refusal from{' '}
           <code>REFUSAL_SYSTEM</code> only — no <code>ChatDecision</code>, no SQL, no RAG. Metadata
-          includes <code>scope</code> and <code>refusal: true</code>.
+          includes <code>scope</code>, <code>refusal: true</code>, and <code>database_id</code> (session
+          is not pinned on refusal).
         </p>
         <p>
           Deeper detail: <Link href="/docs/guardrails">Guardrails</Link> · contributor doc{' '}
@@ -80,10 +88,13 @@ export default function HowItWorksPage() {
         <pre className="not-prose overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-5 font-mono text-xs leading-relaxed text-foreground">
           {`POST /v1/query
     │
+    ├─ resolve database_id → registry
+    │     └─ unknown → HTTP 404 unknown_database_id
+    │
     ├─ classify_scope (channel=query)
     │     └─ out of scope → HTTP 400 query_out_of_scope
     │
-    ├─ introspect schema
+    ├─ introspect schema (chosen backend)
     │
     └─ execute_natural_language_query (shared pipeline)
           ├─ planner.generate_plan → QueryPlan (LLM + Instructor)
@@ -104,7 +115,8 @@ export default function HowItWorksPage() {
         <pre className="not-prose overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-5 font-mono text-xs leading-relaxed text-foreground">
           {`POST /v1/chat
     │
-    ├─ session store (session_id, TTL, history caps)
+    ├─ resolve database_id → registry (404 if unknown)
+    ├─ session store (session_id, TTL, database_id pin check)
     ├─ classify_scope (channel=chat)
     │     └─ out of scope → refusal LLM only → 200 + metadata.scope
     │

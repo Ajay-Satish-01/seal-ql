@@ -7,9 +7,8 @@ from typing import TYPE_CHECKING
 from app.dependencies import (
     get_chat_service,
     get_data_catalog,
-    get_query_executor,
+    get_database_registry,
     get_query_planner,
-    get_schema_introspector,
     get_semantic_registry,
 )
 from app.main import create_app
@@ -19,10 +18,9 @@ from seal_core.settings import Settings, clear_settings_cache
 from tests.mocks import (
     MockChatService,
     MockDataCatalog,
-    MockExecutor,
-    MockIntrospector,
     MockPlanner,
     MockSemanticRegistry,
+    make_mock_database_registry,
 )
 
 if TYPE_CHECKING:
@@ -31,9 +29,9 @@ if TYPE_CHECKING:
 
 def apply_dependency_mocks(application: FastAPI) -> None:
     """Attach in-memory mocks so /v1/* tests do not require Postgres."""
-    application.dependency_overrides[get_schema_introspector] = lambda: MockIntrospector()
+    registry = make_mock_database_registry()
+    application.dependency_overrides[get_database_registry] = lambda: registry
     application.dependency_overrides[get_query_planner] = lambda: MockPlanner()
-    application.dependency_overrides[get_query_executor] = lambda: MockExecutor()
     application.dependency_overrides[get_semantic_registry] = lambda: MockSemanticRegistry()
     application.dependency_overrides[get_data_catalog] = lambda: MockDataCatalog()
     application.dependency_overrides[get_chat_service] = lambda: MockChatService()

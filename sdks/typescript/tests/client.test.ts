@@ -149,6 +149,18 @@ describe('Seal', () => {
       expect(result.tables).toHaveLength(1);
       expect(result.tables[0].name).toBe('users');
     });
+
+    it('should pass databaseId query param', async () => {
+      const fetchMock = mockFetch(200, { dialect: 'duckdb', tables: [] });
+      globalThis.fetch = fetchMock;
+
+      await client.schema({ databaseId: 'analytics' });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://testserver/v1/schema?database_id=analytics',
+        expect.any(Object),
+      );
+    });
   });
 
   // -- Options --

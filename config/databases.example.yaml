@@ -1,0 +1,19 @@
+# Additional named databases for database_id routing.
+# Copy to config/databases.yaml and adjust URLs for your environment.
+#
+# DATABASE_URL always registers id "default". Entries here add more ids.
+# A "default:" entry in this file is ignored (DATABASE_URL wins).
+# Catalog, semantic layer, and vector RAG index remain tied to default only.
+#
+# DuckDB: use duckdb:///path/to/file.duckdb (normalized to a file path at startup)
+#         or :memory: for ephemeral analytics.
+# Postgres: postgresql+asyncpg://user:pass@host:5432/dbname
+#
+# API usage: POST /v1/query, POST /v1/chat, GET /v1/schema?database_id=<id>
+# Docs: https://seal.dev/docs/multi-database (or /docs/multi-database on your docs host)
+
+databases:
+  analytics:
+    url: duckdb:///data/analytics.duckdb
+  # warehouse:
+  #   url: postgresql+asyncpg://reader@host:5432/warehouse

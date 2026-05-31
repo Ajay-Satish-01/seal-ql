@@ -61,6 +61,22 @@ class Settings(BaseSettings):
         default=":memory:",
         description="Path to DuckDB database (or ':memory:' for in-memory).",
     )
+    seal_databases_path: str | None = Field(
+        default="config/databases.yaml",
+        validation_alias=AliasChoices("SEAL_DATABASES_PATH", "seal_databases_path"),
+        description=(
+            "Optional YAML file with additional named databases for database_id routing. "
+            "Missing file is ignored; DATABASE_URL always registers id 'default'."
+        ),
+    )
+    seal_databases: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SEAL_DATABASES", "seal_databases"),
+        description=(
+            "Optional JSON object mapping database_id to url string or {url: ...}. "
+            "Adds non-default entries; does not override DATABASE_URL default."
+        ),
+    )
 
     # ============================================================
     # LLM (OLLAMA_PROFILE=disabled → cloud; default → local Ollama)
