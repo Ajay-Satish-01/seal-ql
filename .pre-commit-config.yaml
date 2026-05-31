@@ -1,9 +1,9 @@
 # Pre-commit hooks for Seal
-# Install: make setup  (or: pre-commit install && pre-commit install --hook-type pre-push)
+# Install: make setup  (or: pre-commit install)
 # Run manually: pre-commit run --all-files
 #
 # NOTE: The prettier/eslint hooks run locally via npx/pnpm.
-#       The pytest hook runs locally via uv on pre-push only (not on every commit).
+#       Tests (unit + E2E) run in GitHub Actions and via `make check` / `make check-e2e` — not on git push.
 
 repos:
   # ============================================================
@@ -60,16 +60,3 @@ repos:
         language: system
         types_or: [javascript, jsx, ts, tsx]
         files: ^sdks/typescript/
-
-  # ============================================================
-  # Tests — pre-push only (Local via uv)
-  # ============================================================
-  - repo: local
-    hooks:
-      - id: pytest
-        name: "pytest (Python)"
-        entry: uv run pytest --tb=short -q
-        language: system
-        pass_filenames: false
-        always_run: true
-        stages: [pre-push]

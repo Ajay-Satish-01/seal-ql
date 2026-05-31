@@ -121,6 +121,8 @@ await client.chat("Revenue last quarter?", { includeCharts: true });
 
 Contributor docs: `docs/how-seal-works.md` (pipeline + LLM stages), `docs/guardrails.md`, `docs/chat-enhancement.md`, `docs/workspace-api.md`, `docs/integrations/`. User-facing: docs site `http://localhost:3000` (`/docs/how-it-works`, `/docs/configuration`, `/docs/guardrails`); dashboard `http://localhost:3001`.
 
+**Tests:** CI runs unit tests and live E2E on every PR. Locally: `make check` (unit, mirrors most of CI) and `make check-e2e` (requires `make up`). Pre-commit hooks do not run pytest.
+
 ## Docker database
 
 Default compose uses database name `seal`. If you change `POSTGRES_DB`, update `DATABASE_URL` to match.

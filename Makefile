@@ -180,10 +180,9 @@ check: ## Run all checks (lint + format check + tests) — same as CI
 setup: ## First-time setup: install pre-commit hooks
 	pip install pre-commit
 	pre-commit install
-	pre-commit install --hook-type pre-push
 	@echo "\n✅ Pre-commit hooks installed!"
 	@echo "   - pre-commit: ruff lint + format, prettier, eslint"
-	@echo "   - pre-push: pytest"
+	@echo "   - tests: GitHub Actions + make check (unit) / make check-e2e (live E2E)"
 
 seed: ## Re-run the database seed script
 	docker compose exec -T postgres psql -U postgres -d seal < scripts/seed.sql

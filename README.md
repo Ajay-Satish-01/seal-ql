@@ -196,10 +196,10 @@ pnpm install
 
 ## 🎨 Development & CI/CD Checks
 
-We maintain a strict quality gate in development using pre-commit hooks to format, lint, and run tests before any code leaves your local environment.
+We maintain a strict quality gate using pre-commit hooks for format/lint on commit, and GitHub Actions for tests (unit + live E2E).
 
 ### First-Time Hook Setup
-Run the setup utility to install pre-commit and pre-push hooks:
+Run the setup utility to install pre-commit hooks:
 ```bash
 make setup
 ```
@@ -209,8 +209,7 @@ Once registered:
   * Python files are reformatted and linted using `ruff` (extremely fast!).
   * TypeScript files are formatted with `prettier` and linted with `eslint`.
   * Standard file sanity checks are done (JSON, TOML, YAML parsing, merge conflict resolution).
-* **Pre-push hooks** auto-execute on `git push`:
-  * Runs all python tests locally via `uv run pytest`.
+* **Tests** run in CI on every PR (`Python — Tests` + `E2E Tests`). Locally: `make check` (unit) and `make check-e2e` (live stack).
 
 To run all formatting and linting controls manually:
 ```bash
