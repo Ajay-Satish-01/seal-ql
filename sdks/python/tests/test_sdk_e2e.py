@@ -109,7 +109,7 @@ def _api_reachable() -> bool:
 @pytest.fixture(scope="module")
 def llm_ready() -> None:
     """Skip LLM SDK tests when the live stack cannot complete a query."""
-    reason = probe_live_llm(base_url=_API_URL, api_key=_API_KEY)
+    reason = probe_live_llm(base_url=_API_URL, api_key=_API_KEY, timeout=180.0)
     if reason is not None:
         pytest.skip(f"LLM unavailable: {reason}")
 
