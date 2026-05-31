@@ -9,7 +9,7 @@ AI-powered SQL generation, validation, and visualization with **schema-grounded 
 ## 🛠️ Tech Stack & Tooling
 
 - **Python**: 3.11+ with `uv` workspaces
-- **TypeScript**: `pnpm` for SDK and `apps/web`
+- **TypeScript**: `pnpm` for SDK, `apps/docs`, and `apps/web`
 - **Backend**: FastAPI (`apps/api/`) — `/v1/query`, `/v1/chat`, `/v1/catalog`
 - **Core**: LiteLLM + Instructor; chat in `packages/core/seal_core/chat/`; catalog in `catalog/`; enhancers in `enhancement/`; vectors in `vector/`
 - **SQL**: SQLGlot (`packages/sql/`)
@@ -25,6 +25,8 @@ AI-powered SQL generation, validation, and visualization with **schema-grounded 
 | `packages/core/seal_core/chat/` | ChatService, sessions, streaming SSE |
 | `packages/core/seal_core/catalog/` | YAML catalog sync + registry |
 | `packages/core/seal_core/enhancement/` | PromptEnhancer orchestrator |
+| `packages/core/seal_core/guardrails/` | Scope gate (heuristics + LLM) before SQL/RAG |
+| `docs/how-seal-works.md` | Contributor pipeline + LLM stage reference |
 | `packages/sql/` | AST validation |
 | `packages/charts/` | Vega-Lite specs |
 | `config/` | `catalog.example.yaml`, `seal-tools.openai.json` |
@@ -41,7 +43,8 @@ AI-powered SQL generation, validation, and visualization with **schema-grounded 
 ### TypeScript
 
 - SDK: `cd sdks/typescript && pnpm install`
-- Docs app: `make check-web` or `cd apps/web && pnpm build`
+- Docs app: `make check-docs` or `cd apps/docs && pnpm build`
+- Dashboard: `make check-dashboard` or `cd apps/web && pnpm build`
 
 ### Local services
 
@@ -59,4 +62,4 @@ AI-powered SQL generation, validation, and visualization with **schema-grounded 
 
 - **Safety**: Block destructive SQL; enforce LIMIT
 - **Types**: Pydantic + strict Python hints; TS types mirror OpenAPI
-- **Docs**: Update README, SETUP, DEPLOYMENT, AGENTS.md, and `apps/web` doc pages when adding API surface
+- **Docs**: Update README, SETUP, DEPLOYMENT, AGENTS.md, `docs/*.md`, and `apps/docs` pages when adding API surface

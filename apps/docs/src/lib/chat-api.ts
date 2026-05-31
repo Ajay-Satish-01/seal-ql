@@ -1,0 +1,120 @@
+import { formatApiError } from '@/lib/api-error';
+import { flushSseRemainder, splitSseBuffer, type SseParseResult } from '@/lib/sse-parse';
+
+export interface ChatApiResponse {
+  session_id: string;
+  message: string;
+  sources?: string[];
+  sql?: string | null;
+  results?: Record<string, unknown>[] | null;
+  chart?: Record<string, unknown> | null;
+  columns?: Array<{ name: string; type: string }> | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ChatStreamMeta {
+  session_id: string;
+  sources?: string[];
+  sql?: string | null;
+  chart?: Record<string, unknown> | null;
+  enhancement?: Record<string, unknown>;
+}
+
+export type ChatStreamEvent =
+  | { type: 'meta'; data: ChatStreamMeta }
+  | { type: 'delta'; content: string }
+  | { type: 'done' };
+
+function normalizeBaseUrl(baseUrl: string): string {
+  return baseUrl.replace(/\/+$/, '');
+}
+
+function authHeaders(apiKey?: string): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (apiKey) headers['X-API-Key'] = apiKey;
+  return headers;
+}
+
+async function readError(res: Response): Promise<never> {
+  const detail = await res.text();
+  throw new Error(formatApiError(res.status, detail));
+}
+
+export async function postChat(
+  baseUrl: string,
+  body: {
+    message: string;
+    session_id?: string;
+    include_charts?: boolean;
+    stream?: boolean;
+    enhancement?: boolean;
+  },
+  apiKey?: string,
+  signal?: AbortSignal,
+): Promise<ChatApiResponse> {
+  const res = await fetch(`${normalizeBaseUrl(baseUrl)}/v1/chat`, {
+    method: 'POST',
+    headers: authHeaders(apiKey),
+    body: JSON.stringify({ stream: false, ...body }),
+    signal,
+  });
+  if (!res.ok) await readError(res);
+  return res.json() as Promise<ChatApiResponse>;
+}
+
+function mapSseEvent(event: SseParseResult): ChatStreamEvent | null {
+  if (event.kind === 'meta') {
+    return { type: 'meta', data: event.data as unknown as ChatStreamMeta };
+  }
+  if (event.kind === 'delta') return { type: 'delta', content: event.content };
+  if (event.kind === 'done') return { type: 'done' };
+  return null;
+}
+
+export async function* streamChat(
+  baseUrl: string,
+  body: {
+    message: string;
+    session_id?: string;
+    include_charts?: boolean;
+    enhancement?: boolean;
+  },
+  apiKey?: string,
+  signal?: AbortSignal,
+): AsyncGenerator<ChatStreamEvent> {
+  const res = await fetch(`${normalizeBaseUrl(baseUrl)}/v1/chat`, {
+    method: 'POST',
+    headers: authHeaders(apiKey),
+    body: JSON.stringify({ stream: true, ...body }),
+    signal,
+  });
+  if (!res.ok) await readError(res);
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error('No response body');
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const { events, remainder } = splitSseBuffer(buffer);
+      buffer = remainder;
+      for (const raw of events) {
+        const mapped = mapSseEvent(raw);
+        if (mapped) yield mapped;
+      }
+    }
+    buffer += decoder.decode();
+    const { events: tailEvents, remainder } = splitSseBuffer(buffer);
+    for (const raw of [...tailEvents, ...flushSseRemainder(remainder)]) {
+      const mapped = mapSseEvent(raw);
+      if (mapped) yield mapped;
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+  }
+}

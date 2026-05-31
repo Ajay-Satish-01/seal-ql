@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Security
 from seal_charts.engine import ChartEngine
 from seal_core.catalog.registry import DataCatalogRegistry
+from seal_core.guardrails.scope import OUT_OF_SCOPE_QUERY_DETAIL, classify_scope
 from seal_core.pipeline.execute import execute_natural_language_query
 from seal_core.planner.planner import QueryPlanner
 from seal_core.schema.introspector import SchemaIntrospector
@@ -38,6 +39,10 @@ async def execute_query(
 ):
     """Translates natural language to SQL, executes it, and returns chart specs."""
     try:
+        scope = await classify_scope(request.query, channel="query")
+        if not scope.in_scope:
+            raise HTTPException(status_code=400, detail=OUT_OF_SCOPE_QUERY_DETAIL)
+
         schema = await introspector.introspect()
 
         exec_result = await execute_natural_language_query(

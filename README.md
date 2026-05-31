@@ -91,6 +91,8 @@ console.log(chat.message, chat.sql);
 * **Modern Tooling & Environments**: Package structures utilizing `uv` workspaces for Python packages/applications, and modern typescript modules using `pnpm`.
 * **Zero-Trust SQL Safety**: SQLGlot-based AST safety checker to block destructive statements and enforce pagination limits.
 * **API Key Authentication**: Shared `X-API-Key` for `/v1/*` with production-safe env validation (`SEAL_AUTH_REQUIRED`, `SEAL_DEV_MODE`, `SEAL_DISABLE_DOCS`).
+* **LLM Guardrails**: Scope gate on `/v1/query` and `/v1/chat` (analytics/schema in-scope; chat refusal, query HTTP 400).
+* **Workspace API**: Hot-reload guardrails and chat settings in dev; catalog description overrides; vector reindex.
 * **Automated Evaluations**: Built-in eval runners to measure SQL syntax success, execution rates, and planner repair metrics against DuckDB and TimescaleDB test cases.
 
 ---
@@ -122,8 +124,9 @@ make up
 For production-style auth (`SEAL_AUTH_REQUIRED`, generated `SEAL_API_KEY`), see [SETUP.md](./SETUP.md) and the docs site **Authentication** page.
 
 Once running, the stack exposes:
-* **API Server**: `http://localhost:8000`
-* **Swagger/OpenAPI docs**: `http://localhost:8000/docs`
+* **API Server**: `http://localhost:8000` (Swagger at `/docs`)
+* **Docs site** (`apps/docs`): `http://localhost:3000` — run `cd apps/docs && pnpm dev`
+* **Dashboard** (`apps/web`): `http://localhost:3001` — run `cd apps/web && pnpm dev`
 * **Postgres Database**: `localhost:5432` (User: `postgres`, Pass: `postgres`, DB: `seal`)
 * **Ollama Service**: `http://localhost:11434`
 
@@ -193,10 +196,10 @@ pnpm install
 
 ## 🎨 Development & CI/CD Checks
 
-We maintain a strict quality gate in development using pre-commit hooks to format, lint, and run tests before any code leaves your local environment.
+We maintain a strict quality gate using pre-commit hooks for format/lint on commit, and GitHub Actions for tests (unit + live E2E).
 
 ### First-Time Hook Setup
-Run the setup utility to install pre-commit and pre-push hooks:
+Run the setup utility to install pre-commit hooks:
 ```bash
 make setup
 ```
@@ -206,8 +209,7 @@ Once registered:
   * Python files are reformatted and linted using `ruff` (extremely fast!).
   * TypeScript files are formatted with `prettier` and linted with `eslint`.
   * Standard file sanity checks are done (JSON, TOML, YAML parsing, merge conflict resolution).
-* **Pre-push hooks** auto-execute on `git push`:
-  * Runs all python tests locally via `uv run pytest`.
+* **Tests** run in CI on every PR (`Python — Tests` + `E2E Tests`). Locally: `make check` (unit) and `make check-e2e` (live stack).
 
 To run all formatting and linting controls manually:
 ```bash
@@ -221,7 +223,9 @@ pre-commit run --all-files
 
 ```text
 ├── apps
-│   └── api/                     # FastAPI back-end service
+│   ├── api/                     # FastAPI back-end service
+│   ├── docs/                    # Docs site + /demo (port 3000)
+│   └── web/                     # Operational dashboard (port 3001)
 ├── packages
 │   ├── core/                    # Planner, chat, catalog, enhancement, vector RAG
 │   ├── sql/                     # Dialect Validators & AST Safety checkers
@@ -232,6 +236,8 @@ pre-commit run --all-files
 │   └── seal-tools.openai.json   # OpenAI tool manifest for agents
 ├── docs
 │   ├── chat-enhancement.md      # Prompt enhancer chain (contributors)
+│   ├── guardrails.md            # Scope gate (contributors)
+│   ├── workspace-api.md         # Workspace settings API (contributors)
 │   └── integrations/            # Vector stores, agent frameworks, custom enhancers
 ├── sdks
 │   ├── python/                  # Python SDK wrapper
@@ -253,9 +259,13 @@ pre-commit run --all-files
 | `POST /v1/chat` | Conversational Q&A (`session_id`, `include_charts`, `stream`, `enhancement`) |
 | `GET /v1/catalog` | Global data catalog (business descriptions) |
 | `POST /v1/catalog/sync` | Re-sync catalog YAML from live schema |
+| `PATCH /v1/catalog/descriptions` | Table/view description overrides |
 | `GET /v1/schema` | Introspected database schema |
+| `GET` / `PATCH /v1/workspace/settings` | Workspace settings (guardrails, chat, vector) |
+| `GET /v1/workspace/export` | Export settings + catalog overrides |
+| `POST /v1/vector/reindex` | Rebuild vector index |
 
-User-facing guides live on the docs site (`apps/web`, `/docs/chat-qa`) or in [SETUP.md](SETUP.md) and [DEPLOYMENT.md](DEPLOYMENT.md).
+User-facing guides: docs site at `http://localhost:3000` (`/docs/how-it-works`, `/docs/configuration`, `/docs/guardrails`), dashboard at `http://localhost:3001`, plus [SETUP.md](SETUP.md), [docs/how-seal-works.md](docs/how-seal-works.md), and [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## 📦 Publishing
 

@@ -97,8 +97,11 @@ export interface ChatStreamMeta {
   session_id: string;
   sources?: string[];
   sql?: string | null;
+  results?: Record<string, unknown>[] | null;
+  columns?: ColumnMetadata[] | null;
   chart?: ChartSpec | null;
   enhancement?: Record<string, unknown>;
+  scope?: Record<string, unknown>;
 }
 
 export type ChatStreamEvent =

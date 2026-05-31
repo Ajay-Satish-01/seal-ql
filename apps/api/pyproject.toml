@@ -10,6 +10,7 @@ dependencies = [
     "seal-core",
     "seal-sql",
     "seal-charts",
+    "seal-semantic",
     "python-dotenv>=1.2.2",
 ]
 

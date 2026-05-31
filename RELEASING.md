@@ -14,8 +14,9 @@ Published artifacts per release:
    - `sdks/python/pyproject.toml`
    - `sdks/typescript/package.json`
    - `apps/api/pyproject.toml` (and regenerate OpenAPI if the API surface changed)
-2. Run `make check` locally.
-3. Configure GitHub repository secrets:
+2. Run `make sync-docs-assets` when OpenAPI or demo fixtures changed; commit `apps/docs` copies.
+3. Run `make check` locally.
+4. Configure GitHub repository secrets:
 
 | Secret | Used for |
 |--------|----------|

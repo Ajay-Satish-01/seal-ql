@@ -14,7 +14,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 from response_validation import validate_query_response  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-FIXTURES_PATH = ROOT / "apps" / "web" / "src" / "data" / "demo-fixtures.json"
+FIXTURES_PATH = ROOT / "apps" / "docs" / "src" / "data" / "demo-fixtures.json"
 
 
 @pytest.fixture

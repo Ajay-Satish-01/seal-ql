@@ -1,0 +1,250 @@
+import Link from 'next/link';
+import { PageHeader } from '@/components/page-header';
+import { Callout } from '@/components/docs/callout';
+import { DocsProse } from '@/components/docs/docs-prose';
+
+export default function HowItWorksPage() {
+  return (
+    <div className="max-w-3xl">
+      <PageHeader
+        title="How Seal works"
+        description="End-to-end flow from HTTP request to guardrails, LLM calls, validated SQL, and answers — for query and chat."
+      />
+
+      <DocsProse>
+        <p>
+          Seal is not a single LLM prompt. It is a <strong>pipeline</strong> of bounded steps: classify
+          intent, optionally enrich context, plan SQL with structured outputs, validate through SQLGlot,
+          execute with limits, then generate a user-facing answer or chart. Each step has explicit
+          failure modes so operators can reason about cost, latency, and safety.
+        </p>
+        <p>
+          All model calls go through <strong>LiteLLM</strong> with <strong>Instructor</strong> for
+          structured JSON (scope decisions, chat decisions, SQL plans, chat answers). The active model
+          is <code>LLM_MODEL</code> in LiteLLM <code>provider/model</code> form — see{' '}
+          <Link href="/docs/configuration">Configuration reference</Link> and{' '}
+          <Link href="/docs/self-hosting#llm-configuration">LLM configuration</Link>.
+        </p>
+
+        <h2>Two entry points</h2>
+        <p>
+          <strong><code>POST /v1/query</code></strong> is stateless analytics: one natural-language
+          question in, SQL + rows + Vega-Lite chart out. There is no session memory and no enhancement
+          chain — only guardrails, introspection, planner, validation, execution, and chart generation.
+        </p>
+        <p>
+          <strong><code>POST /v1/chat</code></strong> is conversational: server-side{' '}
+          <code>session_id</code>, optional SSE streaming, optional charts, and the default{' '}
+          <strong>enhancement chain</strong> (schema focus, vector RAG, multi-turn summaries) before
+          decision and answer models run.
+        </p>
+
+        <h2>Guardrails (scope gate)</h2>
+        <p>
+          Every query and chat turn starts with <code>classify_scope</code> in{' '}
+          <code>packages/core/seal_core/guardrails/</code>. The gate answers one question:{' '}
+          <em>should this API spend tokens on SQL and RAG for this message?</em>
+        </p>
+        <ol>
+          <li>
+            <strong>Input limits</strong> — Compare length to <code>MAX_QUERY_CHARS</code> or{' '}
+            <code>MAX_CHAT_MESSAGE_CHARS</code>. Over-limit requests stop immediately with source{' '}
+            <code>limits</code> (no LLM).
+          </li>
+          <li>
+            <strong>Heuristics</strong> — Regex and keyword checks for obvious data questions vs
+            off-topic or injection patterns. Returns <code>source: heuristic</code> when confident.
+          </li>
+          <li>
+            <strong>LLM classifier</strong> — When heuristics are inconclusive, a small Instructor call
+            returns <code>ScopeDecision</code> (<code>in_scope</code>, <code>reason</code>,{' '}
+            <code>category</code>, <code>confidence</code>).
+          </li>
+          <li>
+            <strong>Fail-closed</strong> — If the classifier errors and{' '}
+            <code>GUARDRAILS_FAIL_CLOSED=true</code>, the message is treated as out-of-scope.
+          </li>
+        </ol>
+        <p>
+          <strong>Out-of-scope query</strong> → HTTP 400, detail <code>query_out_of_scope</code>, no
+          planner. <strong>Out-of-scope chat</strong> → HTTP 200 with a short refusal from{' '}
+          <code>REFUSAL_SYSTEM</code> only — no <code>ChatDecision</code>, no SQL, no RAG. Metadata
+          includes <code>scope</code> and <code>refusal: true</code>.
+        </p>
+        <p>
+          Deeper detail: <Link href="/docs/guardrails">Guardrails</Link> · contributor doc{' '}
+          <code>docs/guardrails.md</code>.
+        </p>
+
+        <h2>Query path (after guardrails)</h2>
+        <pre className="not-prose overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-5 font-mono text-xs leading-relaxed text-foreground">
+          {`POST /v1/query
+    │
+    ├─ classify_scope (channel=query)
+    │     └─ out of scope → HTTP 400 query_out_of_scope
+    │
+    ├─ introspect schema
+    │
+    └─ execute_natural_language_query (shared pipeline)
+          ├─ planner.generate_plan → QueryPlan (LLM + Instructor)
+          ├─ SQLValidator (SQLGlot AST)
+          ├─ SQLSanitizer (LIMIT, no DROP/DELETE/…)
+          ├─ executor.execute
+          └─ repair loop (feed DB/validation errors back to planner, up to 3 attempts)
+    │
+    └─ ChartEngine.generate → Vega-Lite spec (heuristic, not an LLM)`}
+        </pre>
+        <p>
+          You should expect one primary planner LLM call per attempt, plus extra calls only when SQL
+          validation or the database returns a repairable error. Charts are derived from the plan and
+          result shape — not from a separate chart LLM.
+        </p>
+
+        <h2>Chat path (after guardrails)</h2>
+        <pre className="not-prose overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-5 font-mono text-xs leading-relaxed text-foreground">
+          {`POST /v1/chat
+    │
+    ├─ session store (session_id, TTL, history caps)
+    ├─ classify_scope (channel=chat)
+    │     └─ out of scope → refusal LLM only → 200 + metadata.scope
+    │
+    ├─ ChatDecision LLM (needs_data true/false)
+    │     └─ enhancement may rewrite system prompt (stage=decision)
+    │
+    ├─ if needs_data:
+    │     ├─ ContextRetriever.select_tables (catalog + schema, no LLM)
+    │     └─ execute_natural_language_query (same pipeline as /v1/query)
+    │           optional ChartEngine when include_charts=true
+    │
+    └─ Answer LLM (ChatAnswer or streamed tokens)
+          └─ enhancement on system prompt (stage=answer)
+          └─ user messages include recent history + SQL preview rows`}
+        </pre>
+        <p>
+          <code>needs_data=false</code> skips SQL entirely — useful for &quot;what does this column
+          mean?&quot; when schema/catalog context is enough. <code>include_charts</code> does not skip
+          guardrails or the decision step; charts appear only when SQL ran successfully and chart
+          generation applies.
+        </p>
+
+        <h2>Prompt enhancement (chat only)</h2>
+        <p>
+          When <code>CHAT_ENHANCEMENT_ENABLED=true</code> and the request is in scope,{' '}
+          <code>EnhancementOrchestrator</code> runs a chain before selected LLM stages:
+        </p>
+        <ol>
+          <li>
+            <strong>SchemaAwareEnhancer</strong> — Focused tables (up to{' '}
+            <code>CHAT_MAX_CONTEXT_TABLES</code>), FK hints, catalog descriptions from global YAML +
+            workspace overrides.
+          </li>
+          <li>
+            <strong>VectorRagEnhancer</strong> — Embeds the user message, searches{' '}
+            <code>VECTOR_STORE</code>, appends top-K chunks. Disabled when out-of-scope, store is{' '}
+            <code>none</code>, or message is too short.
+          </li>
+          <li>
+            <strong>MultiTurnEnhancer</strong> — Summarizes older turns when history exceeds{' '}
+            <code>CHAT_SUMMARIZE_AFTER_MESSAGES</code>; keeps{' '}
+            <code>CHAT_RECENT_MESSAGES</code> verbatim for the answer stage.
+          </li>
+        </ol>
+        <p>
+          Enhancers implement <code>enhance_system_prompt</code> and{' '}
+          <code>enhance_user_messages</code>. They <strong>fail open</strong>: exceptions log a warning
+          and the base prompt is used. Custom enhancers append via <code>SEAL_ENHANCERS</code>.
+        </p>
+        <p>
+          <Link href="/docs/prompt-enhancement">Prompt enhancement</Link> ·{' '}
+          <code>docs/chat-enhancement.md</code>
+        </p>
+
+        <h2>LLM calls per path (typical in-scope turn)</h2>
+        <div className="not-prose border-border/50 my-6 overflow-x-auto rounded-xl border text-sm">
+          <table className="w-full min-w-[36rem] text-left">
+            <thead>
+              <tr className="border-border/50 bg-muted/40 border-b">
+                <th className="text-foreground px-4 py-3 font-semibold">Step</th>
+                <th className="text-foreground px-4 py-3 font-semibold">/v1/query</th>
+                <th className="text-foreground px-4 py-3 font-semibold">/v1/chat</th>
+                <th className="text-foreground px-4 py-3 font-semibold">Structured output</th>
+              </tr>
+            </thead>
+            <tbody className="text-muted-foreground divide-border/40 divide-y">
+              <tr>
+                <td className="px-4 py-2">Scope gate</td>
+                <td className="px-4 py-2">0–1 (if heuristics inconclusive)</td>
+                <td className="px-4 py-2">0–1</td>
+                <td className="px-4 py-2 font-mono text-xs">ScopeDecision</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-2">Chat decision</td>
+                <td className="px-4 py-2">—</td>
+                <td className="px-4 py-2">1</td>
+                <td className="px-4 py-2 font-mono text-xs">ChatDecision</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-2">SQL planner (+ repair)</td>
+                <td className="px-4 py-2">1–3</td>
+                <td className="px-4 py-2">0–3 if needs_data</td>
+                <td className="px-4 py-2 font-mono text-xs">QueryPlan</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-2">Refusal</td>
+                <td className="px-4 py-2">—</td>
+                <td className="px-4 py-2">1 if out of scope</td>
+                <td className="px-4 py-2 font-mono text-xs">ChatAnswer</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-2">Final answer</td>
+                <td className="px-4 py-2">—</td>
+                <td className="px-4 py-2">1 (or streamed text)</td>
+                <td className="px-4 py-2 font-mono text-xs">ChatAnswer / tokens</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-2">Vector embed (RAG)</td>
+                <td className="px-4 py-2">—</td>
+                <td className="px-4 py-2">0–1 if Chroma enabled</td>
+                <td className="px-4 py-2">Embedding API via LiteLLM</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Heuristic scope matches skip the classifier LLM entirely — you will see{' '}
+          <code>metadata.scope.source: heuristic</code> in chat responses.
+        </p>
+
+        <h2>SQL safety (zero trust)</h2>
+        <p>
+          No LLM output runs on the database without passing <code>packages/sql</code>: AST parse,
+          dialect rules, join/depth limits from settings, and sanitization that enforces{' '}
+          <code>MAX_ROWS</code> and blocks destructive statements. This applies equally to query and
+          chat SQL paths because both call <code>execute_natural_language_query</code>.
+        </p>
+
+        <h2>Data catalog role</h2>
+        <p>
+          The catalog is <strong>global</strong>: one YAML file (plus workspace description overrides)
+          feeds the planner, chat retriever, and optional vector index. Auto-sync rebuilds structure
+          from DDL; operator descriptions survive sync when stored in workspace. See{' '}
+          <Link href="/docs/data-catalog">Data catalog</Link>.
+        </p>
+
+        <h2>Streaming (chat)</h2>
+        <p>
+          With <code>stream=true</code>, the API emits <code>event: seal.meta</code> first (session,
+          sql, preview rows, chart, scope, enhancement applied list), then OpenAI-style token deltas,
+          then <code>[DONE]</code>. Refusals still stream as a single content delta after meta. See{' '}
+          <Link href="/docs/chat-streaming">SSE streaming</Link>.
+        </p>
+
+        <Callout variant="info" title="Where to tune behavior">
+          Environment variables: <Link href="/docs/configuration">Configuration reference</Link>.
+          Runtime overrides: <Link href="/docs/workspace">Workspace settings</Link>. Product
+          architecture diagram: <Link href="/docs/architecture">System architecture</Link>.
+        </Callout>
+      </DocsProse>
+    </div>
+  );
+}

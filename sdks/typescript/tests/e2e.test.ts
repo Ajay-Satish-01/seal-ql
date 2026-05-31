@@ -8,6 +8,12 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { Seal } from '../src/client.js';
+import {
+  assertChatResult,
+  assertQueryResult,
+  isUnexpectedClientError,
+  llmUnavailableMessage,
+} from './e2e-llm.js';
 
 const API_URL = 'http://localhost:8000';
 /** Matches `.env.example` / Python `test_sdk_e2e.py` for local and CI compose stacks. */
@@ -25,7 +31,10 @@ async function isApiReachable(): Promise<boolean> {
   }
 }
 
-describe('E2E Tests', async () => {
+/** LLM-backed routes can take minutes on local Ollama; default Vitest timeout is 5s. */
+const LLM_E2E_TIMEOUT_MS = 200_000;
+
+describe('E2E Tests', { timeout: LLM_E2E_TIMEOUT_MS }, async () => {
   const reachable = await isApiReachable();
 
   // Conditionally skip all tests if the API is not reachable.
@@ -52,21 +61,87 @@ describe('E2E Tests', async () => {
     expect(result.tables.length).toBeGreaterThan(0);
   });
 
-  testFn(
-    'execute query',
-    async (context) => {
-      try {
-        const result = await client.query('Show me 2 tables from the database');
-        expect(result.sql).toBeTruthy();
-        expect(result.results.length).toBeGreaterThan(0);
-        expect(result.metadata.row_count).toBeGreaterThan(0);
-      } catch (e) {
-        // Gracefully skip if the model is too weak/slow — matches Python E2E behavior
-        const msg = e instanceof Error ? e.message : String(e);
-        console.warn(`⚠ Skipping query test (model may be weak/slow): ${msg}`);
+  testFn('fetch catalog', async () => {
+    const result = await client.catalog();
+    expect(result.tables.length).toBeGreaterThan(0);
+  });
+
+  testFn('catalog descriptions survive sync', async (context) => {
+    const headers = { 'X-API-Key': API_KEY, 'Content-Type': 'application/json' };
+    const catalog = await fetch(`${API_URL}/v1/catalog`, { headers });
+    if (!catalog.ok) {
+      context.skip(`catalog GET failed: ${catalog.status}`);
+      return;
+    }
+    const tables = ((await catalog.json()) as { tables?: { name?: string }[] }).tables ?? [];
+    if (!tables.some((t) => t.name === 'orders')) {
+      context.skip('public.orders not in catalog (run make seed)');
+      return;
+    }
+
+    const patch = await fetch(`${API_URL}/v1/catalog/descriptions`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({
+        tables: [{ name: 'orders', schema: 'public', table_description: 'TS SDK E2E override' }],
+      }),
+    });
+    expect(patch.ok).toBe(true);
+
+    const sync = await fetch(`${API_URL}/v1/catalog/sync`, { method: 'POST', headers });
+    expect(sync.ok).toBe(true);
+
+    const after = await fetch(`${API_URL}/v1/catalog`, { headers });
+    const body = (await after.json()) as {
+      tables?: { name?: string; table_description?: string }[];
+    };
+    const orders = body.tables?.find((t) => t.name === 'orders');
+    expect(orders?.table_description).toBe('TS SDK E2E override');
+  });
+
+  testFn('workspace settings', async () => {
+    const res = await fetch(`${API_URL}/v1/workspace/settings`, {
+      headers: { 'X-API-Key': API_KEY },
+    });
+    expect(res.ok).toBe(true);
+    const body = (await res.json()) as { settings?: unknown; schema?: unknown[] };
+    expect(body.settings).toBeDefined();
+    expect(Array.isArray(body.schema)).toBe(true);
+  });
+
+  testFn('chat json', async (context) => {
+    try {
+      const result = await client.chat('Name one table in the database.', {
+        includeCharts: false,
+      });
+      assertChatResult(result);
+    } catch (e) {
+      const skipReason = llmUnavailableMessage(e);
+      if (skipReason) {
+        console.warn(`⚠ Skipping chat E2E (LLM unavailable): ${skipReason}`);
         context.skip();
+        return;
       }
-    },
-    200_000,
-  );
+      throw e;
+    }
+  });
+
+  testFn('execute query', async (context) => {
+    try {
+      const result = await client.query('Show me 2 products');
+      assertQueryResult(result);
+    } catch (e) {
+      const skipReason = llmUnavailableMessage(e);
+      if (skipReason) {
+        console.warn(`⚠ Skipping query E2E (LLM unavailable): ${skipReason}`);
+        context.skip();
+        return;
+      }
+      const msg = e instanceof Error ? e.message : String(e);
+      if (isUnexpectedClientError(e) && /out_of_scope|query_out_of_scope/i.test(msg)) {
+        throw new Error(`Benign query incorrectly marked out of scope: ${msg}`);
+      }
+      throw e;
+    }
+  });
 });

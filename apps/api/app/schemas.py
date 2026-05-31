@@ -1,17 +1,23 @@
 """API Request and Response Models."""
 
-from typing import Any
+from typing import Any, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from seal_charts.models import ChartSpec
+from seal_core.settings import get_settings
 from seal_sql.result import ColumnMetadata
+
+_MAX_QUERY_CHARS = 4000
+_MAX_CHAT_MESSAGE_CHARS = 8000
 
 
 class QueryRequest(BaseModel):
     """The incoming query request from a user."""
 
     query: str = Field(
-        ..., description="The natural language query to translate to SQL and execute."
+        ...,
+        max_length=_MAX_QUERY_CHARS,
+        description="The natural language query to translate to SQL and execute.",
     )
     database_id: str = Field("default", description="The identifier for the target database.")
 
@@ -37,12 +43,33 @@ class HealthResponse(BaseModel):
 
 
 class ChatMessageSchema(BaseModel):
-    role: str = Field(..., description="user, assistant, or system")
-    content: str = Field(..., description="Message content.")
+    role: str = Field(..., description="user or assistant")
+    content: str = Field(
+        ...,
+        max_length=_MAX_CHAT_MESSAGE_CHARS,
+        description="Message content.",
+    )
+
+
+class CatalogDescriptionItem(BaseModel):
+    name: str
+    schema_name: str = Field("public", alias="schema")
+    table_description: str | None = None
+    view_description: str | None = None
+
+    model_config = {"populate_by_name": True}
+
+
+class CatalogDescriptionsPatch(BaseModel):
+    tables: list[CatalogDescriptionItem] = Field(default_factory=list)
 
 
 class ChatRequest(BaseModel):
-    message: str = Field(..., description="Latest user message.")
+    message: str = Field(
+        ...,
+        max_length=_MAX_CHAT_MESSAGE_CHARS,
+        description="Latest user message.",
+    )
     session_id: str | None = Field(None, description="Conversation session id.")
     messages: list[ChatMessageSchema] | None = Field(
         None, description="Optional full history override."
@@ -55,6 +82,16 @@ class ChatRequest(BaseModel):
         None, description="Override CHAT_ENHANCEMENT_ENABLED for this request."
     )
     database_id: str = Field("default", description="Target database identifier.")
+
+    @model_validator(mode="after")
+    def validate_history_size(self) -> Self:
+        if self.messages:
+            total = sum(len(m.content) for m in self.messages)
+            limit = get_settings().max_chat_history_chars
+            if total > limit:
+                msg = f"Chat history exceeds {limit} characters"
+                raise ValueError(msg)
+        return self
 
 
 class ChatResponse(BaseModel):

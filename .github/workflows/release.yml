@@ -34,7 +34,8 @@ jobs:
         run: |
           uv run pytest -v --tb=short \
             --ignore=sdks/python/tests/test_sdk_e2e.py \
-            --ignore=apps/api/tests/test_e2e.py
+            --ignore=apps/api/tests/test_e2e.py \
+            --ignore=apps/api/tests/test_catalog_workspace_integration.py
 
       - name: Build Python SDK
         run: uv build --package seal

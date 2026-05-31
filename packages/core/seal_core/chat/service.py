@@ -15,6 +15,8 @@ from seal_core.chat.models import ChatAnswer, ChatDecision, ChatMessage
 from seal_core.chat.prompts import CHAT_ANSWER_SYSTEM, CHAT_DECISION_SYSTEM
 from seal_core.chat.retriever import ContextRetriever
 from seal_core.enhancement.context import EnhancementContext
+from seal_core.guardrails.prompts import REFUSAL_SYSTEM
+from seal_core.guardrails.scope import classify_scope
 from seal_core.llm.client import get_api_base, get_api_key, get_async_client, get_model
 from seal_core.pipeline.execute import ExecuteQueryResult, execute_natural_language_query
 from seal_core.settings import get_settings
@@ -108,27 +110,46 @@ class ChatService:
         ctx = self._prepare_turn(
             message, session_id, messages_override, enhancement_enabled, schema
         )
+        scope = await self._scope_gate(ctx)
+        if not scope.in_scope:
+            async for chunk in self._refusal_stream(ctx, scope):
+                yield chunk
+            return
+
         decision = await self._chat_decision(ctx)
         exec_result: ExecuteQueryResult | None = None
         chart = None
-        if decision.needs_data or include_charts:
-            exec_result, chart, data_meta = await self._execute_data_path(ctx, include_charts)
+        if decision.needs_data:
+            exec_result, chart, data_meta = await self._execute_data_path(
+                ctx, include_charts and decision.needs_data
+            )
         else:
-            data_meta = {}
+            exec_result, chart, data_meta = None, None, {}
 
         # Run the same enhancement path as _run_turn so streamed answers are
         # schema/RAG/multi-turn aware instead of falling back to the base prompt.
         system = await self._answer_system(ctx, data_meta)
 
+        preview_rows: list[dict[str, object]] | None = None
+        preview_columns = None
+        if exec_result:
+            preview_rows = exec_result.rows[:50]
+            preview_columns = exec_result.columns
+
         meta_event = {
             "session_id": ctx.session_id,
             "sources": ctx.metadata.get("sources", []),
             "sql": exec_result.sql if exec_result else None,
+            "results": preview_rows,
+            "columns": (
+                [c.model_dump() for c in preview_columns] if preview_columns is not None else None
+            ),
             "chart": chart.model_dump() if chart is not None else None,
             "enhancement": {
                 "enabled": ctx.enhancement_enabled,
                 "applied": list(ctx.metadata.get("applied", [])),
             },
+            "scope": ctx.metadata.get("scope"),
         }
         yield f"event: seal.meta\ndata: {json.dumps(meta_event)}\n\n"
 
@@ -181,6 +202,12 @@ class ChatService:
         settings = get_settings()
         sid, state = self._sessions.get_or_create(session_id)
         history = list(messages_override or state.messages)
+        if messages_override:
+            total = sum(len(m.content) for m in history)
+            if total > settings.max_chat_history_chars:
+                raise ValueError(
+                    f"Chat history exceeds {settings.max_chat_history_chars} characters"
+                )
         messages = history + [ChatMessage(role="user", content=message)]
 
         enh_on = (
@@ -200,12 +227,18 @@ class ChatService:
         )
 
     async def _run_turn(self, ctx: TurnContext, *, include_charts: bool) -> ChatResult:
+        scope = await self._scope_gate(ctx)
+        if not scope.in_scope:
+            return await self._refusal_turn(ctx, scope)
+
         decision = await self._chat_decision(ctx)
         exec_result: ExecuteQueryResult | None = None
         chart = None
 
-        if decision.needs_data or include_charts:
-            exec_result, chart, meta = await self._execute_data_path(ctx, include_charts)
+        if decision.needs_data:
+            exec_result, chart, meta = await self._execute_data_path(
+                ctx, include_charts and decision.needs_data
+            )
         else:
             meta = {}
 
@@ -240,12 +273,64 @@ class ChatService:
                 "used_sql": exec_result is not None,
                 "repair_attempts": exec_result.repair_attempts if exec_result else 0,
                 "enhancement": meta,
+                "scope": ctx.metadata.get("scope"),
             },
+        )
+
+    async def _scope_gate(self, ctx: TurnContext):
+        scope = await classify_scope(ctx.user_message, channel="chat")
+        ctx.metadata["scope"] = {
+            "in_scope": scope.in_scope,
+            "reason": scope.reason,
+            "source": scope.source,
+        }
+        return scope
+
+    async def _refusal_turn(self, ctx: TurnContext, scope) -> ChatResult:
+        answer = await self._client.chat.completions.create(
+            model=self._model,
+            messages=[
+                {"role": "system", "content": REFUSAL_SYSTEM},
+                {"role": "user", "content": ctx.user_message},
+            ],
+            response_model=ChatAnswer,
+            api_base=self._api_base,
+            api_key=self._api_key,
+            max_retries=get_settings().llm_max_retries,
+        )
+        return ChatResult(
+            session_id=ctx.session_id,
+            message=answer.message,  # type: ignore[union-attr]
+            metadata={"scope": ctx.metadata.get("scope"), "refusal": True},
+        )
+
+    async def _refusal_stream(self, ctx: TurnContext, scope) -> AsyncIterator[str]:
+        result = await self._refusal_turn(ctx, scope)
+        meta_event = {
+            "session_id": ctx.session_id,
+            "sources": [],
+            "sql": None,
+            "chart": None,
+            "enhancement": {"enabled": False, "applied": []},
+            "scope": ctx.metadata.get("scope"),
+        }
+        yield f"event: seal.meta\ndata: {json.dumps(meta_event)}\n\n"
+        payload = {
+            "object": "chat.completion.chunk",
+            "choices": [{"index": 0, "delta": {"content": result.message}, "finish_reason": None}],
+        }
+        yield f"data: {json.dumps(payload)}\n\n"
+        yield "data: [DONE]\n\n"
+        self._sessions.append(ctx.session_id, ChatMessage(role="user", content=ctx.user_message))
+        self._sessions.append(
+            ctx.session_id,
+            ChatMessage(role="assistant", content=result.message),
         )
 
     async def _chat_decision(self, ctx: TurnContext) -> ChatDecision:
         system = CHAT_DECISION_SYSTEM
         if ctx.enhancement_enabled and self._orchestrator:
+            in_scope = bool(ctx.metadata.get("scope", {}).get("in_scope", True))
             ect = EnhancementContext(
                 session_id=ctx.session_id,
                 turn_id=ctx.turn_id,
@@ -255,6 +340,7 @@ class ChatService:
                 base_system_prompt=system,
                 database_schema=ctx.schema,
                 include_charts=False,
+                in_scope=in_scope,
                 metadata=dict(ctx.metadata),
             )
             system = await self._orchestrator.enhance_system_prompt(ect)
@@ -319,6 +405,7 @@ class ChatService:
         base = CHAT_ANSWER_SYSTEM
         if not ctx.enhancement_enabled or not self._orchestrator:
             return base
+        in_scope = bool(ctx.metadata.get("scope", {}).get("in_scope", True))
         ect = EnhancementContext(
             session_id=ctx.session_id,
             turn_id=ctx.turn_id,
@@ -328,6 +415,7 @@ class ChatService:
             base_system_prompt=base,
             database_schema=ctx.schema,
             include_charts=False,
+            in_scope=in_scope,
             metadata=dict(ctx.metadata),
         )
         system = await self._orchestrator.enhance_system_prompt(ect)

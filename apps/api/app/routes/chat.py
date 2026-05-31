@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.responses import StreamingResponse
 from seal_core.chat.models import ChatMessage
 from seal_core.chat.service import ChatService
@@ -26,31 +26,40 @@ async def chat(
     schema = await introspector.introspect()
     override = None
     if request.messages:
+        for m in request.messages:
+            if m.role.strip().lower() == "system":
+                raise HTTPException(
+                    status_code=400,
+                    detail="system role is not allowed in messages override",
+                )
         override = [ChatMessage(role=m.role, content=m.content) for m in request.messages]
 
-    if request.stream:
+    try:
+        if request.stream:
 
-        async def event_stream():
-            async for chunk in chat_service.handle_stream(
-                message=request.message,
-                session_id=request.session_id,
-                messages_override=override,
-                include_charts=request.include_charts,
-                enhancement_enabled=request.enhancement,
-                schema=schema,
-            ):
-                yield chunk
+            async def event_stream():
+                async for chunk in chat_service.handle_stream(
+                    message=request.message,
+                    session_id=request.session_id,
+                    messages_override=override,
+                    include_charts=request.include_charts,
+                    enhancement_enabled=request.enhancement,
+                    schema=schema,
+                ):
+                    yield chunk
 
-        return StreamingResponse(event_stream(), media_type="text/event-stream")
+            return StreamingResponse(event_stream(), media_type="text/event-stream")
 
-    result = await chat_service.handle_json(
-        message=request.message,
-        session_id=request.session_id,
-        messages_override=override,
-        include_charts=request.include_charts,
-        enhancement_enabled=request.enhancement,
-        schema=schema,
-    )
+        result = await chat_service.handle_json(
+            message=request.message,
+            session_id=request.session_id,
+            messages_override=override,
+            include_charts=request.include_charts,
+            enhancement_enabled=request.enhancement,
+            schema=schema,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return ChatResponse(
         session_id=result.session_id,

@@ -315,7 +315,11 @@ class Settings(BaseSettings):
     # ============================================================
 
     cors_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173"],
+        default=[
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://localhost:5173",
+        ],
         description="Allowed CORS origins.",
     )
     api_key: str | None = Field(
@@ -449,6 +453,38 @@ class Settings(BaseSettings):
         default=False,
         description="Fail startup if catalog references unknown tables.",
     )
+    workspace_store: str = Field(
+        default="postgres",
+        description=(
+            "Workspace persistence: postgres (seal_app.workspace_kv, primary) with "
+            "config/workspace.json read fallback; use file for file-only mode."
+        ),
+    )
+
+    # ============================================================
+    # Guardrails (LLM abuse / scope)
+    # ============================================================
+
+    guardrails_enabled: bool = Field(
+        default=True,
+        description="Enable scope classification before query/chat LLM paths.",
+    )
+    guardrails_fail_closed: bool = Field(
+        default=True,
+        description="Treat scope classification failures as out-of-scope.",
+    )
+    max_query_chars: int = Field(
+        default=4000,
+        description="Maximum characters for POST /v1/query natural language input.",
+    )
+    max_chat_message_chars: int = Field(
+        default=8000,
+        description="Maximum characters for a single chat user message.",
+    )
+    max_chat_history_chars: int = Field(
+        default=32000,
+        description="Maximum total characters for chat history override.",
+    )
 
     # ============================================================
     # Chat / enhancement
@@ -525,10 +561,31 @@ class Settings(BaseSettings):
     ollama_port: int = Field(default=11434, description="Ollama service port.")
 
 
+_runtime_overrides: dict[str, object] = {}
+
+
+def apply_runtime_overrides(updates: dict[str, object]) -> None:
+    """Apply hot-reloaded workspace settings for the current process."""
+    _runtime_overrides.update(updates)
+
+
 @lru_cache(maxsize=1)
-def get_settings() -> Settings:
-    """Return the global settings singleton."""
+def _load_settings() -> Settings:
     return Settings()
+
+
+def get_settings() -> Settings:
+    """Return the global settings singleton (with optional runtime overrides)."""
+    base = _load_settings()
+    if _runtime_overrides:
+        return base.model_copy(update=_runtime_overrides)
+    return base
+
+
+def clear_settings_cache() -> None:
+    """Reset cached Settings and workspace runtime overrides (for tests and hot-reload)."""
+    _load_settings.cache_clear()
+    _runtime_overrides.clear()
 
 
 def validate_llm_configuration() -> None:

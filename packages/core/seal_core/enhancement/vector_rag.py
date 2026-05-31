@@ -21,6 +21,8 @@ class VectorRagEnhancer:
         self._store = store
 
     def enabled(self, ctx: EnhancementContext) -> bool:
+        if not ctx.in_scope:
+            return False
         if isinstance(self._store, NoopVectorStore):
             return False
         return not len(ctx.user_message.strip()) < 3

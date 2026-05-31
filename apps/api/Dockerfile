@@ -27,7 +27,7 @@ ARG SEAL_EXTRA=
 # Install dependencies (cached layer)
 RUN uv sync --frozen --no-install-workspace --all-packages \
     && if [ -n "$SEAL_EXTRA" ]; then \
-      uv sync --frozen --no-install-workspace --all-packages --extra "$SEAL_EXTRA" --package seal-api --package seal-core; \
+      uv sync --frozen --no-install-workspace --extra "$SEAL_EXTRA" --package seal-api --package seal-core; \
     fi
 
 # Copy source code
@@ -36,7 +36,7 @@ COPY . .
 # Install workspace packages in editable mode
 RUN uv sync --frozen --all-packages \
     && if [ -n "$SEAL_EXTRA" ]; then \
-      uv sync --frozen --all-packages --extra "$SEAL_EXTRA" --package seal-api --package seal-core; \
+      uv sync --frozen --extra "$SEAL_EXTRA" --package seal-api --package seal-core; \
     fi
 
 RUN chmod +x /app/scripts/healthcheck.py
@@ -63,7 +63,7 @@ ARG SEAL_EXTRA=
 # Install production dependencies only (frozen lockfile)
 RUN uv sync --frozen --no-install-workspace --all-packages --no-dev \
     && if [ -n "$SEAL_EXTRA" ]; then \
-      uv sync --frozen --no-install-workspace --all-packages --no-dev --extra "$SEAL_EXTRA" --package seal-api --package seal-core; \
+      uv sync --frozen --no-install-workspace --no-dev --extra "$SEAL_EXTRA" --package seal-api --package seal-core; \
     fi
 
 # Copy source code
@@ -72,7 +72,7 @@ COPY . .
 # Install workspace packages (no dev deps)
 RUN uv sync --frozen --all-packages --no-dev \
     && if [ -n "$SEAL_EXTRA" ]; then \
-      uv sync --frozen --all-packages --no-dev --extra "$SEAL_EXTRA" --package seal-api --package seal-core; \
+      uv sync --frozen --no-dev --extra "$SEAL_EXTRA" --package seal-api --package seal-core; \
     fi
 
 RUN chmod +x /app/scripts/healthcheck.py
