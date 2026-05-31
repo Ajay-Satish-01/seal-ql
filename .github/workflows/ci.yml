@@ -180,6 +180,12 @@ jobs:
           docker compose logs api --tail 80
           exit 1
 
+      - name: Wait for Ollama model
+        env:
+          OLLAMA_PROFILE: ${{ secrets.OLLAMA_PROFILE || 'default' }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || 'ollama/qwen3.5:4b' }}
+        run: bash scripts/ci-wait-for-ollama.sh
+
       - name: Run Python E2E tests
         run: docker compose exec -T api uv run pytest -v --tb=short sdks/python/tests/test_sdk_e2e.py apps/api/tests/test_e2e.py apps/api/tests/test_catalog_workspace_integration.py --junitxml=/tmp/e2e-test-results.xml
 

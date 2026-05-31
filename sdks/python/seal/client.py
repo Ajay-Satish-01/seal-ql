@@ -44,6 +44,12 @@ from seal.models import CatalogResponse, ChatResponse, DatabaseSchema, HealthRes
 _DEFAULT_TIMEOUT = 120.0  # seconds — queries can be slow due to LLM
 
 
+def _connection_error_message(base_url: str, exc: httpx.RequestError) -> str:
+    if isinstance(exc, httpx.TimeoutException):
+        return f"Request to {base_url} timed out"
+    return f"Cannot connect to {base_url}"
+
+
 def _handle_error(response: httpx.Response) -> None:
     """Raise an appropriate SDK exception for non-2xx responses."""
     if response.status_code < 400:
@@ -125,7 +131,7 @@ class Seal:
         try:
             resp = self._client.get("/health")
         except httpx.RequestError as exc:
-            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+            raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
 
         _handle_error(resp)
         return HealthResponse.model_validate(resp.json())
@@ -151,7 +157,7 @@ class Seal:
                 json={"query": query, "database_id": database_id},
             )
         except httpx.RequestError as exc:
-            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+            raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
 
         _handle_error(resp)
         return QueryResponse.model_validate(resp.json())
@@ -168,7 +174,7 @@ class Seal:
         try:
             resp = self._client.get("/v1/schema")
         except httpx.RequestError as exc:
-            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+            raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
 
         _handle_error(resp)
         return DatabaseSchema.model_validate(resp.json())
@@ -178,7 +184,7 @@ class Seal:
         try:
             resp = self._client.get("/v1/catalog")
         except httpx.RequestError as exc:
-            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+            raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
         _handle_error(resp)
         return CatalogResponse.model_validate(resp.json())
 
@@ -206,7 +212,7 @@ class Seal:
         try:
             resp = self._client.post("/v1/chat", json=body)
         except httpx.RequestError as exc:
-            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+            raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
         _handle_error(resp)
         return ChatResponse.model_validate(resp.json())
 
@@ -235,7 +241,7 @@ class Seal:
                     _handle_error(resp)
                 yield from parse_sse_stream(resp.iter_lines())
         except httpx.RequestError as exc:
-            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+            raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
 
 
 # ============================================================
@@ -297,7 +303,7 @@ class AsyncSeal:
         try:
             resp = await self._client.get("/health")
         except httpx.RequestError as exc:
-            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+            raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
 
         _handle_error(resp)
         return HealthResponse.model_validate(resp.json())
@@ -323,7 +329,7 @@ class AsyncSeal:
                 json={"query": query, "database_id": database_id},
             )
         except httpx.RequestError as exc:
-            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+            raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
 
         _handle_error(resp)
         return QueryResponse.model_validate(resp.json())
@@ -340,7 +346,7 @@ class AsyncSeal:
         try:
             resp = await self._client.get("/v1/schema")
         except httpx.RequestError as exc:
-            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+            raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
 
         _handle_error(resp)
         return DatabaseSchema.model_validate(resp.json())
@@ -349,7 +355,7 @@ class AsyncSeal:
         try:
             resp = await self._client.get("/v1/catalog")
         except httpx.RequestError as exc:
-            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+            raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
         _handle_error(resp)
         return CatalogResponse.model_validate(resp.json())
 
@@ -373,7 +379,7 @@ class AsyncSeal:
         try:
             resp = await self._client.post("/v1/chat", json=body)
         except httpx.RequestError as exc:
-            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+            raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
         _handle_error(resp)
         return ChatResponse.model_validate(resp.json())
 
@@ -412,4 +418,4 @@ class AsyncSeal:
                     for event in parse_sse_stream(iter(buffer)):
                         yield event
         except httpx.RequestError as exc:
-            raise SealConnectionError(f"Cannot connect to {self._base_url}") from exc
+            raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
