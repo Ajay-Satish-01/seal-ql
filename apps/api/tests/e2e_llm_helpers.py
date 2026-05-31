@@ -7,8 +7,10 @@ Fail on auth regressions, unexpected 4xx scope errors, or invalid 200 bodies.
 from __future__ import annotations
 
 import warnings
+from collections.abc import Iterator
 from typing import Any
 
+import httpx
 import pytest
 
 _LLM_SKIP_HTTP = frozenset({429, 500, 502, 503, 504})
@@ -21,8 +23,11 @@ _LLM_SKIP_TEXT_MARKERS = (
     "too many requests",
     "timeout",
     "timed out",
+    "readtimeout",
+    "connecttimeout",
     "connection error",
     "connection refused",
+    "cannot connect",
     "litellm",
     "instructor",
     "vertexai",
@@ -33,10 +38,27 @@ _LLM_SKIP_TEXT_MARKERS = (
     "an internal error",
 )
 
+_DEFAULT_PROBE_TIMEOUT = 60.0
+
 
 def _snippet(text: str, limit: int = 400) -> str:
     t = (text or "").strip()
     return t if len(t) <= limit else f"{t[:limit]}…"
+
+
+def _iter_exception_chain(exc: BaseException | None) -> Iterator[BaseException]:
+    seen: set[int] = set()
+    while exc is not None and id(exc) not in seen:
+        seen.add(id(exc))
+        yield exc
+        exc = exc.__cause__ or exc.__context__
+
+
+def _is_timeout_exception(exc: BaseException) -> bool:
+    if isinstance(exc, TimeoutError | httpx.TimeoutException):
+        return True
+    name = type(exc).__name__.lower()
+    return name.endswith("timeout") or name == "timeouterror"
 
 
 def llm_unavailable_reason(
@@ -57,10 +79,15 @@ def llm_unavailable_reason(
         return _snippet(body) or f"HTTP {status_code}"
 
     if exc is not None:
-        name = type(exc).__name__.lower()
-        msg = str(exc).lower()
-        if any(m in msg or m in name for m in _LLM_SKIP_TEXT_MARKERS):
-            return f"{type(exc).__name__}: {_snippet(str(exc))}"
+        chain = list(_iter_exception_chain(exc))
+        for link in chain:
+            if _is_timeout_exception(link):
+                return f"{type(link).__name__}: {_snippet(str(link))}"
+        for link in chain:
+            name = type(link).__name__.lower()
+            msg = str(link).lower()
+            if any(m in msg or m in name for m in _LLM_SKIP_TEXT_MARKERS):
+                return f"{type(link).__name__}: {_snippet(str(link))}"
 
     if status_code is not None and status_code >= 500:
         return f"HTTP {status_code}: {_snippet(body)}"
@@ -82,6 +109,34 @@ def skip_if_llm_unavailable(
             stacklevel=2,
         )
         pytest.skip(f"LLM unavailable: {reason}")
+
+
+def probe_live_llm(
+    *,
+    base_url: str,
+    api_key: str | None = None,
+    timeout: float = _DEFAULT_PROBE_TIMEOUT,
+) -> str | None:
+    """Return a skip reason when /v1/query is not viable; None when LLM path looks healthy."""
+    headers: dict[str, str] = {}
+    if api_key:
+        headers["X-API-Key"] = api_key
+    try:
+        with httpx.Client(
+            base_url=base_url.rstrip("/"),
+            headers=headers,
+            timeout=timeout,
+        ) as client:
+            response = client.post(
+                "/v1/query",
+                json={"query": "How many tables are in the database?"},
+            )
+    except httpx.RequestError as exc:
+        return llm_unavailable_reason(exc=exc) or f"{type(exc).__name__}: {_snippet(str(exc))}"
+
+    if response.status_code == 401:
+        return None
+    return llm_unavailable_reason(status_code=response.status_code, body=response.text)
 
 
 def assert_chat_json_body(body: dict[str, Any]) -> None:

@@ -19,6 +19,7 @@ from seal.exceptions import QueryError, SealError, ServerError
 from tests.e2e_llm_helpers import (
     assert_chat_json_body,
     assert_query_json_body,
+    probe_live_llm,
     skip_if_llm_unavailable,
 )
 
@@ -105,6 +106,14 @@ def _api_reachable() -> bool:
         return False
 
 
+@pytest.fixture(scope="module")
+def llm_ready() -> None:
+    """Skip LLM SDK tests when the live stack cannot complete a query."""
+    reason = probe_live_llm(base_url=_API_URL, api_key=_API_KEY, timeout=180.0)
+    if reason is not None:
+        pytest.skip(f"LLM unavailable: {reason}")
+
+
 @pytest.mark.skipif(
     not _api_reachable(),
     reason="API server not reachable at localhost:8000. Run 'make up' first.",
@@ -165,11 +174,11 @@ class TestSyncE2E:
             assert r.status_code == 200, r.text
             assert "settings" in r.json()
 
-    def test_chat(self):
+    def test_chat(self, llm_ready: None) -> None:
         with Seal(_API_URL, api_key=_API_KEY, timeout=180) as client:
             _run_chat_e2e(client)
 
-    def test_query(self):
+    def test_query(self, llm_ready: None) -> None:
         with Seal(_API_URL, api_key=_API_KEY, timeout=180) as client:
             _run_query_e2e(client)
 
@@ -195,6 +204,6 @@ class TestAsyncE2E:
             assert len(result.tables) > 0
 
     @pytest.mark.asyncio
-    async def test_query(self):
+    async def test_query(self, llm_ready: None) -> None:
         async with AsyncSeal(_API_URL, api_key=_API_KEY, timeout=180) as client:
             await _run_query_e2e_async(client)
