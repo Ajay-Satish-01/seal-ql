@@ -2,22 +2,25 @@
 
 ## Repository Structure
 
-- `apps/api/`: FastAPI backend service (`/v1/query`, `/v1/chat`, `/v1/catalog`)
-- `apps/web/`: Docs site, marketing, interactive demo (`/demo` with query + chat)
-- `packages/core/`: Planner, introspection, **chat**, **catalog**, **enhancement**, **vector** RAG, shared **pipeline**
+- `apps/api/`: FastAPI backend (`/v1/query`, `/v1/chat`, `/v1/catalog`, workspace, vector)
+- `apps/docs/`: Docs site, marketing, fixture-based `/demo` (Next.js, port **3000**)
+- `apps/web/`: Operational dashboard — live API console (Next.js, port **3001**)
+- `packages/core/`: Planner, introspection, **chat**, **catalog**, **enhancement**, **guardrails**, **vector** RAG, **workspace**, shared **pipeline**
 - `packages/sql/`: Dialect validators & AST safety checkers
 - `packages/charts/`: Vega-Lite spec generators
 - `packages/semantic/`: Semantic metrics registries
 - `sdks/python/`, `sdks/typescript/`: SDK wrappers (`query`, `chat`, `chatStream`, `catalog`)
 - `config/`: `catalog.example.yaml`, `seal-tools.openai.json`
-- `scripts/`: `seed.sql`, `sync_catalog.py`
-- `docs/`: Contributor docs (`chat-enhancement.md`, `integrations/`)
+- `scripts/`: `seed.sql`, `migrate_app.sql`, `sync_catalog.py`
+- `docs/`: Contributor docs (`how-seal-works.md`, `guardrails.md`, `chat-enhancement.md`, `workspace-api.md`, `integrations/`)
 
 ## Architecture
 
-- **API Gateway**: FastAPI; routes NL requests to query or chat paths.
-- **Data catalog**: Auto-synced global YAML (`DATA_CATALOG_PATH`); feeds planner + `SchemaAwareEnhancer`.
+- **API Gateway**: FastAPI; scope gate on query/chat; routes NL requests to planner or chat.
+- **Guardrails**: Heuristics + LLM `ScopeDecision` before SQL/RAG; chat refusal vs query 400.
+- **Data catalog**: Auto-synced YAML (`DATA_CATALOG_PATH`); description overrides in workspace DB (re-applied after sync).
 - **Chat**: `ChatService` + `SessionStore` + `EnhancementOrchestrator` (schema → vector RAG → multi-turn).
+- **Workspace**: Postgres `seal_app.workspace_kv` (primary); `config/workspace.json` read fallback; `.env` base. Hot-reload on save in dev; prod uses `POST /v1/workspace/settings/apply`.
 - **Query Planner**: LiteLLM + Instructor; shared `execute_natural_language_query` pipeline with chat SQL.
 - **SQL Validator**: SQLGlot AST — zero-trust boundary for all LLM-generated SQL.
 - **Database Executor**: Postgres (TimescaleDB) or DuckDB.
@@ -28,6 +31,7 @@
 - Docker-first: image `seal/api` on Docker Hub; compose stacks API + Postgres + optional Ollama.
 - Mount `./config` for catalog YAML persistence (`CATALOG_AUTO_SYNC`, `DATA_CATALOG_PATH`).
 - Default `VECTOR_STORE=none`; optional Chroma via `seal-core[chroma]` and `VECTOR_STORE=chroma`.
+- Local frontends: docs **3000**, dashboard **3001**, API **8000**.
 
 ## SDKs
 
@@ -43,19 +47,20 @@
 
 ## Commands
 
-- `make up` / `make down` / `make seed`: Docker stack and seed data.
+- `make up` / `make down` / `make seed`: Docker stack and seed data (`migrate_app.sql` for workspace).
 - `make sync-catalog`: Regenerate `config/catalog.yaml` from live schema.
-- `make sync-docs-assets`: OpenAPI + demo fixtures + `seal-tools.openai.json` → `apps/web`.
+- `make sync-docs-assets`: OpenAPI + demo fixtures → `apps/docs`.
 - `make verify-openapi-sync`: CI check for committed OpenAPI copies.
-- `make validate-query`: Live `POST /v1/query` shape check (API running).
-- `make check-web`: Build TS SDK + Next.js docs app.
+- `make check-docs` / `make check-dashboard` / `make check-web`: Build docs and dashboard apps.
 - `uv sync --all-packages --all-extras` / `uv run pytest -v`
 - `pre-commit run --all-files`
 
 ## Workflows
 
-- **Schema / catalog**: Introspection in `packages/core/`; catalog sync preserves user `table_description` / `view_description`.
+- **Schema / catalog**: Introspection in `packages/core/`; catalog sync preserves user descriptions; PATCH `/v1/catalog/descriptions` for overrides.
+- **Guardrails**: `packages/core/seal_core/guardrails/`; wire in `ChatService` and `apps/api` query route.
 - **Chat / enhancement**: Changes in `seal_core/enhancement/` and `seal_core/chat/`; wire default chain in `apps/api` lifespan.
+- **Workspace**: `seal_core/workspace/` + `apps/api/app/routes/workspace.py`; startup + hot-reload via `apply_workspace_on_startup` / `apply_runtime_overrides`.
 - **Agent queries**: All dynamic SQL through `packages/sql/` AST validation — never execute raw LLM SQL.
 - **Visualization**: Chart columns must match SQL result columns.
 
@@ -63,12 +68,12 @@
 
 - **Zero-Trust**: SQLGlot parse required for every generated statement.
 - **No destructive ops**: `DROP`, `DELETE`, `TRUNCATE`; enforce `LIMIT` on selects.
-- **Model output**: Instructor for structured planner/chat decisions.
+- **Model output**: Instructor for structured planner/chat/guardrails decisions.
 
 ## Testing
 
-- API tests: `apps/api/tests/` (`test_chat.py`, `test_chat_stream.py`, mocks in `factory.py`).
-- Core: `packages/core/tests/` (catalog, enhancement, vector, pipeline).
+- API tests: `apps/api/tests/` (`test_chat.py`, `test_workspace.py`, mocks in `factory.py`).
+- Core: `packages/core/tests/` (catalog, enhancement, vector, guardrails, workspace).
 - SDK: `sdks/python/tests/test_chat_client.py`; `tests/test_seal_tools_manifest.py`.
 - Run: `uv run pytest -v` in the uv virtualenv.
 
@@ -81,3 +86,4 @@ See `RELEASING.md` and `SETUP.md`. Bump aligned versions in API + both SDKs; `ma
 - Never bypass `packages/sql/` AST parser.
 - Never hardcode LLM provider — use LiteLLM.
 - Catalog is **global** (not per-request): same registry for `/v1/query` and `/v1/chat`.
+- Out-of-scope chat returns 200 refusal; out-of-scope query returns 400 `query_out_of_scope`.

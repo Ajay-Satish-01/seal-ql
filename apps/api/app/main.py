@@ -18,10 +18,12 @@ from seal_core.schema.introspector import get_introspector
 from seal_core.settings import get_settings, validate_vector_store_configuration
 from seal_core.vector.factory import get_vector_store
 from seal_core.vector.indexer import VectorIndexBuilder
+from seal_core.workspace.bootstrap import apply_workspace_on_startup
+from seal_core.workspace.store import create_workspace_store
 from seal_semantic.registry import SemanticRegistry
 from seal_sql.executor import QueryExecutor
 
-from app.routes import catalog, chat, health, query, schema
+from app.routes import catalog, chat, health, query, schema, vector, workspace
 
 load_dotenv()
 
@@ -112,10 +114,16 @@ async def lifespan(app: FastAPI):
     app.state.data_catalog = data_catalog
     app.state.chat_service = chat_service
     app.state.vector_store = vector_store
+    workspace_store = create_workspace_store()
+    app.state.workspace_store = workspace_store
+    if hasattr(workspace_store, "ensure_schema"):
+        await workspace_store.ensure_schema()
+    await apply_workspace_on_startup(workspace_store, data_catalog)
 
     yield
 
     logger.info("Closing database connections...")
+    await workspace_store.close()
     await executor.close()
     await introspector.close()
 
@@ -143,7 +151,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-API-Key"],
     )
 
@@ -152,6 +160,8 @@ def create_app() -> FastAPI:
     app.include_router(query.router, prefix="/v1")
     app.include_router(chat.router, prefix="/v1")
     app.include_router(catalog.router, prefix="/v1")
+    app.include_router(workspace.router, prefix="/v1")
+    app.include_router(vector.router, prefix="/v1")
 
     return app
 

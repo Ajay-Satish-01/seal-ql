@@ -16,8 +16,11 @@ export interface ChatStreamMeta {
   session_id: string;
   sources?: string[];
   sql?: string | null;
+  results?: Record<string, unknown>[] | null;
+  columns?: Array<{ name: string; type: string }> | null;
   chart?: Record<string, unknown> | null;
   enhancement?: Record<string, unknown>;
+  scope?: Record<string, unknown>;
 }
 
 export type ChatStreamEvent =

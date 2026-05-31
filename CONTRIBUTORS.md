@@ -10,13 +10,16 @@ We use a monorepo architecture managed by modern tooling:
 
 * **Backend (Python)**: Configured as a unified `uv` workspace. The workspace root `pyproject.toml` references:
   * `apps/api` (FastAPI app container)
-  * `packages/core` (Planner, chat, catalog, enhancement, vector RAG, introspection)
+  * `packages/core` (Planner, chat, catalog, enhancement, guardrails, workspace, vector RAG, introspection)
   * `packages/sql` (AST-based SQL validators)
   * `packages/charts` (Vega-Lite visual generators)
   * `packages/semantic` (Metrics semantic compiler)
   * `sdks/python` (Python SDK wrapper)
   * `evals` (Testing datasets & repair evaluations)
-* **Frontend/SDK (TypeScript)**: Configured under `sdks/typescript/` as an independent TypeScript package managed by `pnpm`.
+* **Frontend (TypeScript)**:
+  * `apps/docs` — docs site + fixture demo (port 3000, `pnpm`)
+  * `apps/web` — operational dashboard (port 3001, `pnpm`)
+  * `sdks/typescript/` — published `seal` npm package
 
 ---
 
@@ -49,6 +52,11 @@ make seed
 
 # Optional: sync data catalog YAML from live schema
 make sync-catalog
+
+# Docs site (port 3000) and dashboard (port 3001) — separate terminals
+make sync-docs-assets
+cd apps/docs && pnpm install && pnpm dev
+cd apps/web && pnpm dev   # when dashboard package.json exists
 ```
 
 ### 3. Pre-commit & Push Hook Installation

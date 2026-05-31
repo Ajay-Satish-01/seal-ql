@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from seal_core.llm import client as llm_client
 from seal_core.llm.client import get_api_base, get_api_key, get_model
-from seal_core.settings import Settings, get_settings
+from seal_core.settings import Settings, clear_settings_cache, get_settings
 
 
 def _clear_llm_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -22,7 +22,7 @@ def _clear_llm_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "ANTHROPIC_API_KEY",
     ):
         monkeypatch.delenv(name, raising=False)
-    get_settings.cache_clear()
+    clear_settings_cache()
 
 
 @pytest.fixture(autouse=True)
@@ -30,7 +30,7 @@ def _reset_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_llm_env(monkeypatch)
     llm_client._config_validated = False
     yield
-    get_settings.cache_clear()
+    clear_settings_cache()
     llm_client._config_validated = False
 
 
@@ -38,7 +38,7 @@ def test_ollama_profile_disabled_uses_cloud_routing(monkeypatch: pytest.MonkeyPa
     monkeypatch.setenv("OLLAMA_PROFILE", "disabled")
     monkeypatch.setenv("LLM_MODEL", "gemini/gemini-1.5-flash")
     monkeypatch.setenv("LLM_API_KEY", "test-key")
-    get_settings.cache_clear()
+    clear_settings_cache()
 
     settings = get_settings()
     assert settings.use_cloud_llm()
@@ -104,7 +104,7 @@ def test_warn_cloud_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "")
     monkeypatch.setenv("OPENAI_API_KEY", "")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "")
-    get_settings.cache_clear()
+    clear_settings_cache()
 
     warnings = get_settings().collect_llm_configuration_warnings()
     assert any("no API key" in w for w in warnings)

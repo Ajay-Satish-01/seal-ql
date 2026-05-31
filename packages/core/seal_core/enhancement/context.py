@@ -19,6 +19,7 @@ class EnhancementContext(BaseModel):
     base_system_prompt: str = ""
     database_schema: DatabaseSchema | None = Field(default=None, alias="schema")
     include_charts: bool = False
+    in_scope: bool = True
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     model_config = {"arbitrary_types_allowed": True, "populate_by_name": True}

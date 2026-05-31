@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 from fastapi.testclient import TestClient
-from seal_core.settings import Settings, get_settings
+from seal_core.settings import Settings, clear_settings_cache, get_settings
 from tests.factory import build_client
 from tests.shared import TEST_API_KEY
 
@@ -26,7 +26,7 @@ def test_lifespan_fails_when_auth_required_with_placeholder_key(
     monkeypatch.setenv("SEAL_AUTH_REQUIRED", "true")
     monkeypatch.setenv("SEAL_API_KEY", "replace-me-with-openssl-rand-hex-32")
     monkeypatch.setenv("SEAL_DEV_MODE", "false")
-    get_settings.cache_clear()
+    clear_settings_cache()
 
     with (
         pytest.raises(RuntimeError, match="placeholder"),
@@ -34,13 +34,13 @@ def test_lifespan_fails_when_auth_required_with_placeholder_key(
     ):
         pass
 
-    get_settings.cache_clear()
+    clear_settings_cache()
 
 
 def test_lifespan_fails_when_auth_required_without_key(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("SEAL_AUTH_REQUIRED", "true")
     monkeypatch.delenv("SEAL_API_KEY", raising=False)
-    get_settings.cache_clear()
+    clear_settings_cache()
 
     with (
         pytest.raises(RuntimeError, match="SEAL_API_KEY"),
@@ -48,7 +48,7 @@ def test_lifespan_fails_when_auth_required_without_key(monkeypatch: MonkeyPatch)
     ):
         pass
 
-    get_settings.cache_clear()
+    clear_settings_cache()
 
 
 def test_placeholder_rejected_when_not_dev_mode() -> None:
@@ -89,7 +89,7 @@ def test_placeholder_rejected_even_with_dev_mode_when_auth_required() -> None:
 def test_empty_api_key_treated_as_disabled(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("SEAL_API_KEY", "   ")
     monkeypatch.setenv("SEAL_AUTH_REQUIRED", "false")
-    get_settings.cache_clear()
+    clear_settings_cache()
 
     settings = get_settings()
     assert settings.api_key is None
@@ -97,7 +97,7 @@ def test_empty_api_key_treated_as_disabled(monkeypatch: MonkeyPatch) -> None:
     with build_client(monkeypatch) as client:
         assert client.get("/v1/schema").status_code == 200
 
-    get_settings.cache_clear()
+    clear_settings_cache()
 
 
 # ---------------------------------------------------------------------------
@@ -115,7 +115,7 @@ def auth_client(monkeypatch: MonkeyPatch) -> Generator[TestClient, None, None]:
     )
     yield client
     client.close()
-    get_settings.cache_clear()
+    clear_settings_cache()
 
 
 def test_health_is_public(auth_client: TestClient) -> None:
@@ -214,4 +214,4 @@ def test_misconfigured_auth_returns_503(monkeypatch: MonkeyPatch) -> None:
         assert response.status_code == 503
         assert response.json()["detail"] == "API authentication is misconfigured"
 
-    get_settings.cache_clear()
+    clear_settings_cache()

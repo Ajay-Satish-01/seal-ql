@@ -1,4 +1,4 @@
-"""Generate demo fixtures for apps/web using the real ChartEngine."""
+"""Generate demo fixtures for apps/docs using the real ChartEngine."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from seal_charts.engine import ChartEngine  # noqa: E402
 from seal_core.planner.models import ChartType, QueryPlan  # noqa: E402
 from seal_sql.result import ColumnMetadata, QueryResult  # noqa: E402
 
-OUTPUT_PATH = root_dir / "apps" / "web" / "src" / "data" / "demo-fixtures.json"
+OUTPUT_PATH = root_dir / "apps" / "docs" / "src" / "data" / "demo-fixtures.json"
 
 METADATA_BASE = {
     "row_count": 0,

@@ -34,3 +34,24 @@ def test_get_catalog(monkeypatch) -> None:
     r = client.get("/v1/catalog", headers=AUTH_HEADERS)
     assert r.status_code == 200
     assert "tables" in r.json()
+
+
+def test_query_out_of_scope_returns_400(monkeypatch) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from seal_core.guardrails.models import ScopeResult
+
+    client: TestClient = build_client(monkeypatch)
+    with patch(
+        "app.routes.query.classify_scope",
+        new=AsyncMock(
+            return_value=ScopeResult(in_scope=False, reason="off-topic", source="heuristic")
+        ),
+    ):
+        r = client.post(
+            "/v1/query",
+            json={"query": "write me a poem"},
+            headers=AUTH_HEADERS,
+        )
+    assert r.status_code == 400
+    assert r.json()["detail"] == "query_out_of_scope"

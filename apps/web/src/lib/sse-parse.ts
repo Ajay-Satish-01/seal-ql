@@ -5,9 +5,4 @@
  * and is covered by `sdks/typescript/tests/sse.test.ts`. We re-export here so
  * the web demo and the SDK can never drift.
  */
-export {
-  parseSseEventBlock,
-  splitSseBuffer,
-  flushSseRemainder,
-  type SseParseResult,
-} from 'seal';
+export { parseSseEventBlock, splitSseBuffer, flushSseRemainder, type SseParseResult } from 'seal';

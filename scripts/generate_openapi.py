@@ -17,9 +17,9 @@ os.environ["SEAL_AUTH_REQUIRED"] = "false"
 os.environ["SEAL_DEV_MODE"] = "true"
 
 import yaml  # noqa: E402
-from seal_core.settings import get_settings  # noqa: E402
+from seal_core.settings import _load_settings  # noqa: E402
 
-get_settings.cache_clear()
+_load_settings.cache_clear()
 
 from app.main import create_app  # noqa: E402
 

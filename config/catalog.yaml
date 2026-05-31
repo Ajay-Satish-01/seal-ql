@@ -1,0 +1,300 @@
+version: 1
+generated_at: '2026-05-31T06:50:19.753381+00:00'
+schema_hash: 67c3678f70690a04
+tables:
+- schema: public
+  name: customer_summary
+  kind: view
+  columns:
+  - name: customer_id
+    data_type: integer
+    normalized_type: integer
+    nullable: true
+    is_primary_key: false
+  - name: customer_name
+    data_type: character varying
+    normalized_type: string
+    nullable: true
+    is_primary_key: false
+  - name: segment
+    data_type: character varying
+    normalized_type: string
+    nullable: true
+    is_primary_key: false
+  - name: order_count
+    data_type: bigint
+    normalized_type: integer
+    nullable: true
+    is_primary_key: false
+  - name: total_spent
+    data_type: numeric
+    normalized_type: numeric
+    nullable: true
+    is_primary_key: false
+  - name: last_order_at
+    data_type: timestamp without time zone
+    normalized_type: timestamp
+    nullable: true
+    is_primary_key: false
+- schema: public
+  name: customers
+  kind: table
+  columns:
+  - name: id
+    data_type: integer
+    normalized_type: integer
+    nullable: false
+    is_primary_key: true
+  - name: name
+    data_type: character varying
+    normalized_type: string
+    nullable: false
+    is_primary_key: false
+  - name: email
+    data_type: character varying
+    normalized_type: string
+    nullable: false
+    is_primary_key: false
+  - name: segment
+    data_type: character varying
+    normalized_type: string
+    nullable: false
+    is_primary_key: false
+  - name: joined_at
+    data_type: timestamp without time zone
+    normalized_type: timestamp
+    nullable: false
+    is_primary_key: false
+- schema: public
+  name: events
+  kind: hypertable
+  columns:
+  - name: time
+    data_type: timestamp with time zone
+    normalized_type: timestamp
+    nullable: false
+    is_primary_key: false
+  - name: event_type
+    data_type: character varying
+    normalized_type: string
+    nullable: false
+    is_primary_key: false
+  - name: customer_id
+    data_type: integer
+    normalized_type: integer
+    nullable: true
+    is_primary_key: false
+  - name: product_id
+    data_type: integer
+    normalized_type: integer
+    nullable: true
+    is_primary_key: false
+  - name: properties
+    data_type: jsonb
+    normalized_type: json
+    nullable: true
+    is_primary_key: false
+  - name: value
+    data_type: numeric
+    normalized_type: numeric
+    nullable: true
+    is_primary_key: false
+- schema: public
+  name: events_daily
+  kind: view
+  columns:
+  - name: bucket
+    data_type: timestamp with time zone
+    normalized_type: timestamp
+    nullable: true
+    is_primary_key: false
+  - name: event_type
+    data_type: character varying
+    normalized_type: string
+    nullable: true
+    is_primary_key: false
+  - name: event_count
+    data_type: bigint
+    normalized_type: integer
+    nullable: true
+    is_primary_key: false
+  - name: total_value
+    data_type: numeric
+    normalized_type: numeric
+    nullable: true
+    is_primary_key: false
+  - name: avg_value
+    data_type: numeric
+    normalized_type: numeric
+    nullable: true
+    is_primary_key: false
+  - name: min_value
+    data_type: numeric
+    normalized_type: numeric
+    nullable: true
+    is_primary_key: false
+  - name: max_value
+    data_type: numeric
+    normalized_type: numeric
+    nullable: true
+    is_primary_key: false
+- schema: public
+  name: events_hourly
+  kind: view
+  columns:
+  - name: bucket
+    data_type: timestamp with time zone
+    normalized_type: timestamp
+    nullable: true
+    is_primary_key: false
+  - name: event_type
+    data_type: character varying
+    normalized_type: string
+    nullable: true
+    is_primary_key: false
+  - name: event_count
+    data_type: bigint
+    normalized_type: integer
+    nullable: true
+    is_primary_key: false
+  - name: total_value
+    data_type: numeric
+    normalized_type: numeric
+    nullable: true
+    is_primary_key: false
+  - name: avg_value
+    data_type: numeric
+    normalized_type: numeric
+    nullable: true
+    is_primary_key: false
+- schema: public
+  name: orders
+  kind: table
+  columns:
+  - name: id
+    data_type: integer
+    normalized_type: integer
+    nullable: false
+    is_primary_key: true
+  - name: customer_id
+    data_type: integer
+    normalized_type: integer
+    nullable: false
+    is_primary_key: false
+  - name: product_id
+    data_type: integer
+    normalized_type: integer
+    nullable: false
+    is_primary_key: false
+  - name: amount
+    data_type: numeric
+    normalized_type: numeric
+    nullable: false
+    is_primary_key: false
+  - name: quantity
+    data_type: integer
+    normalized_type: integer
+    nullable: false
+    is_primary_key: false
+  - name: status
+    data_type: character varying
+    normalized_type: string
+    nullable: false
+    is_primary_key: false
+  - name: region
+    data_type: character varying
+    normalized_type: string
+    nullable: false
+    is_primary_key: false
+  - name: created_at
+    data_type: timestamp without time zone
+    normalized_type: timestamp
+    nullable: false
+    is_primary_key: false
+- schema: public
+  name: product_performance
+  kind: materialized_view
+  columns:
+  - name: product_id
+    data_type: integer
+    normalized_type: integer
+    nullable: true
+    is_primary_key: false
+  - name: product_name
+    data_type: character varying(100)
+    normalized_type: string
+    nullable: true
+    is_primary_key: false
+  - name: category
+    data_type: character varying(50)
+    normalized_type: string
+    nullable: true
+    is_primary_key: false
+  - name: total_orders
+    data_type: bigint
+    normalized_type: integer
+    nullable: true
+    is_primary_key: false
+  - name: total_revenue
+    data_type: numeric
+    normalized_type: numeric
+    nullable: true
+    is_primary_key: false
+  - name: avg_order_value
+    data_type: numeric
+    normalized_type: numeric
+    nullable: true
+    is_primary_key: false
+  - name: estimated_profit
+    data_type: numeric
+    normalized_type: numeric
+    nullable: true
+    is_primary_key: false
+- schema: public
+  name: products
+  kind: table
+  columns:
+  - name: id
+    data_type: integer
+    normalized_type: integer
+    nullable: false
+    is_primary_key: true
+  - name: name
+    data_type: character varying
+    normalized_type: string
+    nullable: false
+    is_primary_key: false
+  - name: category
+    data_type: character varying
+    normalized_type: string
+    nullable: false
+    is_primary_key: false
+  - name: price
+    data_type: numeric
+    normalized_type: numeric
+    nullable: false
+    is_primary_key: false
+  - name: cost
+    data_type: numeric
+    normalized_type: numeric
+    nullable: false
+    is_primary_key: false
+- schema: seal_app
+  name: workspace_kv
+  kind: table
+  columns:
+  - name: key
+    data_type: text
+    normalized_type: string
+    nullable: false
+    is_primary_key: true
+  - name: value
+    data_type: jsonb
+    normalized_type: json
+    nullable: false
+    is_primary_key: false
+  - name: updated_at
+    data_type: timestamp with time zone
+    normalized_type: timestamp
+    nullable: false
+    is_primary_key: false

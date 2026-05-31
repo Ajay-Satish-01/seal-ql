@@ -140,8 +140,181 @@ paths:
                 detail: Invalid or missing API key
       security:
       - APIKeyHeader: []
+  /v1/catalog/descriptions:
+    patch:
+      summary: Patch Catalog Descriptions
+      description: Persist table/view description overrides to workspace DB (YAML
+        may regenerate on sync).
+      operationId: patch_catalog_descriptions_v1_catalog_descriptions_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogDescriptionsPatch'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogResponse'
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyHeader: []
+  /v1/workspace/settings:
+    get:
+      summary: Get Workspace Settings
+      operationId: get_workspace_settings_v1_workspace_settings_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceSettingsResponse'
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
+      security:
+      - APIKeyHeader: []
+    patch:
+      summary: Patch Workspace Settings
+      operationId: patch_workspace_settings_v1_workspace_settings_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceSettingsPatch'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceSettingsResponse'
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyHeader: []
+  /v1/workspace/settings/apply:
+    post:
+      summary: Apply Workspace Settings
+      description: Apply persisted hot-reload settings to the running API (prod dashboard
+        button).
+      operationId: apply_workspace_settings_v1_workspace_settings_apply_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceSettingsResponse'
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
+      security:
+      - APIKeyHeader: []
+  /v1/workspace/export:
+    get:
+      summary: Export Workspace
+      operationId: export_workspace_v1_workspace_export_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceExportResponse'
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
+      security:
+      - APIKeyHeader: []
+  /v1/vector/reindex:
+    post:
+      summary: Reindex Vector
+      operationId: reindex_vector_v1_vector_reindex_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VectorReindexResponse'
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
+      security:
+      - APIKeyHeader: []
 components:
   schemas:
+    CatalogDescriptionItem:
+      properties:
+        name:
+          type: string
+          title: Name
+        schema:
+          type: string
+          title: Schema
+          default: public
+        table_description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Table Description
+        view_description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: View Description
+      type: object
+      required:
+      - name
+      title: CatalogDescriptionItem
+    CatalogDescriptionsPatch:
+      properties:
+        tables:
+          items:
+            $ref: '#/components/schemas/CatalogDescriptionItem'
+          type: array
+          title: Tables
+      type: object
+      title: CatalogDescriptionsPatch
     CatalogResponse:
       properties:
         version:
@@ -232,9 +405,10 @@ components:
         role:
           type: string
           title: Role
-          description: user, assistant, or system
+          description: user or assistant
         content:
           type: string
+          maxLength: 8000
           title: Content
           description: Message content.
       type: object
@@ -246,6 +420,7 @@ components:
       properties:
         message:
           type: string
+          maxLength: 8000
           title: Message
           description: Latest user message.
         session_id:
@@ -496,6 +671,7 @@ components:
       properties:
         query:
           type: string
+          maxLength: 4000
           title: Query
           description: The natural language query to translate to SQL and execute.
         database_id:
@@ -670,6 +846,100 @@ components:
       - msg
       - type
       title: ValidationError
+    VectorReindexResponse:
+      properties:
+        status:
+          type: string
+          title: Status
+        indexed_tables:
+          type: integer
+          title: Indexed Tables
+      type: object
+      required:
+      - status
+      - indexed_tables
+      title: VectorReindexResponse
+    WorkspaceExportResponse:
+      properties:
+        settings:
+          additionalProperties: true
+          type: object
+          title: Settings
+        catalog_overrides:
+          additionalProperties: true
+          type: object
+          title: Catalog Overrides
+      type: object
+      required:
+      - settings
+      - catalog_overrides
+      title: WorkspaceExportResponse
+    WorkspaceSettingsPatch:
+      properties:
+        settings:
+          additionalProperties: true
+          type: object
+          title: Settings
+      type: object
+      required:
+      - settings
+      title: WorkspaceSettingsPatch
+    WorkspaceSettingsResponse:
+      properties:
+        settings:
+          additionalProperties: true
+          type: object
+          title: Settings
+        schema:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Schema
+        hot_reload_applied:
+          items:
+            type: string
+          type: array
+          title: Hot Reload Applied
+        pending_apply:
+          items:
+            type: string
+          type: array
+          title: Pending Apply
+        restart_required:
+          items:
+            type: string
+          type: array
+          title: Restart Required
+        storage:
+          anyOf:
+          - $ref: '#/components/schemas/WorkspaceStorageInfo'
+          - type: 'null'
+      type: object
+      required:
+      - settings
+      title: WorkspaceSettingsResponse
+    WorkspaceStorageInfo:
+      properties:
+        settings_read_source:
+          type: string
+          title: Settings Read Source
+          description: 'Where settings overrides were read: postgres, file, or env
+            only.'
+          default: env
+        catalog_read_source:
+          type: string
+          title: Catalog Read Source
+          description: 'Where catalog overrides were read: postgres, file, or env
+            only.'
+          default: env
+        write_target:
+          type: string
+          title: Write Target
+          description: 'Where dashboard writes persist: postgres or file.'
+          default: postgres
+      type: object
+      title: WorkspaceStorageInfo
   securitySchemes:
     APIKeyHeader:
       type: apiKey

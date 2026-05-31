@@ -8,7 +8,7 @@ import pytest
 from app.main import create_app
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from seal_core.settings import Settings, get_settings
+from seal_core.settings import Settings, clear_settings_cache
 from tests.factory import apply_dependency_mocks, clear_dependency_mocks
 from tests.shared import TEST_API_KEY
 
@@ -25,20 +25,21 @@ def _configure_test_env(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None
     monkeypatch.setenv("VECTOR_STORE", "none")
     monkeypatch.setenv("CATALOG_AUTO_SYNC", "false")
     monkeypatch.setenv("CHAT_ENHANCEMENT_ENABLED", "false")
-    get_settings.cache_clear()
+    monkeypatch.setenv("GUARDRAILS_ENABLED", "false")
+    clear_settings_cache()
     yield
-    get_settings.cache_clear()
+    clear_settings_cache()
 
 
 @pytest.fixture
 def api_app() -> Generator[FastAPI, None, None]:
     """Fresh FastAPI app with mocked DB/LLM dependencies (no global mutation)."""
-    get_settings.cache_clear()
+    clear_settings_cache()
     application = create_app()
     apply_dependency_mocks(application)
     yield application
     clear_dependency_mocks(application)
-    get_settings.cache_clear()
+    clear_settings_cache()
 
 
 @pytest.fixture

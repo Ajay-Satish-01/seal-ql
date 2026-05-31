@@ -6,7 +6,9 @@ Seal is Docker-first: run the `seal/api` image with Postgres (and optionally Oll
 
 | Service | Role |
 | ------- | ---- |
-| **API** | FastAPI — `/v1/query`, `/v1/chat`, `/v1/catalog`, `/v1/schema` |
+| **API** | FastAPI — `/v1/query`, `/v1/chat`, `/v1/catalog`, `/v1/schema`, workspace, vector |
+| **Docs** | `apps/docs` (port 3000) — marketing, guides, fixture `/demo` |
+| **Dashboard** | `apps/web` (port 3001) — live API console (Query, Chat, Catalog, Settings, Vector) |
 | **Postgres** | TimescaleDB analytics DB (bundled in compose) |
 | **Ollama** | Local LLM (optional; `OLLAMA_PROFILE=disabled` for cloud) |
 
@@ -52,7 +54,7 @@ Then `make up` (Ollama container is not started).
 
 `make docker-build` produces the `prod` image (non-root user).
 
-Use the published compose example (also at `apps/web/public/compose/docker-compose.example.yml` on the docs site):
+Use the published compose example (also at `apps/docs/public/compose/docker-compose.example.yml` on the docs site):
 
 1. Download `docker-compose.example.yml` and `seed.sql`.
 2. Create `.env` with `SEAL_API_KEY`, `SEAL_AUTH_REQUIRED=true`, `SEAL_DEV_MODE=false`, `SEAL_DISABLE_DOCS=true`.
@@ -69,7 +71,7 @@ Use the published compose example (also at `apps/web/public/compose/docker-compo
 | `SEAL_AUTH_REQUIRED` | Fail startup without a real key | `false` (dev), `true` (prod example) |
 | `SEAL_DEV_MODE` | Allow placeholder keys when auth not required | `true` (dev) |
 | `SEAL_DISABLE_DOCS` | Hide `/docs` and `/openapi.json` | follows auth in prod |
-| `CORS_ORIGINS` | JSON array of browser origins | `["http://localhost:3000"]` |
+| `CORS_ORIGINS` | JSON array of browser origins | `["http://localhost:3000","http://localhost:3001"]` |
 | `MAX_ROWS` | Row cap for generated SQL | `10000` |
 | `QUERY_TIMEOUT_SECONDS` | SQL execution timeout | `30` |
 
@@ -100,6 +102,22 @@ Use the published compose example (also at `apps/web/public/compose/docker-compo
 | `VECTOR_STORE_CLASS` | Dotted path to custom vector store | — |
 | `RAG_DOCUMENTS_PATH` | Extra files to index for RAG | — |
 | `RAG_TOP_K` | Vector retrieval top-K | `5` |
+
+#### Guardrails
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `GUARDRAILS_ENABLED` | Scope gate on query/chat | `true` |
+| `GUARDRAILS_FAIL_CLOSED` | Classifier errors → out-of-scope | `true` |
+| `MAX_QUERY_CHARS` | `/v1/query` input limit | `4000` |
+| `MAX_CHAT_MESSAGE_CHARS` | Single chat message limit | `8000` |
+| `MAX_CHAT_HISTORY_CHARS` | History override limit | `32000` |
+
+See [docs/guardrails.md](docs/guardrails.md). Hot-reload on save when `SEAL_DEV_MODE=true`; in production use `POST /v1/workspace/settings/apply` (dashboard **Apply to API**).
+
+#### Workspace
+
+Apply `scripts/migrate_app.sql` to create `seal_app.workspace_kv`. Routes: [docs/workspace-api.md](docs/workspace-api.md).
 
 The API logs **warnings** at startup for common misconfigurations (e.g. cloud model without `OLLAMA_PROFILE=disabled`).
 
@@ -152,6 +170,11 @@ When the external agent already has RAG, set `VECTOR_STORE=none` and pass `enhan
 
 The production image health-checks `GET /health`. Use the same endpoint in your load balancer. Authenticated routes require `X-API-Key`.
 
-## Docs site (optional)
+## Frontends (optional)
 
-Deploy `apps/web` to Vercel for documentation and demo UI — see [apps/web/DEPLOYMENT.md](apps/web/DEPLOYMENT.md). The demo can call a live API when `baseUrl` and API key are configured on `/demo`.
+| App | Port | Deploy |
+|-----|------|--------|
+| `apps/docs` | 3000 | Vercel — see [apps/docs/DEPLOYMENT.md](apps/docs/DEPLOYMENT.md) |
+| `apps/web` | 3001 | Same host or separate origin; requires `CORS_ORIGINS` |
+
+The docs `/demo` route uses static fixtures; the dashboard always calls a live API (`baseUrl` + `X-API-Key`).

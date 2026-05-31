@@ -32,7 +32,7 @@ services:
       - "QUERY_ROW_CAP=${QUERY_ROW_CAP:-10000}"
       - "QUERY_RETRY_BASE_DELAY=${QUERY_RETRY_BASE_DELAY:-0.5}"
       - "LLM_MAX_RETRIES=${LLM_MAX_RETRIES:-2}"
-      - 'CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000","http://localhost:5173"]}'
+      - 'CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000","http://localhost:3001","http://localhost:5173"]}'
       # Set SEAL_API_KEY in .env (see .env.example). No insecure default in compose.
       - "SEAL_API_KEY=${SEAL_API_KEY:-}"
       - "SEAL_AUTH_REQUIRED=${SEAL_AUTH_REQUIRED:-false}"

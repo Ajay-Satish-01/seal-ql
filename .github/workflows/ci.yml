@@ -48,8 +48,27 @@ jobs:
   # ============================================================
   # Web: Docs site build
   # ============================================================
-  web-build:
-    name: "Web — Next.js Build"
+  docs-build:
+    name: "Docs — Next.js Build"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+          cache-dependency-path: "apps/docs/pnpm-lock.yaml"
+
+      - name: Install and build
+        run: make check-docs
+
+  dashboard-build:
+    name: "Dashboard — Next.js Build"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -65,7 +84,7 @@ jobs:
           cache-dependency-path: "apps/web/pnpm-lock.yaml"
 
       - name: Install and build
-        run: make check-web
+        run: make check-dashboard
 
   # ============================================================
   # Python: Tests via pytest
@@ -98,7 +117,7 @@ jobs:
           done
 
       - name: Run unit tests (excluding E2E)
-        run: docker compose exec -T api uv run pytest -v --tb=short --ignore=sdks/python/tests/test_sdk_e2e.py --ignore=apps/api/tests/test_e2e.py --junitxml=/tmp/test-results.xml
+        run: docker compose exec -T api uv run pytest -v --tb=short --ignore=sdks/python/tests/test_sdk_e2e.py --ignore=apps/api/tests/test_e2e.py --ignore=apps/api/tests/test_catalog_workspace_integration.py --junitxml=/tmp/test-results.xml
 
       - name: Upload test results
         if: always()
@@ -150,16 +169,19 @@ jobs:
       - name: Wait for API to be ready
         run: |
           for i in $(seq 1 60); do
-            if curl -s http://localhost:8000/health | grep -q '"status":"ok"'; then
+            if curl -sf http://localhost:8000/health | grep -q '"status":"ok"'; then
               echo "API is healthy"
-              break
+              exit 0
             fi
             echo "Waiting for API... ($i/60)"
             sleep 2
           done
+          echo "API did not become healthy in time"
+          docker compose logs api --tail 80
+          exit 1
 
       - name: Run Python E2E tests
-        run: docker compose exec -T api uv run pytest -v --tb=short sdks/python/tests/test_sdk_e2e.py apps/api/tests/test_e2e.py --junitxml=/tmp/e2e-test-results.xml
+        run: docker compose exec -T api uv run pytest -v --tb=short sdks/python/tests/test_sdk_e2e.py apps/api/tests/test_e2e.py apps/api/tests/test_catalog_workspace_integration.py --junitxml=/tmp/e2e-test-results.xml
 
       - name: Upload Python test results
         if: always()
@@ -329,13 +351,16 @@ jobs:
       - name: Wait for API to be ready
         run: |
           for i in $(seq 1 30); do
-            if curl -s http://localhost:8000/health | grep -q '"status":"ok"'; then
+            if curl -sf http://localhost:8000/health | grep -q '"status":"ok"'; then
               echo "API is healthy"
-              break
+              exit 0
             fi
             echo "Waiting for API... ($i/30)"
             sleep 2
           done
+          echo "API did not become healthy in time"
+          docker compose logs api --tail 80
+          exit 1
 
       - name: Verify health endpoint
         run: |

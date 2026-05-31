@@ -1,6 +1,6 @@
 /**
  * SSE parsing for POST /v1/chat stream responses.
- * Keep apps/web/src/lib/sse-parse.ts in sync when changing this module.
+ * Keep apps/docs/src/lib/sse-parse.ts in sync when changing this module.
  */
 
 export type SseParseResult =

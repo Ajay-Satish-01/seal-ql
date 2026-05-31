@@ -58,10 +58,27 @@ class ContextRetriever:
             return [t.name for t in schema.tables]
 
         ranked = sorted(scores.items(), key=lambda x: -x[1])
-        names = [n for n, _ in ranked[:limit]]
-        if not names and schema.tables:
-            names = [schema.tables[0].name]
-        return names
+        if ranked:
+            return [n for n, _ in ranked[:limit]]
+
+        # Catalog-aware fallback: match description tokens when schema scoring is empty.
+        if catalog and tokens:
+            catalog_scores: dict[str, float] = {}
+            for table in schema.tables:
+                entry = catalog.get_entry(table.name, table.schema_name)
+                if not entry:
+                    continue
+                desc = (catalog.get_description(entry) or "").lower()
+                if not desc:
+                    continue
+                score = sum(5.0 for tok in tokens if tok in desc)
+                if score > 0:
+                    catalog_scores[table.name] = score
+            if catalog_scores:
+                ranked = sorted(catalog_scores.items(), key=lambda x: -x[1])
+                return [n for n, _ in ranked[:limit]]
+
+        return []
 
     def score_table(
         self,

@@ -15,7 +15,7 @@ from app.dependencies import (
 from app.main import create_app
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from seal_core.settings import Settings, get_settings
+from seal_core.settings import Settings, clear_settings_cache
 from tests.mocks import (
     MockChatService,
     MockDataCatalog,
@@ -56,7 +56,7 @@ def build_client(
             monkeypatch.delenv(key, raising=False)
         else:
             monkeypatch.setenv(key, value)
-    get_settings.cache_clear()
+    clear_settings_cache()
     application = create_app()
     if mock_dependencies:
         apply_dependency_mocks(application)

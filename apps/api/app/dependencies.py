@@ -5,6 +5,7 @@ from seal_core.catalog.registry import DataCatalogRegistry
 from seal_core.chat.service import ChatService
 from seal_core.planner.planner import QueryPlanner
 from seal_core.schema.introspector import SchemaIntrospector
+from seal_core.workspace.store import WorkspaceStore
 from seal_sql.executor import QueryExecutor
 
 
@@ -36,3 +37,8 @@ def get_data_catalog(request: Request) -> DataCatalogRegistry:
 def get_chat_service(request: Request) -> ChatService:
     """Get the application's global chat service."""
     return request.app.state.chat_service
+
+
+def get_workspace_store(request: Request) -> WorkspaceStore:
+    """Get the application's workspace settings store."""
+    return request.app.state.workspace_store

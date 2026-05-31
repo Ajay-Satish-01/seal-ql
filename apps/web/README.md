@@ -1,38 +1,42 @@
-# Seal Docs Site
+# Seal dashboard (`apps/web`)
 
-Documentation, marketing landing, and interactive demo (`/demo`) for Seal.
+Operational console for a running Seal API. Uses the TypeScript SDK against a live backend (no static demo fixtures).
 
-## Doc routes (chat & Q&A)
+## Pages
 
-| Path | Topic |
-| ---- | ----- |
-| `/docs/chat-qa` | Chat overview, batteries-included stack |
-| `/docs/data-catalog` | Global YAML catalog sync |
-| `/docs/prompt-enhancement` | Enhancer chain |
-| `/docs/vector-rag` | Chroma / custom vector stores |
-| `/docs/chat-streaming` | SSE (`seal.meta`, tokens) |
-| `/docs/agent-frameworks` | `seal-tools.openai.json` |
+| Page | Purpose |
+|------|---------|
+| **Query** | `POST /v1/query` — natural language → SQL, results, Vega-Lite chart |
+| **Chat** | `POST /v1/chat` with SSE streaming |
+| **Catalog** | `GET /v1/catalog`, description overrides via `PATCH /v1/catalog/descriptions` |
+| **Settings** | `GET` / `PATCH /v1/workspace/settings` (guardrails, enhancement, limits) |
+| **Vector** | `POST /v1/vector/reindex` when `VECTOR_STORE` is enabled |
 
-Public assets: `/seal-tools.openai.json`, `/config/catalog.example.yaml` (synced via `make sync-docs-assets`).
+Connection bar: API base URL (`http://localhost:8000`) and `X-API-Key`.
 
-## Development
+## Local dev
 
 ```bash
-# From repo root — regenerate OpenAPI, demo fixtures, seal-tools, catalog example
-make sync-docs-assets
+# API + Postgres (from repo root)
+make up
 
-cd apps/web
-pnpm install
-pnpm dev
+# Docs site (port 3000) — separate terminal
+cd apps/docs && pnpm install && pnpm dev
+
+# Dashboard (port 3001)
+cd apps/web && pnpm install && pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The demo includes **live chat** when you set base URL + API key.
+| Service | URL |
+|---------|-----|
+| API | http://localhost:8000 |
+| Docs | http://localhost:3000 |
+| Dashboard | http://localhost:3001 |
+
+Set `CORS_ORIGINS` to include `http://localhost:3001` (default in `.env.example`).
 
 ## Build
 
 ```bash
-cd sdks/typescript && pnpm build
-cd apps/web && pnpm build
+make check-dashboard
 ```
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for Vercel deployment.

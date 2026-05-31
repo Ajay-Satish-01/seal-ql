@@ -37,7 +37,7 @@ const client = new Seal({
 });
 ```
 
-`ConnectionError` remains available as a deprecated alias for `SealConnectionError`.
+`ConnectionError` is an alias for `SealConnectionError`.
 
 ## API authentication
 
@@ -87,7 +87,14 @@ On startup, Seal can auto-sync `config/catalog.yaml` from introspected schema (`
 
 - `GET /v1/catalog` — read catalog JSON
 - `POST /v1/catalog/sync` — force re-sync
+- `PATCH /v1/catalog/descriptions` — table/view description overrides
 - `POST /v1/chat` — schema-grounded Q&A (`include_charts`, `stream`, `enhancement`)
+- `GET` / `PATCH /v1/workspace/settings` — workspace settings (see [docs/workspace-api.md](docs/workspace-api.md))
+- `POST /v1/vector/reindex` — rebuild vector index when `VECTOR_STORE` is enabled
+
+**Guardrails** (see [docs/guardrails.md](docs/guardrails.md)): `GUARDRAILS_ENABLED`, `GUARDRAILS_FAIL_CLOSED`, `MAX_QUERY_CHARS`, `MAX_CHAT_MESSAGE_CHARS`, `MAX_CHAT_HISTORY_CHARS`. Out-of-scope chat returns HTTP 200 with a refusal; out-of-scope query returns HTTP 400 (`query_out_of_scope`).
+
+**Local UIs**: docs `apps/docs` (port 3000), dashboard `apps/web` (port 3001). Run `make up` for API, then `cd apps/docs && pnpm dev` and `cd apps/web && pnpm dev` in separate terminals.
 
 Optional vector RAG: `VECTOR_STORE=chroma` with `seal-core[chroma]` installed. Default is `VECTOR_STORE=none`.
 
@@ -112,7 +119,7 @@ const client = new Seal({ baseUrl: "http://localhost:8000", apiKey: "your-secret
 await client.chat("Revenue last quarter?", { includeCharts: true });
 ```
 
-Contributor docs: `docs/chat-enhancement.md`, `docs/integrations/`. User-facing: docs site `/docs/chat-qa`.
+Contributor docs: `docs/how-seal-works.md` (pipeline + LLM stages), `docs/guardrails.md`, `docs/chat-enhancement.md`, `docs/workspace-api.md`, `docs/integrations/`. User-facing: docs site `http://localhost:3000` (`/docs/how-it-works`, `/docs/configuration`, `/docs/guardrails`); dashboard `http://localhost:3001`.
 
 ## Docker database
 

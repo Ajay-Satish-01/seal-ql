@@ -8,7 +8,9 @@ export function formatApiError(status: number, bodyText: string): string {
     if (typeof json.detail === 'string') return json.detail;
     if (Array.isArray(json.detail)) {
       return json.detail
-        .map((item) => (typeof item === 'object' && item && 'msg' in item ? String(item.msg) : String(item)))
+        .map((item) =>
+          typeof item === 'object' && item && 'msg' in item ? String(item.msg) : String(item),
+        )
         .join('; ');
     }
   } catch {

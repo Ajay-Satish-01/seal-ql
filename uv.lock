@@ -2666,6 +2666,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "seal-charts" },
     { name = "seal-core" },
+    { name = "seal-semantic" },
     { name = "seal-sql" },
     { name = "uvicorn" },
 ]
@@ -2693,6 +2694,7 @@ requires-dist = [
     { name = "seal-charts", editable = "packages/charts" },
     { name = "seal-core", editable = "packages/core" },
     { name = "seal-core", extras = ["chroma"], marker = "extra == 'chroma'", editable = "packages/core" },
+    { name = "seal-semantic", editable = "packages/semantic" },
     { name = "seal-sql", editable = "packages/sql" },
     { name = "uvicorn", specifier = ">=0.34.0" },
 ]
