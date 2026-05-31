@@ -58,6 +58,20 @@ async def test_classify_scope_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
+async def test_classify_scope_limits_enforced_when_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Size limits must apply even with guardrails off (DoS / cost control)."""
+    monkeypatch.setenv("GUARDRAILS_ENABLED", "false")
+    monkeypatch.setenv("MAX_QUERY_CHARS", "10")
+    clear_settings_cache()
+    result = await classify_scope("x" * 50, channel="query")
+    assert result.in_scope is False
+    assert result.source == "limits"
+    clear_settings_cache()
+
+
+@pytest.mark.asyncio
 async def test_classify_scope_heuristic_fast_path(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GUARDRAILS_ENABLED", "true")
     clear_settings_cache()

@@ -35,13 +35,18 @@ def check_input_limits(
 async def classify_scope(text: str, *, channel: str) -> ScopeResult:
     """Classify message scope; channel is 'query' or 'chat'."""
     settings = get_settings()
-    if not settings.guardrails_enabled:
-        return ScopeResult(in_scope=True, reason="guardrails disabled", source="disabled")
 
+    # Input-size limits are a denial-of-service / cost control that is independent
+    # of scope classification, so enforce them even when guardrails are disabled.
+    # Otherwise disabling guardrails would silently remove the configured cap and
+    # let oversized payloads reach the LLM.
     limit = settings.max_query_chars if channel == "query" else settings.max_chat_message_chars
     over = check_input_limits(text, max_chars=limit, label=channel)
     if over is not None:
         return over
+
+    if not settings.guardrails_enabled:
+        return ScopeResult(in_scope=True, reason="guardrails disabled", source="disabled")
 
     hint = heuristic_in_scope(text)
     if hint is True:

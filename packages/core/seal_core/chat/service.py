@@ -15,7 +15,7 @@ from seal_core.chat.models import ChatAnswer, ChatDecision, ChatMessage
 from seal_core.chat.prompts import CHAT_ANSWER_SYSTEM, CHAT_DECISION_SYSTEM
 from seal_core.chat.retriever import ContextRetriever
 from seal_core.enhancement.context import EnhancementContext
-from seal_core.guardrails.prompts import REFUSAL_SYSTEM
+from seal_core.guardrails.prompts import LIMIT_REFUSAL_MESSAGE, REFUSAL_SYSTEM
 from seal_core.guardrails.scope import classify_scope
 from seal_core.llm.client import get_api_base, get_api_key, get_async_client, get_model
 from seal_core.pipeline.execute import ExecuteQueryResult, execute_natural_language_query
@@ -287,6 +287,15 @@ class ChatService:
         return scope
 
     async def _refusal_turn(self, ctx: TurnContext, scope) -> ChatResult:
+        # Size-limit violations are refused with a static message: forwarding the
+        # oversized user message to the LLM would defeat the limit's purpose.
+        if getattr(scope, "source", None) == "limits":
+            return ChatResult(
+                session_id=ctx.session_id,
+                message=LIMIT_REFUSAL_MESSAGE,
+                metadata={"scope": ctx.metadata.get("scope"), "refusal": True},
+            )
+
         answer = await self._client.chat.completions.create(
             model=self._model,
             messages=[

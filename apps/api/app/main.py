@@ -147,10 +147,15 @@ def create_app() -> FastAPI:
         **docs_kwargs,
     )
 
+    # Never combine a wildcard origin with credentials: that lets any site make
+    # credentialed cross-origin calls. When origins are wildcarded, drop
+    # credentials (Starlette would otherwise echo "*" and browsers reject it).
+    cors_origins = settings.cors_origins
+    allow_credentials = "*" not in cors_origins
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
+        allow_origins=cors_origins,
+        allow_credentials=allow_credentials,
         allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-API-Key"],
     )
