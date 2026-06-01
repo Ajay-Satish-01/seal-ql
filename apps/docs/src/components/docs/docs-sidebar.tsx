@@ -32,6 +32,7 @@ const sidebarGroups = [
       { title: 'Workspace settings', href: '/docs/workspace' },
       { title: 'Data catalog', href: '/docs/data-catalog' },
       { title: 'Guardrails', href: '/docs/guardrails' },
+      { title: 'Zero-trust SQL', href: '/docs/zero-trust-sql' },
       { title: 'Prompt enhancement', href: '/docs/prompt-enhancement' },
       { title: 'Vector RAG', href: '/docs/vector-rag' },
     ],

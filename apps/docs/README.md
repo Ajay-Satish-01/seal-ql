@@ -15,6 +15,7 @@ For the live API console (Query, Chat, Catalog, Settings, Vector), use **`apps/w
 | `/docs/data-catalog` | Global YAML catalog sync |
 | `/docs/prompt-enhancement` | Enhancer chain |
 | `/docs/guardrails` | Scope gate / abuse protection |
+| `/docs/zero-trust-sql` | SQLGlot validator + sanitizer boundary |
 | `/docs/workspace` | Postgres workspace settings |
 | `/docs/vector-rag` | Chroma / custom vector stores |
 | `/docs/chat-streaming` | SSE (`seal.meta`, tokens) |

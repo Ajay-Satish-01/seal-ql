@@ -6,8 +6,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from seal_sql.sanitizer import SQLSanitizer
-from seal_sql.validator import SQLValidator
+from seal_sql.boundary import format_boundary_errors, validate_and_sanitize
 
 if TYPE_CHECKING:
     from seal_sql.executor import QueryExecutor
@@ -58,23 +57,17 @@ async def execute_natural_language_query(
         table_names=table_names,
     )
 
-    san_result = None
+    boundary_result = None
     result: QueryResult | None = None
     repair_attempts = 0
 
     for attempt in range(1, max_attempts + 1):
         try:
-            validator = SQLValidator(schema)
-            val_result = validator.validate(plan.sql)
-            if not val_result.valid:
-                raise ValueError(f"SQL Validation failed: {val_result.errors}")
+            boundary_result = validate_and_sanitize(plan.sql, schema)
+            if not boundary_result.valid:
+                raise ValueError(format_boundary_errors(boundary_result.errors))
 
-            sanitizer = SQLSanitizer()
-            san_result = sanitizer.sanitize(val_result.normalized_sql)
-            if not san_result.safe:
-                raise ValueError("SQL Sanitization failed: Query contains destructive operations.")
-
-            result = await executor.execute(san_result.sanitized_sql)
+            result = await executor.execute(boundary_result.executable_sql)
             repair_attempts = attempt - 1
             break
         except Exception as e:
@@ -93,16 +86,16 @@ async def execute_natural_language_query(
             )
             repair_attempts = attempt
 
-    assert san_result is not None and result is not None
+    assert boundary_result is not None and result is not None
 
     return ExecuteQueryResult(
-        sql=san_result.sanitized_sql,
+        sql=boundary_result.executable_sql,
         columns=result.columns,
         rows=result.rows,
         plan=plan,
         row_count=result.row_count,
         execution_time_ms=result.execution_time_ms,
         truncated=result.truncated,
-        warnings=list(san_result.warnings),
+        warnings=list(boundary_result.warnings),
         repair_attempts=repair_attempts,
     )

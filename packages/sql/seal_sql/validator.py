@@ -10,11 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-import sqlglot
 from sqlglot import exp
-from sqlglot.errors import ParseError
 
-from seal_sql.dialects import to_sqlglot_dialect
+from seal_sql.parse import ParsedStatement, ParseFailure, parse_single_statement
 
 if TYPE_CHECKING:
     from seal_core.schema.models import DatabaseSchema
@@ -62,7 +60,7 @@ class SQLValidator:
             schema: The database schema to validate against.
         """
         self._schema = schema
-        self._dialect = to_sqlglot_dialect(schema.dialect)
+        self._dialect = schema.dialect
 
         # Pre-build lookup indexes for fast validation.
         # Table names are lowercased for case-insensitive matching.
@@ -86,24 +84,23 @@ class SQLValidator:
         Returns:
             A ValidationResult with validation outcome and details.
         """
-        errors: list[str] = []
-        warnings: list[str] = []
-
-        # --- Step 1: Parse ---
-        try:
-            parsed = sqlglot.parse_one(sql, dialect=self._dialect)
-        except ParseError as e:
+        parsed = parse_single_statement(sql, self._dialect)
+        if isinstance(parsed, ParseFailure):
             return ValidationResult(
                 valid=False,
-                errors=[f"SQL parse error: {e}"],
+                errors=[parsed.message],
                 normalized_sql=sql,
             )
+        return self.validate_parsed(parsed)
 
-        # --- Step 2: Normalize ---
-        normalized_sql = parsed.sql(dialect=self._dialect, pretty=False)
+    def validate_parsed(self, parsed: ParsedStatement) -> ValidationResult:
+        """Validate an already-parsed statement (avoids a second parse)."""
+        errors: list[str] = []
+        warnings: list[str] = []
+        expression = parsed.expression
+        normalized_sql = parsed.normalized_sql()
 
-        # --- Step 3: Extract table references ---
-        tables_referenced = self._extract_tables(parsed)
+        tables_referenced = self._extract_tables(expression)
 
         # --- Step 4: Validate tables exist ---
         unknown_tables: set[str] = set()
@@ -116,15 +113,18 @@ class SQLValidator:
                 unknown_tables.add(table_name.lower())
 
         # --- Step 5: Extract and validate columns ---
-        columns_referenced = self._extract_columns(parsed, tables_referenced)
+        columns_referenced, ambiguous_columns = self._extract_columns(expression, tables_referenced)
+
+        for col, scope_tables in ambiguous_columns:
+            candidates = self._tables_with_column(col, scope_tables)
+            errors.append(
+                f"Ambiguous column: '{col}' exists in multiple tables "
+                f"({', '.join(sorted(candidates))}). Qualify it with a table alias."
+            )
 
         for table_name, cols in columns_referenced.items():
             if table_name == "_unresolved_":
-                # These columns don't exist in any known table.
                 for col in cols:
-                    all_known_cols = set()
-                    for table_cols in self._table_columns.values():
-                        all_known_cols.update(table_cols)
                     errors.append(f"Unknown column: '{col}' — not found in any referenced table.")
                 continue
 
@@ -144,7 +144,7 @@ class SQLValidator:
                     )
 
         # --- Step 6: Warn on SELECT * ---
-        if self._has_select_star(parsed):
+        if self._has_select_star(expression):
             warnings.append(
                 "Query uses SELECT * — consider selecting specific columns "
                 "for better performance and clarity."
@@ -200,7 +200,7 @@ class SQLValidator:
 
     def _extract_columns(
         self, parsed: exp.Expression, known_tables: set[str]
-    ) -> dict[str, set[str]]:
+    ) -> tuple[dict[str, set[str]], list[tuple[str, set[str]]]]:
         """Extract column references grouped by table.
 
         When a column has an explicit table qualifier (e.g., `users.name`),
@@ -215,9 +215,10 @@ class SQLValidator:
             known_tables: Table names found in the query.
 
         Returns:
-            Dict mapping table_name -> set of column names.
+            Tuple of (columns by table, ambiguous (column, scope_tables) entries).
         """
         columns: dict[str, set[str]] = {}
+        ambiguous_columns: list[tuple[str, set[str]]] = []
 
         for col_node in parsed.find_all(exp.Column):
             col_name = col_node.name
@@ -226,27 +227,61 @@ class SQLValidator:
             if not col_name:
                 continue
 
+            scope_select = col_node.find_ancestor(exp.Select)
+            scope_tables = (
+                self._tables_in_select_scope(scope_select)
+                if scope_select is not None
+                else known_tables
+            )
+
             if table_ref:
-                # Explicit table qualifier — map directly.
-                # Resolve alias to real table name if needed.
                 real_table = self._resolve_table_alias(parsed, table_ref, known_tables)
                 columns.setdefault(real_table, set()).add(col_name)
             else:
-                # Unqualified column — try to find which table it belongs to.
-                resolved = self._resolve_unqualified_column(col_name, known_tables)
-                if resolved:
-                    columns.setdefault(resolved, set()).add(col_name)
-                else:
-                    # Column not found in any referenced table — track for error.
-                    # Only flag if the column doesn't exist in ANY known table.
-                    col_lower = col_name.lower()
-                    exists_anywhere = any(
-                        col_lower in cols for cols in self._table_columns.values()
-                    )
-                    if not exists_anywhere:
-                        columns.setdefault("_unresolved_", set()).add(col_name)
+                self._record_unqualified_column(
+                    col_name=col_name,
+                    scope_tables=scope_tables,
+                    columns=columns,
+                    ambiguous_columns=ambiguous_columns,
+                )
 
-        return columns
+        return columns, ambiguous_columns
+
+    def _tables_in_select_scope(self, select: exp.Select) -> set[str]:
+        """Tables visible in a single SELECT (FROM/JOIN), excluding subquery innards."""
+        tables: set[str] = set()
+
+        def collect(source: exp.Expression | None) -> None:
+            if source is None:
+                return
+            if isinstance(source, exp.Subquery | exp.Select):
+                return
+            if isinstance(source, exp.Table):
+                if source.name:
+                    tables.add(source.name)
+                return
+            if isinstance(source, exp.Join):
+                collect(source.this)
+                collect(source.expression)
+                return
+            if isinstance(source, exp.From):
+                collect(source.this)
+                return
+            for child in source.iter_expressions():
+                collect(child)
+
+        collect(select.args.get("from_"))
+        for join in select.args.get("joins") or []:
+            collect(join)
+
+        # CTE aliases are visible as logical tables in the outer query.
+        with_ = select.args.get("with_") or select.args.get("with")
+        if with_ is not None:
+            for cte in with_.find_all(exp.CTE):
+                if cte.alias:
+                    tables.add(cte.alias)
+
+        return tables
 
     def _resolve_table_alias(
         self, parsed: exp.Expression, alias: str, known_tables: set[str]
@@ -273,33 +308,40 @@ class SQLValidator:
 
         return alias
 
-    def _resolve_unqualified_column(self, col_name: str, known_tables: set[str]) -> str | None:
-        """Try to resolve an unqualified column to a table.
-
-        If the column exists in exactly one of the referenced tables,
-        assign it there. If ambiguous (exists in multiple), skip validation
-        (the database will resolve it).
-
-        Args:
-            col_name: The column name to resolve.
-            known_tables: Tables referenced in the query.
-
-        Returns:
-            The table name if uniquely resolved, None otherwise.
-        """
-        col_lower = col_name.lower()
-        candidates: list[str] = []
-
-        for table in known_tables:
-            table_lower = table.lower()
-            if table_lower in self._table_columns and col_lower in self._table_columns[table_lower]:
-                candidates.append(table)
-
+    def _record_unqualified_column(
+        self,
+        *,
+        col_name: str,
+        scope_tables: set[str],
+        columns: dict[str, set[str]],
+        ambiguous_columns: list[tuple[str, set[str]]],
+    ) -> None:
+        """Resolve, flag ambiguous, or mark unknown for an unqualified column."""
+        candidates = self._tables_with_column(col_name, scope_tables)
         if len(candidates) == 1:
-            return candidates[0]
+            columns.setdefault(candidates[0], set()).add(col_name)
+            return
+        if len(candidates) > 1:
+            scope_set = set(scope_tables)
+            already_reported = any(
+                col == col_name and tables == scope_set for col, tables in ambiguous_columns
+            )
+            if not already_reported:
+                ambiguous_columns.append((col_name, scope_set))
+            return
+        col_lower = col_name.lower()
+        if not any(col_lower in cols for cols in self._table_columns.values()):
+            columns.setdefault("_unresolved_", set()).add(col_name)
 
-        # Ambiguous or not found — skip column validation for this one.
-        return None
+    def _tables_with_column(self, col_name: str, known_tables: set[str]) -> list[str]:
+        """Return referenced tables that contain the given column name."""
+        col_lower = col_name.lower()
+        return [
+            table
+            for table in known_tables
+            if table.lower() in self._table_columns
+            and col_lower in self._table_columns[table.lower()]
+        ]
 
     def _has_select_star(self, parsed: exp.Expression) -> bool:
         """Check if the query uses SELECT *.

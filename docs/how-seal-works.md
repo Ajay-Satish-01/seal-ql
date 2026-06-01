@@ -63,7 +63,7 @@ Non-default `database_id`: catalog/semantic omitted from planner; `VectorRagEnha
 `seal_core/pipeline/execute.py` — used by query route and chat data path:
 
 - `planner.generate_plan` (structured `QueryPlan`)
-- `SQLValidator` / `SQLSanitizer`
+- `SQLValidator` / `SQLSanitizer` — see [zero-trust-sql.md](zero-trust-sql.md) and `/docs/zero-trust-sql`
 - `executor.execute`
 - Repair: replan on validation/execution errors (default `max_attempts=3`)
 
