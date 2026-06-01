@@ -95,7 +95,7 @@ export default function ExecutionMetadataPage() {
         </li>
         <li>
           <DocLink href="/docs/guardrails">Guardrails</DocLink> —{' '}
-          <code>metadata.scope.source</code> values
+          <code>metadata.scope.source</code> and <code>metadata.suggested_queries</code> on refusal
         </li>
         <li>
           <DocLink href="/docs/api-reference">API reference</DocLink> — OpenAPI components{' '}

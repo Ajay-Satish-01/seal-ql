@@ -45,6 +45,8 @@ export interface ChatMetadata extends ExecutionMetadata {
   scope?: ScopeMetadata;
   refusal?: boolean;
   sql_error?: boolean;
+  /** Up to three example in-scope questions on guardrails refusal. */
+  suggested_queries?: string[];
 }
 
 /** Flat `seal.meta` SSE payload (execution fields at top level, not under metadata). */
@@ -58,6 +60,7 @@ export interface ChatStreamMeta extends ExecutionMetadata {
   scope?: ScopeMetadata;
   refusal?: boolean;
   sql_error?: boolean;
+  suggested_queries?: string[];
 }
 
 /** Keys copied from chat JSON `metadata` onto flat seal.meta (sync with Python). */

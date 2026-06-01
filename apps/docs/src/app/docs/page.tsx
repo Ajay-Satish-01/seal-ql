@@ -44,7 +44,7 @@ const CAPABILITY_CARDS = [
   {
     icon: Shield,
     title: 'Guardrails',
-    desc: 'Heuristics + LLM scope gate — refuse off-topic chat (200) or reject queries (400).',
+    desc: 'Scope gate with in-scope suggestions — chat refusal (200) or structured query 400.',
     href: '/docs/guardrails',
   },
   {

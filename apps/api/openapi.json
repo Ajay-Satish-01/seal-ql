@@ -174,6 +174,26 @@
               }
             }
           },
+          "400": {
+            "description": "Guardrails rejected the query (out of scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryOutOfScopeErrorResponse"
+                },
+                "example": {
+                  "detail": {
+                    "detail": "query_out_of_scope",
+                    "reason": "off-topic pattern",
+                    "suggested_queries": [
+                      "Show order count by month",
+                      "What tables are available?"
+                    ]
+                  }
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -834,6 +854,22 @@
             ],
             "title": "Sql Error",
             "description": "True when SQL execution failed."
+          },
+          "suggested_queries": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Queries",
+            "description": "Example in-scope data questions on guardrails refusal."
           }
         },
         "type": "object",
@@ -1917,6 +1953,64 @@
             "title": "Used Sql",
             "type": "boolean"
           },
+          "enhancement": {
+            "$ref": "#/components/schemas/EnhancementInfo"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScopeMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Guardrails scope decision when classified."
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "True when the turn was refused.",
+            "title": "Refusal"
+          },
+          "sql_error": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "True when SQL execution failed.",
+            "title": "Sql Error"
+          },
+          "suggested_queries": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 3,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Example in-scope data questions on guardrails refusal.",
+            "title": "Suggested Queries"
+          },
           "session_id": {
             "description": "Conversation session id.",
             "title": "Session Id",
@@ -1987,53 +2081,53 @@
             ],
             "default": null,
             "description": "Chart when include_charts and SQL ran."
-          },
-          "enhancement": {
-            "$ref": "#/components/schemas/EnhancementInfo"
-          },
-          "scope": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ScopeMetadata"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Guardrails scope decision."
-          },
-          "refusal": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "True when the turn was refused.",
-            "title": "Refusal"
-          },
-          "sql_error": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "True when SQL execution failed.",
-            "title": "Sql Error"
           }
         },
         "required": [
           "session_id"
         ],
         "title": "ChatStreamMeta",
+        "type": "object"
+      },
+      "QueryOutOfScopeDetail": {
+        "description": "Structured HTTP 400 body when guardrails reject ``POST /v1/query``.",
+        "properties": {
+          "detail": {
+            "default": "query_out_of_scope",
+            "description": "Error code for programmatic clients.",
+            "title": "Detail",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "description": "Short classification reason.",
+            "title": "Reason",
+            "type": "string"
+          },
+          "suggested_queries": {
+            "description": "Up to three example in-scope data questions.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Suggested Queries",
+            "type": "array"
+          }
+        },
+        "title": "QueryOutOfScopeDetail",
+        "type": "object"
+      },
+      "QueryOutOfScopeErrorResponse": {
+        "description": "FastAPI error envelope for guardrails rejections on ``POST /v1/query``.",
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/QueryOutOfScopeDetail"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "QueryOutOfScopeErrorResponse",
         "type": "object"
       }
     },

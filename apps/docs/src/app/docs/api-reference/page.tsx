@@ -114,6 +114,22 @@ export default function ApiReferencePage() {
               ]}
             />
             <CodeBlock language="json" code={schemaToExample('QueryResponse')} />
+            <h4 className="text-foreground mt-8 mb-2 text-sm font-semibold">Errors</h4>
+            <ul className="text-muted-foreground list-disc space-y-2 pl-5 text-sm">
+              <li>
+                <strong>400</strong> — guardrails out of scope: structured{' '}
+                <code>detail</code> with <code>query_out_of_scope</code>, <code>reason</code>,{' '}
+                <code>suggested_queries</code> (OpenAPI <code>QueryOutOfScopeErrorResponse</code>).
+                SDKs raise <code>QueryOutOfScopeError</code>.
+              </li>
+              <li>
+                <strong>404</strong> — unknown <code>database_id</code>
+              </li>
+              <li>
+                <strong>422</strong> — request body over Pydantic <code>max_length</code> (before
+                guardrails limits)
+              </li>
+            </ul>
           </EndpointBlock>
         ) : null}
 
@@ -182,10 +198,22 @@ export default function ApiReferencePage() {
             <CodeBlock language="json" code={schemaToExample('ChatResponse')} />
             <p className="mt-4">
               JSON responses use <code>ChatMetadata</code> (nested <code>metadata</code> with{' '}
-              <code>ScopeMetadata</code>, <code>EnhancementInfo</code>). Streaming uses flat{' '}
+              <code>ScopeMetadata</code>, <code>EnhancementInfo</code>, optional{' '}
+              <code>suggested_queries</code> on guardrails refusal). Streaming uses flat{' '}
               <code>ChatStreamMeta</code> on <code>seal.meta</code> — see{' '}
               <Link href="/docs/execution-metadata">Execution metadata</Link>.
             </p>
+            <h4 className="text-foreground mt-6 mb-2 text-sm font-semibold">Errors</h4>
+            <ul className="text-muted-foreground list-disc space-y-2 pl-5 text-sm">
+              <li>
+                <strong>200</strong> — out-of-scope message: <code>metadata.refusal=true</code> and{' '}
+                <code>metadata.suggested_queries</code> (no SQL)
+              </li>
+              <li>
+                <strong>400</strong> — <code>system</code> role in <code>messages</code>, session{' '}
+                <code>database_id</code> mismatch, or history over limit
+              </li>
+            </ul>
             <p className="mt-2">
               Examples: <Link href="/docs/chat-qa">Chat & Q&A</Link>,{' '}
               <Link href="/docs/chat-streaming">Streaming</Link>.

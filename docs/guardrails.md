@@ -16,7 +16,7 @@ The API is scoped to **data analytics** — SQL, schema, catalog, metrics, chart
 | Stage | What happens | `metadata.scope.source` (chat) |
 |-------|----------------|----------------------------------|
 | Disabled | `GUARDRAILS_ENABLED=false` → allow all | `disabled` |
-| Limits | Over `MAX_QUERY_CHARS` / `MAX_CHAT_MESSAGE_CHARS` | `limits` |
+| Limits | Over `MAX_QUERY_CHARS` / `MAX_CHAT_MESSAGE_CHARS` (chat/query may also return **422** when over Pydantic `max_length` on the request body) | `limits` |
 | Heuristics | Keywords → in-scope; regex → out-of-scope; else defer | `heuristic` |
 | LLM | Instructor `ScopeDecision` via LiteLLM | `llm` |
 | Classifier error | `GUARDRAILS_FAIL_CLOSED=true` → out-of-scope | `llm` |
@@ -40,8 +40,29 @@ Python (`ScopeSource` in `guardrails/models.py`) and OpenAPI (`ScopeMetadata`) r
 
 | Path | In scope | Out of scope |
 |------|----------|--------------|
-| `POST /v1/query` | Introspect → `execute_natural_language_query` → chart | HTTP **400** `query_out_of_scope` |
+| `POST /v1/query` | Introspect → `execute_natural_language_query` → chart | HTTP **400** structured body (see below) |
 | `POST /v1/chat` | Decision → optional SQL → answer / stream | HTTP **200** refusal (`REFUSAL_SYSTEM` only); `metadata.refusal=true` |
+
+### Out-of-scope response shapes
+
+**Query** — FastAPI wraps the object under `detail`:
+
+```json
+{
+  "detail": {
+    "detail": "query_out_of_scope",
+    "reason": "off-topic pattern",
+    "suggested_queries": [
+      "Show order count by month",
+      "What tables are available?"
+    ]
+  }
+}
+```
+
+`suggested_queries` are heuristic templates from scope category/source (no extra LLM on the query path). They are **illustrative** (aligned with the seed demo schema, e.g. orders/catalog language), not generated from live introspection — embedders on custom schemas should treat them as examples only.
+
+**Chat** — HTTP 200 with `metadata.refusal=true`, `metadata.suggested_queries` (up to 3), and the same field on SSE `seal.meta`. The refusal LLM may return `ChatAnswer.suggested_queries`; when empty, heuristics are used. **Limits** refusals use static `LIMIT_REFUSAL_MESSAGE` plus heuristic suggestions only.
 
 Out-of-scope chat **does not** run `ChatDecision`, SQL, or vector RAG (`EnhancementContext.in_scope=false`).
 
@@ -78,7 +99,7 @@ Docs site **Configuration reference** (`/docs/configuration#guardrails`) include
 
 ## Code
 
-- `packages/core/seal_core/guardrails/` — models, heuristics, `classify_scope`, prompts
+- `packages/core/seal_core/guardrails/` — models, heuristics, `classify_scope`, `suggestions`, prompts
 - `packages/core/seal_core/chat/service.py` — `_scope_gate`, `_refusal_turn`, `_refusal_stream`
 - `apps/api/app/routes/query.py` — query gate before planner
 

@@ -22,7 +22,7 @@ Contributor-oriented overview of request flow, LLM usage, and safety boundaries.
 
 | Route | Out of scope |
 |-------|----------------|
-| `POST /v1/query` | HTTP 400 `query_out_of_scope` |
+| `POST /v1/query` | HTTP 400 structured `detail` (`query_out_of_scope`, `reason`, `suggested_queries`) |
 | `POST /v1/chat` | HTTP 200 refusal (`REFUSAL_SYSTEM` + `ChatAnswer`), no SQL/RAG |
 
 See [guardrails.md](guardrails.md).

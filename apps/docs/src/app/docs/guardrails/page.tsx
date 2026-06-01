@@ -31,8 +31,10 @@ export default function GuardrailsPage() {
         <Callout variant="info" title="Different HTTP semantics by design">
           <strong>Chat</strong> returns HTTP <strong>200</strong> with a polite refusal — clients that
           only handle success codes still get a safe message. <strong>Query</strong> returns HTTP{' '}
-          <strong>400</strong> with detail <code>query_out_of_scope</code> — appropriate for
-          programmatic agents that should treat scope failure as a hard error.
+          <strong>400</strong> with a structured <code>detail</code> object (code{' '}
+          <code>query_out_of_scope</code>, <code>reason</code>, and up to three{' '}
+          <code>suggested_queries</code>) — appropriate for programmatic agents that should treat
+          scope failure as a hard error.
         </Callout>
 
         <h2>Classification pipeline</h2>
@@ -100,12 +102,15 @@ export default function GuardrailsPage() {
         <h3>Query — out of scope</h3>
         <p>
           The route raises HTTP 400 before introspection or planner work. No SQL, no chart, no token
-          spend on <code>QueryPlan</code>.
+          spend on <code>QueryPlan</code>. The body includes heuristic{' '}
+          <code>suggested_queries</code> (no extra classifier LLM on this path).
         </p>
         <h3>Chat — out of scope</h3>
         <p>
           <code>ChatService</code> calls <code>_refusal_turn</code>: one LLM with{' '}
-          <code>REFUSAL_SYSTEM</code> produces a short <code>ChatAnswer</code>. There is no{' '}
+          <code>REFUSAL_SYSTEM</code> produces a short <code>ChatAnswer</code> (optional{' '}
+          <code>suggested_queries</code>). Metadata and SSE <code>seal.meta</code> include{' '}
+          <code>suggested_queries</code> (LLM when provided, otherwise heuristics). There is no{' '}
           <code>ChatDecision</code>, no <code>execute_natural_language_query</code>, and vector RAG
           enhancers see <code>in_scope=false</code> and stay disabled.
         </p>
@@ -159,17 +164,17 @@ export default function GuardrailsPage() {
         <p>Requires <code>SEAL_API_KEY</code> in your shell when auth is enabled.</p>
         <CodeBlock
           language="bash"
-          code={`# Out-of-scope query → 400
-curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8000/v1/query \\
+          code={`# Out-of-scope query → 400 with suggested_queries
+curl -s -X POST http://localhost:8000/v1/query \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: $SEAL_API_KEY" \\
-  -d '{"query":"Write me a poem about the ocean"}'
+  -d '{"query":"Write me a poem about the ocean"}' | jq '.detail'
 
-# Out-of-scope chat → 200 refusal (check metadata.scope)
+# Out-of-scope chat → 200 refusal (metadata.scope + suggested_queries)
 curl -s -X POST http://localhost:8000/v1/chat \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: $SEAL_API_KEY" \\
-  -d '{"message":"What is the capital of France?"}' | jq '.metadata.scope'`}
+  -d '{"message":"What is the capital of France?"}' | jq '{scope: .metadata.scope, suggested: .metadata.suggested_queries}'`}
         />
 
         <p>

@@ -5,7 +5,7 @@ from seal_charts.engine import ChartEngine
 from seal_core.catalog.registry import DataCatalogRegistry
 from seal_core.database.config import planner_resources_for_database
 from seal_core.database.registry import DatabaseRegistry
-from seal_core.guardrails.scope import OUT_OF_SCOPE_QUERY_DETAIL, classify_scope
+from seal_core.guardrails.scope import build_query_out_of_scope_detail, classify_scope
 from seal_core.pipeline.execute import execute_natural_language_query
 from seal_core.pipeline.models import ExecutionMetadata
 from seal_core.pipeline.validate_metadata import (
@@ -24,7 +24,7 @@ from app.dependencies import (
     get_semantic_registry,
 )
 from app.errors import public_query_error_detail, public_server_error_detail
-from app.openapi_responses import AUTH_AND_DATABASE_RESPONSES
+from app.openapi_responses import QUERY_ENDPOINT_RESPONSES
 from app.schemas import QueryRequest, QueryResponse
 from app.security import require_api_key
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/query", response_model=QueryResponse, responses=AUTH_AND_DATABASE_RESPONSES)
+@router.post("/query", response_model=QueryResponse, responses=QUERY_ENDPOINT_RESPONSES)
 async def execute_query(
     request: QueryRequest,
     _: None = Security(require_api_key),
@@ -47,7 +47,10 @@ async def execute_query(
 
         scope = await classify_scope(request.query, channel="query")
         if not scope.in_scope:
-            raise HTTPException(status_code=400, detail=OUT_OF_SCOPE_QUERY_DETAIL)
+            raise HTTPException(
+                status_code=400,
+                detail=build_query_out_of_scope_detail(scope),
+            )
 
         schema = await bundle.introspector.introspect()
         semantic, catalog = planner_resources_for_database(

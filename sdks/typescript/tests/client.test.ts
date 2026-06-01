@@ -96,6 +96,44 @@ describe('Seal', () => {
       await expect(client.query('bad query')).rejects.toThrow(/Validation failed/);
     });
 
+    it('should throw QueryError with message on chat session database mismatch', async () => {
+      globalThis.fetch = mockFetch(
+        400,
+        {
+          detail: {
+            code: 'session_database_id_mismatch',
+            message: "Session 's1' is pinned to database_id 'default'; got 'analytics'",
+            session_id: 's1',
+            pinned_database_id: 'default',
+            requested_database_id: 'analytics',
+          },
+        },
+        false,
+      );
+      await expect(
+        client.chat('follow up', { sessionId: 's1', databaseId: 'analytics' }),
+      ).rejects.toThrow(/pinned to database/i);
+    });
+
+    it('should throw QueryOutOfScopeError on structured guardrails 400', async () => {
+      globalThis.fetch = mockFetch(
+        400,
+        {
+          detail: {
+            detail: 'query_out_of_scope',
+            reason: 'off-topic pattern',
+            suggested_queries: ['Show order count by month'],
+          },
+        },
+        false,
+      );
+      await expect(client.query('write me a poem')).rejects.toMatchObject({
+        name: 'QueryOutOfScopeError',
+        reason: 'off-topic pattern',
+        suggestedQueries: ['Show order count by month'],
+      });
+    });
+
     it('should throw ServerError on 500', async () => {
       globalThis.fetch = mockFetch(500, { detail: 'Internal error' }, false);
       await expect(client.query('query')).rejects.toThrow(ServerError);

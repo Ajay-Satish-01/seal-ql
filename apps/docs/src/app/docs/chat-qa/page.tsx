@@ -109,6 +109,7 @@ ${curlChat(base, 'Show revenue for the largest table', { sessionId: 'YOUR_SESSIO
           <code>used_sql</code>), <code>metadata.enhancement</code> (
           <code>enabled</code>, <code>applied</code>, optional skip/unavailable reasons), and{' '}
           <code>metadata.scope</code> (refusals set <code>refusal: true</code>,{' '}
+          <code>metadata.suggested_queries</code> with example in-scope questions,{' '}
           <code>used_sql: false</code>, no <code>sql</code>)
         </li>
       </ul>

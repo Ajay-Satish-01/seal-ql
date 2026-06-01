@@ -56,7 +56,34 @@ for event in client.chat_stream("Summarize orders by region", include_charts=Tru
         print(event["content"], end="", flush=True)
 ```
 
-Non-streaming `client.chat()` returns nested `metadata` on `ChatResponse` (same fields as query `metadata`, plus chat-specific keys).
+Non-streaming `client.chat()` returns nested `metadata` on `ChatResponse` (same fields as query `metadata`, plus chat-specific keys such as `scope`, `refusal`, and `suggested_queries` on guardrails refusals).
+
+## Guardrails errors
+
+Out-of-scope **query** requests return HTTP 400 with a structured FastAPI `detail` object:
+
+```python
+{
+  "detail": {
+    "detail": "query_out_of_scope",
+    "reason": "off-topic pattern",
+    "suggested_queries": ["Show order count by month", "What tables are available?"]
+  }
+}
+```
+
+The SDK raises `QueryOutOfScopeError` (subclass of `QueryError`) with `.reason` and `.suggested_queries`:
+
+```python
+from seal import QueryOutOfScopeError, Seal
+
+try:
+    client.query("write me a poem")
+except QueryOutOfScopeError as e:
+    print(e.reason, e.suggested_queries)
+```
+
+Out-of-scope **chat** returns HTTP 200 with `metadata.refusal=true` and `metadata.suggested_queries` (same field on SSE `seal.meta` when `stream=true`). Other structured chat 400s (e.g. `session_database_id_mismatch`) surface as `QueryError` with the API `message` text.
 
 ## Asynchronous Client
 

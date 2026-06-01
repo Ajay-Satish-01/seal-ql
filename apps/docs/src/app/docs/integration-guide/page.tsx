@@ -216,6 +216,13 @@ console.log(result.sql, result.results, result.chart);`}
           <Link href="/docs/guardrails">Guardrails</Link>. The dashboard Settings page writes to
           Postgres; use <strong>Apply to API</strong> in production after PATCH.
         </p>
+        <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
+          Off-topic <strong>query</strong> calls return HTTP 400 with structured{' '}
+          <code>detail</code> (<code>query_out_of_scope</code>, <code>reason</code>,{' '}
+          <code>suggested_queries</code>) — handle <code>QueryOutOfScopeError</code> in the SDKs.
+          Off-topic <strong>chat</strong> returns HTTP 200 with <code>metadata.refusal</code> and the
+          same suggestion list (flat on <code>seal.meta</code> when streaming).
+        </p>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">8. Troubleshooting</h2>
         <ul>

@@ -59,3 +59,6 @@ def test_chat_refusal_reports_unavailable_when_enhancement_requested_without_orc
     enh = r.json()["metadata"]["enhancement"]
     assert enh["unavailable_reason"] == ENHANCEMENT_UNAVAILABLE_ORCHESTRATOR
     assert enh["enabled"] is False
+    suggestions = r.json()["metadata"].get("suggested_queries")
+    assert isinstance(suggestions, list)
+    assert 0 < len(suggestions) <= 3

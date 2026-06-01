@@ -129,7 +129,9 @@ export default function ConfigurationPage() {
               <p>
                 Guardrails run before expensive LLM planner work. They enforce size limits, fast
                 heuristics, and a structured scope classifier. Chat refusals are polite HTTP 200
-                messages; query refusals are HTTP 400 with <code>query_out_of_scope</code>.
+                messages with <code>suggested_queries</code>; query refusals are HTTP 400 with
+                structured <code>detail</code> (<code>query_out_of_scope</code>,{' '}
+                <code>reason</code>, <code>suggested_queries</code>).
               </p>
               <p>
                 Full pipeline and examples: <Link href="/docs/guardrails">Guardrails</Link>.

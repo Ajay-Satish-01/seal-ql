@@ -34,6 +34,24 @@ export class QueryError extends SealError {
   }
 }
 
+/** Guardrails rejected the query (HTTP 400, structured detail). */
+export class QueryOutOfScopeError extends QueryError {
+  readonly reason: string;
+  readonly suggestedQueries: readonly string[];
+
+  constructor(
+    message: string,
+    statusCode: number,
+    reason: string,
+    suggestedQueries: readonly string[],
+  ) {
+    super(message, statusCode);
+    this.name = 'QueryOutOfScopeError';
+    this.reason = reason;
+    this.suggestedQueries = suggestedQueries;
+  }
+}
+
 export class ServerError extends SealError {
   constructor(message: string, statusCode?: number) {
     super(message, statusCode);

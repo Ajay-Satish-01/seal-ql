@@ -64,6 +64,11 @@ export const CHAT_METADATA_EXTRA_FIELDS: MetadataFieldDef[] = [
     description: 'true on guardrails refusal (HTTP 200, no SQL)',
   },
   {
+    name: 'metadata.suggested_queries',
+    description:
+      'Up to three example in-scope data questions on guardrails refusal (heuristic or refusal LLM)',
+  },
+  {
     name: 'metadata.sql_error',
     description: 'Data path failed; used_sql stays false and sql is omitted',
   },
@@ -114,6 +119,7 @@ export const CHAT_METADATA_REFUSAL_EXAMPLE: ChatMetadata = {
   },
   scope: SCOPE_OFF_TOPIC,
   refusal: true,
+  suggested_queries: ['Show order count by month', 'What tables are available?'],
 };
 
 const DEMO_SESSION_ID = 'demo-session-a1b2c3d4';

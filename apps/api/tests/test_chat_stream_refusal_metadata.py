@@ -52,7 +52,12 @@ def test_chat_stream_refusal_seal_meta(monkeypatch) -> None:
         patch.object(
             service._client.chat.completions,
             "create",
-            new=AsyncMock(return_value=ChatAnswer(message="I can only help with your data.")),
+            new=AsyncMock(
+                return_value=ChatAnswer(
+                    message="I can only help with your data.",
+                    suggested_queries=["What tables are available?"],
+                )
+            ),
         ),
     ):
         client: TestClient = build_client(monkeypatch)
@@ -76,3 +81,4 @@ def test_chat_stream_refusal_seal_meta(monkeypatch) -> None:
     assert payload["scope"]["in_scope"] is False
     assert payload["enhancement"]["enabled"] is False
     assert payload["sql"] is None
+    assert payload["suggested_queries"] == ["What tables are available?"]

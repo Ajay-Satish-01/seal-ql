@@ -112,6 +112,21 @@ def validate_enhancement_block(
     return errors
 
 
+def validate_suggested_queries(value: Any) -> list[str]:
+    """Validate optional ``suggested_queries`` on refusal metadata."""
+    errors: list[str] = []
+    if value is None:
+        return errors
+    if not isinstance(value, list):
+        errors.append("suggested_queries must be an array")
+        return errors
+    if len(value) > 3:
+        errors.append("suggested_queries must have at most 3 items")
+    if not all(isinstance(item, str) and item.strip() for item in value):
+        errors.append("suggested_queries must be an array of non-empty strings")
+    return errors
+
+
 def validate_scope_block(scope: Any) -> list[str]:
     """Validate nested or flat ``scope`` metadata."""
     errors: list[str] = []
@@ -191,6 +206,8 @@ def validate_nested_chat_metadata(meta: dict[str, Any], *, sql_at_top_level: boo
     )
     if "scope" in meta:
         errors.extend(validate_scope_block(meta.get("scope")))
+    if "suggested_queries" in meta:
+        errors.extend(validate_suggested_queries(meta.get("suggested_queries")))
     return errors
 
 
@@ -269,4 +286,6 @@ def validate_stream_meta_event(event: dict[str, Any]) -> list[str]:
                 errors.append(f"columns[{i}] must have name and type")
     if event.get("scope") is not None:
         errors.extend(validate_scope_block(event.get("scope")))
+    if "suggested_queries" in event:
+        errors.extend(validate_suggested_queries(event.get("suggested_queries")))
     return errors

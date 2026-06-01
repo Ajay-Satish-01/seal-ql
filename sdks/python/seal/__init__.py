@@ -20,6 +20,7 @@ from seal.client import AsyncSeal, Seal
 from seal.exceptions import (
     ConnectionError,
     QueryError,
+    QueryOutOfScopeError,
     SealConnectionError,
     SealError,
     ServerError,
@@ -54,5 +55,6 @@ __all__ = [
     "SealConnectionError",
     "ConnectionError",
     "QueryError",
+    "QueryOutOfScopeError",
     "ServerError",
 ]

@@ -10,7 +10,8 @@
  *   console.log(result.results);
  */
 
-import { QueryError, SealConnectionError, ServerError } from './errors.js';
+import { raiseForResponse } from './http-errors.js';
+import { SealConnectionError } from './errors.js';
 import { mapChatSseEvent } from './vendor/chat-sse-events.js';
 import { flushSseRemainder, splitSseBuffer } from './sse.js';
 import type {
@@ -87,18 +88,13 @@ export class Seal {
     }
 
     if (!response.ok) {
-      let detail: string;
+      let body: { detail?: unknown } = { detail: response.statusText };
       try {
-        const errorBody = (await response.json()) as { detail?: string };
-        detail = errorBody.detail ?? response.statusText;
+        body = (await response.json()) as { detail?: unknown };
       } catch {
-        detail = response.statusText;
+        // keep statusText fallback
       }
-
-      if (response.status >= 500) {
-        throw new ServerError(`Server error (${response.status}): ${detail}`, response.status);
-      }
-      throw new QueryError(`Query rejected (${response.status}): ${detail}`, response.status);
+      raiseForResponse(response.status, body);
     }
 
     return (await response.json()) as T;
@@ -207,17 +203,13 @@ export class Seal {
     }
 
     if (!response.ok) {
-      let detail: string;
+      let body: { detail?: unknown } = { detail: response.statusText };
       try {
-        const errorBody = (await response.json()) as { detail?: string };
-        detail = errorBody.detail ?? response.statusText;
+        body = (await response.json()) as { detail?: unknown };
       } catch {
-        detail = response.statusText;
+        // keep statusText fallback
       }
-      if (response.status >= 500) {
-        throw new ServerError(`Server error (${response.status}): ${detail}`, response.status);
-      }
-      throw new QueryError(`Chat rejected (${response.status}): ${detail}`, response.status);
+      raiseForResponse(response.status, body);
     }
 
     const reader = response.body?.getReader();

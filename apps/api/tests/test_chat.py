@@ -14,6 +14,7 @@ def test_chat_json_response(monkeypatch) -> None:
     body = r.json()
     assert "session_id" in body
     assert "message" in body
+    assert "suggested_queries" not in body.get("metadata", {})
 
 
 def test_chat_with_database_id(monkeypatch) -> None:
@@ -68,4 +69,6 @@ def test_query_out_of_scope_returns_400(monkeypatch) -> None:
             headers=AUTH_HEADERS,
         )
     assert r.status_code == 400
-    assert r.json()["detail"] == "query_out_of_scope"
+    detail = r.json()["detail"]
+    assert detail["detail"] == "query_out_of_scope"
+    assert isinstance(detail["suggested_queries"], list)

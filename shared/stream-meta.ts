@@ -53,6 +53,7 @@ export interface StreamMetaPayload {
   scope?: ScopeMetadata;
   refusal?: boolean;
   sql_error?: boolean;
+  suggested_queries?: string[];
 }
 
 /** Light runtime checks before treating an SSE meta payload as StreamMetaPayload. */
@@ -114,6 +115,16 @@ export function parseStreamMeta(data: unknown): StreamMetaPayload {
   }
   if (record.scope != null && readScope(record.scope) === undefined) {
     throw new Error('seal.meta invalid scope object');
+  }
+  if (record.suggested_queries != null) {
+    const suggestions = record.suggested_queries;
+    if (
+      !Array.isArray(suggestions) ||
+      suggestions.length > 3 ||
+      !suggestions.every((item) => typeof item === 'string' && item.trim().length > 0)
+    ) {
+      throw new Error('seal.meta suggested_queries must be an array of up to 3 non-empty strings');
+    }
   }
 
   const columns = record.columns;

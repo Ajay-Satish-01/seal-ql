@@ -42,8 +42,8 @@ DuckDB entries use `duckdb:///path/file.duckdb` or `:memory:` in config (see mul
 
 - Unknown `database_id`: HTTP 404 `unknown_database_id`
 - Chat session id mismatch: HTTP 400 `session_database_id_mismatch` (structured `detail.code`)
-- Query off-topic: HTTP 400 `query_out_of_scope` (see [../guardrails.md](../guardrails.md))
-- Chat off-topic: HTTP 200 with `metadata.scope.in_scope: false` and `metadata.database_id` set
+- Query off-topic: HTTP 400 with structured `detail` (`query_out_of_scope`, `reason`, `suggested_queries`) — see [../guardrails.md](../guardrails.md). Parse `detail` as an object, not a string.
+- Chat off-topic: HTTP 200 with `metadata.refusal`, `metadata.suggested_queries`, and `metadata.scope.in_scope: false`
 
 Full pipeline: [../how-seal-works.md](../how-seal-works.md).
 

@@ -376,6 +376,11 @@ export interface components {
              * @description True when SQL execution failed.
              */
             readonly sql_error?: boolean | null;
+            /**
+             * Suggested Queries
+             * @description Example in-scope data questions on guardrails refusal.
+             */
+            readonly suggested_queries?: readonly string[] | null;
         };
         /** ChatRequest */
         readonly ChatRequest: {
@@ -1003,6 +1008,30 @@ export interface components {
              * @default false
              */
             readonly used_sql: boolean;
+            readonly enhancement?: components["schemas"]["EnhancementInfo"];
+            /**
+             * @description Guardrails scope decision when classified.
+             * @default null
+             */
+            readonly scope: components["schemas"]["ScopeMetadata"] | null;
+            /**
+             * Refusal
+             * @description True when the turn was refused.
+             * @default null
+             */
+            readonly refusal: boolean | null;
+            /**
+             * Sql Error
+             * @description True when SQL execution failed.
+             * @default null
+             */
+            readonly sql_error: boolean | null;
+            /**
+             * Suggested Queries
+             * @description Example in-scope data questions on guardrails refusal.
+             * @default null
+             */
+            readonly suggested_queries: readonly string[] | null;
             /**
              * Session Id
              * @description Conversation session id.
@@ -1038,24 +1067,36 @@ export interface components {
              * @default null
              */
             readonly chart: components["schemas"]["ChartSpec"] | null;
-            readonly enhancement?: components["schemas"]["EnhancementInfo"];
+        };
+        /**
+         * QueryOutOfScopeDetail
+         * @description Structured HTTP 400 body when guardrails reject ``POST /v1/query``.
+         */
+        readonly QueryOutOfScopeDetail: {
             /**
-             * @description Guardrails scope decision.
-             * @default null
+             * Detail
+             * @description Error code for programmatic clients.
+             * @default query_out_of_scope
              */
-            readonly scope: components["schemas"]["ScopeMetadata"] | null;
+            readonly detail: string;
             /**
-             * Refusal
-             * @description True when the turn was refused.
-             * @default null
+             * Reason
+             * @description Short classification reason.
+             * @default
              */
-            readonly refusal: boolean | null;
+            readonly reason: string;
             /**
-             * Sql Error
-             * @description True when SQL execution failed.
-             * @default null
+             * Suggested Queries
+             * @description Up to three example in-scope data questions.
              */
-            readonly sql_error: boolean | null;
+            readonly suggested_queries?: readonly string[];
+        };
+        /**
+         * QueryOutOfScopeErrorResponse
+         * @description FastAPI error envelope for guardrails rejections on ``POST /v1/query``.
+         */
+        readonly QueryOutOfScopeErrorResponse: {
+            readonly detail: components["schemas"]["QueryOutOfScopeDetail"];
         };
     };
     responses: never;
@@ -1200,6 +1241,27 @@ export interface operations {
                 };
                 content: {
                     readonly "application/json": components["schemas"]["QueryResponse"];
+                };
+            };
+            /** @description Guardrails rejected the query (out of scope) */
+            readonly 400: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": {
+                     *         "detail": "query_out_of_scope",
+                     *         "reason": "off-topic pattern",
+                     *         "suggested_queries": [
+                     *           "Show order count by month",
+                     *           "What tables are available?"
+                     *         ]
+                     *       }
+                     *     }
+                     */
+                    readonly "application/json": components["schemas"]["QueryOutOfScopeErrorResponse"];
                 };
             };
             /** @description Invalid or missing API key */
