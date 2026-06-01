@@ -43,7 +43,7 @@ def test_chat_refusal_reports_unavailable_when_enhancement_requested_without_orc
     with patch(
         "seal_core.chat.service.classify_scope",
         new=AsyncMock(
-            return_value=ScopeResult(in_scope=False, reason="off-topic", source="heuristic")
+            return_value=ScopeResult(in_scope=False, reason="off-topic", source="limits")
         ),
     ):
         client: TestClient = build_client(monkeypatch)
