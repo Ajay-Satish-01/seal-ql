@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -123,11 +124,21 @@ class MockChatService:
 
         MockChatService.last_database_id = database_id
         sid = session_id or "test-session"
+        from seal_core.pipeline.models import build_chat_metadata
+
         return ChatResult(
             session_id=sid,
             message=f"Echo: {message}",
             sources=["mock_table"],
-            metadata={"used_sql": False, "enhancement": {}, "database_id": database_id},
+            metadata=build_chat_metadata(
+                database_id=database_id,
+                exec_result=None,
+                used_sql=False,
+                enhancement_enabled=False,
+                applied=[],
+                vector_rag_available=False,
+                orchestrator_available=False,
+            ),
         )
 
     async def handle_stream(
@@ -141,10 +152,25 @@ class MockChatService:
         database_id: str = "default",
     ) -> AsyncIterator[str]:
         MockChatService.last_database_id = database_id
-        meta = (
-            f'event: seal.meta\ndata: {{"session_id":"test-session",'
-            f'"database_id":"{database_id}"}}\n\n'
+        from seal_core.pipeline.models import build_stream_meta_event
+
+        meta_payload = build_stream_meta_event(
+            session_id="test-session",
+            database_id=database_id,
+            exec_result=None,
+            used_sql=False,
+            enhancement_enabled=False,
+            applied=[],
+            sources=[],
+            sql=None,
+            results=None,
+            columns=None,
+            chart=None,
+            scope=None,
+            vector_rag_available=False,
+            orchestrator_available=False,
         )
+        meta = f"event: seal.meta\ndata: {json.dumps(meta_payload)}\n\n"
         yield meta
         yield 'data: {"choices":[{"delta":{"content":"Hi"}}]}\n\n'
         yield "data: [DONE]\n\n"

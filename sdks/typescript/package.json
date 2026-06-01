@@ -8,6 +8,7 @@
   "packageManager": "pnpm@10.33.2",
   "files": [
     "dist",
+    "src/generated/openapi.ts",
     "README.md",
     "LICENSE"
   ],
@@ -46,6 +47,9 @@
   },
   "scripts": {
     "prepublishOnly": "pnpm run build",
+    "prebuild": "pnpm run generate:api-types && node ../../scripts/sync-sdk-meta-vendor.mjs",
+    "pretest": "node ../../scripts/sync-sdk-meta-vendor.mjs",
+    "generate:api-types": "openapi-typescript ../../apps/api/openapi.json -o src/generated/openapi.ts --immutable",
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -83,6 +87,7 @@
     "prettier": "^3.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "openapi-typescript": "^7.10.1",
     "typescript": "^5.4.5",
     "typescript-eslint": "^8.0.0-alpha.20",
     "vitest": "^4.1.0"

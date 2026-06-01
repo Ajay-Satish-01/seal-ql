@@ -144,6 +144,14 @@ def assert_chat_json_body(body: dict[str, Any]) -> None:
     assert body.get("session_id"), "expected session_id in 200 chat response"
     message = body.get("message")
     assert message and str(message).strip(), "expected non-empty message in 200 chat response"
+    if body.get("sql"):
+        metadata = body.get("metadata") or {}
+        assert metadata.get("database_id"), "expected metadata.database_id when sql present"
+        assert "row_count" in metadata, "expected metadata.row_count when sql present"
+        assert "repair_attempts" in metadata, "expected metadata.repair_attempts when sql present"
+        enhancement = metadata.get("enhancement") or {}
+        assert "enabled" in enhancement, "expected metadata.enhancement.enabled when sql present"
+        assert "applied" in enhancement, "expected metadata.enhancement.applied when sql present"
 
 
 def assert_query_json_body(data: dict[str, Any]) -> None:

@@ -7,6 +7,11 @@ from seal_core.database.config import planner_resources_for_database
 from seal_core.database.registry import DatabaseRegistry
 from seal_core.guardrails.scope import OUT_OF_SCOPE_QUERY_DETAIL, classify_scope
 from seal_core.pipeline.execute import execute_natural_language_query
+from seal_core.pipeline.models import ExecutionMetadata
+from seal_core.pipeline.validate_metadata import (
+    InvalidQueryMetadataError,
+    enforce_query_metadata,
+)
 from seal_core.planner.planner import QueryPlanner
 from seal_semantic.registry import SemanticRegistry
 from seal_sql.result import QueryResult
@@ -70,22 +75,25 @@ async def execute_query(
         )
         chart_spec = ChartEngine.generate(exec_result.plan, result)
 
+        metadata = ExecutionMetadata.from_execute_result(
+            database_id=request.database_id,
+            exec_result=exec_result,
+            used_sql=True,
+        ).model_dump()
+        enforce_query_metadata(metadata)
+
         return QueryResponse(
             sql=exec_result.sql,
             columns=exec_result.columns,
             results=exec_result.rows,
             chart=chart_spec,
-            metadata={
-                "database_id": request.database_id,
-                "row_count": exec_result.row_count,
-                "execution_time_ms": exec_result.execution_time_ms,
-                "truncated": exec_result.truncated,
-                "warnings": exec_result.warnings,
-                "repair_attempts": exec_result.repair_attempts,
-            },
+            metadata=metadata,
         )
     except HTTPException:
         raise
+    except InvalidQueryMetadataError as e:
+        logger.error("Query metadata validation failed: %s", e.errors)
+        raise HTTPException(status_code=500, detail=public_server_error_detail()) from e
     except Exception as e:
         if "Validation" in str(e) or "Sanitization" in str(e):
             logger.error("Query failed: %s", e)

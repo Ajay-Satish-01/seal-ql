@@ -1,6 +1,12 @@
 """LLM abuse guardrails — scope classification and refusal handling."""
 
-from seal_core.guardrails.models import ScopeDecision, ScopeResult
+from seal_core.guardrails.models import (
+    GuardrailsChannel,
+    ScopeDecision,
+    ScopeMetadata,
+    ScopeResult,
+    ScopeSource,
+)
 from seal_core.guardrails.scope import (
     OUT_OF_SCOPE_QUERY_DETAIL,
     check_input_limits,
@@ -9,8 +15,11 @@ from seal_core.guardrails.scope import (
 )
 
 __all__ = [
+    "GuardrailsChannel",
     "ScopeDecision",
+    "ScopeMetadata",
     "ScopeResult",
+    "ScopeSource",
     "OUT_OF_SCOPE_QUERY_DETAIL",
     "classify_scope",
     "check_input_limits",

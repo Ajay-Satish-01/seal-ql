@@ -12,3 +12,5 @@ Contributor docs for extending Seal. User-facing copies live on the docs site (`
 **Core behavior** (guardrails, LLM stages, SQL pipeline): [../how-seal-works.md](../how-seal-works.md).
 
 Sync public assets: `make sync-docs-assets` (OpenAPI, demo fixtures, `seal-tools.openai.json`, catalog example).
+
+When changing request/response models or tool manifests that affect the HTTP API, run `make openapi-ts` and `make verify-openapi-sync` before merge (see [../chat-metadata.md](../chat-metadata.md) for execution metadata fields).

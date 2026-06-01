@@ -53,6 +53,7 @@ repos:
         language: system
         types_or: [javascript, jsx, ts, tsx, css, json]
         files: ^sdks/typescript/
+        exclude: ^sdks/typescript/src/generated/
 
       - id: eslint
         name: "eslint lint (TS)"
@@ -60,3 +61,4 @@ repos:
         language: system
         types_or: [javascript, jsx, ts, tsx]
         files: ^sdks/typescript/
+        exclude: ^sdks/typescript/src/generated/

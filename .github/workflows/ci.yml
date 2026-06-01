@@ -39,6 +39,16 @@ jobs:
       - name: Ruff format check
         run: docker compose run --rm -T api uv run ruff format --check .
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+          cache-dependency-path: "sdks/typescript/pnpm-lock.yaml"
+
       - name: Verify OpenAPI docs sync
         run: make verify-openapi-sync
 
@@ -281,6 +291,9 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Install Python workspace (OpenAPI generation)
+        run: uv sync --all-packages --all-extras
+
       - name: Build Python SDK
         run: uv build --package seal
 
@@ -296,6 +309,9 @@ jobs:
           node-version: "24"
           cache: pnpm
           cache-dependency-path: sdks/typescript/pnpm-lock.yaml
+
+      - name: Verify OpenAPI TypeScript types (committed generated/openapi.ts)
+        run: make verify-openapi-sync
 
       - name: Validate npm package
         working-directory: sdks/typescript

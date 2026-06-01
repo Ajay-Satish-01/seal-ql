@@ -44,7 +44,7 @@ export function ResultsPanel({ response }: ResultsPanelProps) {
 
       <div>
         <h3 className="text-foreground mb-3 text-sm font-semibold">Visualization</h3>
-        <ChartPanel chart={response.chart} results={response.results} />
+        <ChartPanel chart={response.chart ?? null} results={response.results} />
       </div>
     </div>
   );

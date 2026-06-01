@@ -33,8 +33,8 @@ Thumbs.db
 htmlcov/
 .pytest_cache/
 
-# Generated SDK code
-sdks/typescript/src/generated/
+# Vendored copies of shared/ (regenerated on SDK prebuild; do not edit)
+sdks/typescript/src/vendor/
 sdks/python/seal/generated/
 
 # DuckDB

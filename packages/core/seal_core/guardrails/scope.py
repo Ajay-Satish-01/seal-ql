@@ -5,7 +5,12 @@ from __future__ import annotations
 import logging
 
 from seal_core.guardrails.heuristics import heuristic_in_scope
-from seal_core.guardrails.models import ScopeCategory, ScopeDecision, ScopeResult
+from seal_core.guardrails.models import (
+    GuardrailsChannel,
+    ScopeCategory,
+    ScopeDecision,
+    ScopeResult,
+)
 from seal_core.guardrails.prompts import SCOPE_CLASSIFY_SYSTEM
 from seal_core.llm.client import get_api_base, get_api_key, get_async_client, get_model
 from seal_core.settings import get_settings
@@ -32,8 +37,8 @@ def check_input_limits(
     return None
 
 
-async def classify_scope(text: str, *, channel: str) -> ScopeResult:
-    """Classify message scope; channel is 'query' or 'chat'."""
+async def classify_scope(text: str, *, channel: GuardrailsChannel) -> ScopeResult:
+    """Classify message scope for the query or chat API channel."""
     settings = get_settings()
 
     # Input-size limits are a denial-of-service / cost control that is independent
@@ -97,5 +102,5 @@ async def classify_scope(text: str, *, channel: str) -> ScopeResult:
         )
 
 
-async def is_in_scope(text: str, *, channel: str) -> ScopeResult:
+async def is_in_scope(text: str, *, channel: GuardrailsChannel) -> ScopeResult:
     return await classify_scope(text, channel=channel)

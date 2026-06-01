@@ -1,0 +1,13 @@
+[
+  "database_id",
+  "row_count",
+  "execution_time_ms",
+  "truncated",
+  "warnings",
+  "repair_attempts",
+  "used_sql",
+  "enhancement",
+  "scope",
+  "refusal",
+  "sql_error"
+]

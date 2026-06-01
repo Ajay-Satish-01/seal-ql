@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { DocsProse } from '@/components/docs/docs-prose';
 import { Callout } from '@/components/docs/callout';
+import { DocLink } from '@/components/docs/doc-link';
 
 export default function FeaturesPage() {
   return (
@@ -142,6 +143,7 @@ export default function FeaturesPage() {
         </ul>
         <p>
           <Link href="/docs/chat-qa">Chat &amp; Q&amp;A</Link> ·{' '}
+          <DocLink href="/docs/execution-metadata">Execution metadata</DocLink> ·{' '}
           <Link href="/docs/chat-streaming">Streaming</Link>
         </p>
 

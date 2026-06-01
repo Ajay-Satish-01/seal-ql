@@ -186,6 +186,15 @@ export const chatConfig: ConfigRow[] = [
       'With `false`, chat behaves like a thinner Q&A path — faster, less context, no RAG retrieval step. Good when your agent already supplies schema.',
   },
   {
+    name: 'STRICT_STREAM_META_VALIDATION',
+    type: 'boolean',
+    default: 'false',
+    description:
+      'When true, invalid chat metadata (JSON) or seal.meta (SSE) payloads raise instead of only logging a warning. Alias: STRICT_METADATA_VALIDATION.',
+    expect:
+      'Use in CI or staging to catch contract regressions early. Default off so production stays resilient to minor shape drift.',
+  },
+  {
     name: 'CHAT_SESSION_TTL_SECONDS',
     type: 'integer',
     default: '3600',

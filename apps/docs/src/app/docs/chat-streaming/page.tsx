@@ -1,13 +1,15 @@
-import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
-import { CodeBlock } from '@/components/code-block';
 import { Callout } from '@/components/docs/callout';
+import { DocLink } from '@/components/docs/doc-link';
+import { MetadataJsonBlock } from '@/components/docs/metadata-json-block';
 import { SITE } from '@/lib/constants';
 import {
   curlChat,
   pythonChatStreamSnippet,
   tsChatStreamSnippet,
 } from '@/lib/doc-snippets';
+import { CHAT_STREAM_META_JSON } from '@/lib/execution-metadata';
+import { CodeBlock } from '@/components/code-block';
 
 export default function ChatStreamingPage() {
   const base = SITE.defaultBaseUrl;
@@ -39,9 +41,7 @@ export default function ChatStreamingPage() {
         event includes <code>database_id</code> so clients can confirm which backend ran before
         reading streamed text. Use the same <code>database_id</code> on every message in a{' '}
         <code>session_id</code> — see{' '}
-        <Link href="/docs/multi-database" className="text-primary underline-offset-4 hover:underline">
-          Multi-database routing
-        </Link>
+        <DocLink href="/docs/multi-database">Multi-database routing</DocLink>
         .
       </p>
       <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
@@ -52,9 +52,15 @@ export default function ChatStreamingPage() {
       <h2 className="font-heading mt-8 text-xl font-semibold">SSE event order</h2>
       <ol className="text-muted-foreground mt-4 list-decimal space-y-2 pl-6 text-sm">
         <li>
-          <code>event: seal.meta</code> — <code>session_id</code>, <code>database_id</code>,{' '}
-          <code>sources</code>, <code>sql</code>, <code>chart</code>, <code>enhancement</code>,{' '}
-          <code>scope</code>
+          <code>event: seal.meta</code> — flat JSON (not nested under <code>metadata</code>):{' '}
+          <code>session_id</code>, <code>sources</code>, <code>sql</code>, <code>results</code>,{' '}
+          <code>columns</code>, <code>chart</code>, execution fields (
+          <code>database_id</code>, <code>row_count</code>, <code>execution_time_ms</code>,{' '}
+          <code>truncated</code>, <code>warnings</code>, <code>repair_attempts</code>,{' '}
+          <code>used_sql</code>), <code>enhancement</code>, <code>scope</code>, and{' '}
+          <code>refusal</code> / <code>sql_error</code> when applicable. See{' '}
+          <DocLink href="/docs/execution-metadata">Execution metadata</DocLink>
+          .
         </li>
         <li>
           <code>data: {'{...}'}</code> — OpenAI-style <code>chat.completion.chunk</code> deltas
@@ -64,13 +70,22 @@ export default function ChatStreamingPage() {
         </li>
       </ol>
 
+      <h3 className="text-foreground mt-6 text-lg font-medium">Example seal.meta payload</h3>
+      <MetadataJsonBlock title="Example seal.meta payload" code={CHAT_STREAM_META_JSON} className="mt-6" />
+
+      <Callout variant="info" title="Client validation (SDK / dashboard / demo)">
+        The TypeScript SDK maps SSE frames with <code>mapChatSseEvent</code>. Malformed{' '}
+        <code>seal.meta</code> (for example invalid <code>scope.source</code>) yields a{' '}
+        <code>meta_error</code> event with <code>partial</code> fields when{' '}
+        <code>session_id</code> / <code>database_id</code> are still readable; answer deltas may
+        continue. Same rules in <code>shared/stream-meta.ts</code> used by the dashboard and docs
+        demo.
+      </Callout>
+
       <p className="text-muted-foreground mt-6 text-sm">
         Non-streaming JSON: set <code>stream: false</code> (default). See{' '}
-        <Link href="/docs/chat-qa" className="text-primary underline-offset-4 hover:underline">
-          Chat &amp; Q&amp;A
-        </Link>{' '}
-        and the <Link href="/demo" className="text-primary underline-offset-4 hover:underline">demo</Link>{' '}
-        streaming panel.
+        <DocLink href="/docs/chat-qa">Chat &amp; Q&amp;A</DocLink> and the{' '}
+        <DocLink href="/demo">demo</DocLink> streaming panel.
       </p>
     </div>
   );

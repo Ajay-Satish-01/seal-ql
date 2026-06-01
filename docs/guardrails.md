@@ -23,6 +23,19 @@ The API is scoped to **data analytics** — SQL, schema, catalog, metrics, chart
 
 Heuristic patterns live in `guardrails/heuristics.py` (data keywords, injection/off-topic regex).
 
+### Typed `metadata.scope.source`
+
+Python (`ScopeSource` in `guardrails/models.py`) and OpenAPI (`ScopeMetadata`) restrict `source` to:
+
+| Value | Meaning |
+|-------|---------|
+| `disabled` | `GUARDRAILS_ENABLED=false` |
+| `limits` | Input over `MAX_QUERY_CHARS` / `MAX_CHAT_MESSAGE_CHARS` |
+| `heuristic` | Keyword/regex match (no classifier LLM) |
+| `llm` | Instructor `ScopeDecision` (or fail-closed on classifier error) |
+
+`classify_scope(..., channel=...)` accepts only `query` or `chat` (`GuardrailsChannel`).
+
 ## After classification
 
 | Path | In scope | Out of scope |
@@ -68,3 +81,5 @@ Docs site **Configuration reference** (`/docs/configuration#guardrails`) include
 - `packages/core/seal_core/guardrails/` — models, heuristics, `classify_scope`, prompts
 - `packages/core/seal_core/chat/service.py` — `_scope_gate`, `_refusal_turn`, `_refusal_stream`
 - `apps/api/app/routes/query.py` — query gate before planner
+
+Refusal and scope fields on chat responses: [chat-metadata.md](chat-metadata.md).

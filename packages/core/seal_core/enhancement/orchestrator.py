@@ -44,6 +44,19 @@ class EnhancementOrchestrator:
             _validate_enhancer(e, type(e).__name__) for e in enhancers
         ]
 
+    def vector_rag_available(self) -> bool:
+        """Return False only when a VectorRagEnhancer uses a no-op store.
+
+        When no vector enhancer is registered, returns True (vector RAG is not disabled,
+        it is simply absent from the chain).
+        """
+        from seal_core.vector.noop_store import NoopVectorStore
+
+        for enh in self._enhancers:
+            if isinstance(enh, VectorRagEnhancer):
+                return not isinstance(enh._store, NoopVectorStore)
+        return True
+
     async def enhance_system_prompt(self, ctx: EnhancementContext) -> str:
         prompt = ctx.base_system_prompt
         applied: list[str] = list(ctx.metadata.get("applied", []))

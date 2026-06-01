@@ -11,12 +11,12 @@
  */
 
 import { QueryError, SealConnectionError, ServerError } from './errors.js';
+import { mapChatSseEvent } from './vendor/chat-sse-events.js';
 import { flushSseRemainder, splitSseBuffer } from './sse.js';
 import type {
   CatalogResponse,
   ChatResponse,
   ChatStreamEvent,
-  ChatStreamMeta,
   DatabaseSchema,
   HealthResponse,
   QueryResponse,
@@ -232,12 +232,9 @@ export class Seal {
       raw: import('./sse.js').SseParseResult | null,
     ): Generator<ChatStreamEvent, void, unknown> {
       if (!raw) return;
-      if (raw.kind === 'meta') {
-        yield { type: 'meta' as const, data: raw.data as unknown as ChatStreamMeta };
-      } else if (raw.kind === 'delta') {
-        yield { type: 'delta' as const, content: raw.content };
-      } else if (raw.kind === 'done') {
-        yield { type: 'done' as const };
+      if (raw.kind === 'meta' || raw.kind === 'delta' || raw.kind === 'done') {
+        const mapped = mapChatSseEvent(raw);
+        if (mapped) yield mapped as ChatStreamEvent;
       }
     };
 

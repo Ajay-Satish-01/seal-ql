@@ -107,8 +107,9 @@ export default function ApiReferencePage() {
                 },
                 {
                   name: 'metadata',
-                  type: 'object',
-                  description: 'database_id, row_count, execution_time_ms, truncated, warnings.',
+                  type: 'QueryMetadata',
+                  description:
+                    'ExecutionMetadata: database_id, row_count, execution_time_ms, truncated, warnings, repair_attempts, used_sql.',
                 },
               ]}
             />
@@ -180,6 +181,12 @@ export default function ApiReferencePage() {
             <h4 className="text-foreground mt-6 mb-2 text-sm font-semibold">Response (JSON)</h4>
             <CodeBlock language="json" code={schemaToExample('ChatResponse')} />
             <p className="mt-4">
+              JSON responses use <code>ChatMetadata</code> (nested <code>metadata</code> with{' '}
+              <code>ScopeMetadata</code>, <code>EnhancementInfo</code>). Streaming uses flat{' '}
+              <code>ChatStreamMeta</code> on <code>seal.meta</code> — see{' '}
+              <Link href="/docs/execution-metadata">Execution metadata</Link>.
+            </p>
+            <p className="mt-2">
               Examples: <Link href="/docs/chat-qa">Chat & Q&A</Link>,{' '}
               <Link href="/docs/chat-streaming">Streaming</Link>.
             </p>

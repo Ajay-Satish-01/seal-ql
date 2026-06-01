@@ -1,5 +1,25 @@
 import { formatApiError } from '@/lib/api-error';
 import { flushSseRemainder, splitSseBuffer, type SseParseResult } from '@/lib/sse-parse';
+import type {
+  ChatMetadata,
+  ChatStreamMeta,
+  ColumnDescriptor,
+  ExecutionMetadata,
+} from '@seal/metadata-contract';
+import { mapChatSseEvent, type ChatStreamEvent } from '@seal/chat-sse-events';
+
+export type {
+  ChatMetadata,
+  ChatStreamMeta,
+  ColumnDescriptor,
+  EnhancementMetadata,
+  ExecutionMetadata,
+  ScopeMetadata,
+} from '@seal/metadata-contract';
+
+export type { ChatStreamEvent };
+
+export type QueryMetadata = ExecutionMetadata;
 
 export interface ChatApiResponse {
   session_id: string;
@@ -8,26 +28,9 @@ export interface ChatApiResponse {
   sql?: string | null;
   results?: Record<string, unknown>[] | null;
   chart?: Record<string, unknown> | null;
-  columns?: Array<{ name: string; type: string }> | null;
-  metadata?: Record<string, unknown>;
+  columns?: ColumnDescriptor[] | null;
+  metadata?: ChatMetadata;
 }
-
-export interface ChatStreamMeta {
-  session_id: string;
-  database_id?: string;
-  sources?: string[];
-  sql?: string | null;
-  results?: Record<string, unknown>[] | null;
-  columns?: Array<{ name: string; type: string }> | null;
-  chart?: Record<string, unknown> | null;
-  enhancement?: Record<string, unknown>;
-  scope?: Record<string, unknown>;
-}
-
-export type ChatStreamEvent =
-  | { type: 'meta'; data: ChatStreamMeta }
-  | { type: 'delta'; content: string }
-  | { type: 'done' };
 
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/+$/, '');
@@ -68,11 +71,9 @@ export async function postChat(
 }
 
 function mapSseEvent(event: SseParseResult): ChatStreamEvent | null {
-  if (event.kind === 'meta') {
-    return { type: 'meta', data: event.data as unknown as ChatStreamMeta };
+  if (event.kind === 'meta' || event.kind === 'delta' || event.kind === 'done') {
+    return mapChatSseEvent(event);
   }
-  if (event.kind === 'delta') return { type: 'delta', content: event.content };
-  if (event.kind === 'done') return { type: 'done' };
   return null;
 }
 

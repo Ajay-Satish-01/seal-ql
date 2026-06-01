@@ -20,10 +20,16 @@ function ChartSkeleton() {
 
 interface ChartPanelProps {
   chart: ChartSpec | null;
-  results: Record<string, unknown>[];
+  results: ReadonlyArray<Record<string, unknown>>;
 }
 
-function MetricCard({ results, yField }: { results: Record<string, unknown>[]; yField?: string }) {
+function MetricCard({
+  results,
+  yField,
+}: {
+  results: ReadonlyArray<Record<string, unknown>>;
+  yField?: string;
+}) {
   const field = yField ?? Object.keys(results[0] ?? {})[0];
   const value = field ? results[0]?.[field] : null;
   return (
@@ -38,7 +44,7 @@ function MetricCard({ results, yField }: { results: Record<string, unknown>[]; y
   );
 }
 
-function ResultsTable({ results }: { results: Record<string, unknown>[] }) {
+function ResultsTable({ results }: { results: ReadonlyArray<Record<string, unknown>> }) {
   if (results.length === 0) {
     return <p className="text-muted-foreground text-sm">No rows returned.</p>;
   }

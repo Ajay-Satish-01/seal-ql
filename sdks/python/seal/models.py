@@ -7,7 +7,7 @@ so the SDK has zero dependency on the internal server packages.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -40,6 +40,56 @@ class ChartSpec(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class ExecutionMetadata(BaseModel):
+    """Execution metadata shared by query and chat.
+
+    ``used_sql`` is True only after successful SQL execution. Chat may set ``sql_error``
+    when the data path fails without populating ``sql``.
+    """
+
+    database_id: str = "default"
+    row_count: int = 0
+    execution_time_ms: float = 0
+    truncated: bool = False
+    warnings: list[str] = Field(default_factory=list)
+    repair_attempts: int = 0
+    used_sql: bool = False
+
+
+VectorSkippedReason = Literal["non_default_database", "vector_store_disabled"]
+EnhancementUnavailableReason = Literal["orchestrator_unavailable"]
+ScopeSource = Literal["heuristic", "llm", "limits", "disabled"]
+
+
+class EnhancementMetadata(BaseModel):
+    """Enhancement chain metadata on chat responses.
+
+    Mirrors ``packages/core/seal_core/pipeline/models.py`` (SDK stays decoupled from core).
+    """
+
+    enabled: bool = False
+    applied: list[str] = Field(default_factory=list)
+    vector_skipped_reason: VectorSkippedReason | None = None
+    unavailable_reason: EnhancementUnavailableReason | None = None
+
+
+class ScopeMetadata(BaseModel):
+    """Guardrails scope decision on chat metadata and SSE seal.meta."""
+
+    in_scope: bool
+    reason: str | None = None
+    source: ScopeSource
+
+
+class ChatMetadata(ExecutionMetadata):
+    """Metadata on POST /v1/chat JSON responses."""
+
+    enhancement: EnhancementMetadata = Field(default_factory=EnhancementMetadata)
+    scope: ScopeMetadata | None = None
+    refusal: bool | None = None
+    sql_error: bool | None = None
+
+
 class QueryResponse(BaseModel):
     """The complete response from a /v1/query call."""
 
@@ -47,7 +97,7 @@ class QueryResponse(BaseModel):
     columns: list[ColumnMetadata]
     results: list[dict[str, Any]]
     chart: ChartSpec | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: ExecutionMetadata | dict[str, Any] = Field(default_factory=ExecutionMetadata)
 
 
 class HealthResponse(BaseModel):
@@ -88,8 +138,9 @@ class ChatResponse(BaseModel):
     sources: list[str] = Field(default_factory=list)
     sql: str | None = None
     results: list[dict[str, Any]] | None = None
+    columns: list[ColumnMetadata] | None = None
     chart: ChartSpec | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: ChatMetadata | dict[str, Any] = Field(default_factory=ChatMetadata)
 
 
 class CatalogResponse(BaseModel):

@@ -1,0 +1,130 @@
+{
+  "description": "Pass/fail matrix for validate_stream_meta_event (Python) and parseStreamMeta (TS).",
+  "cases": [
+    {
+      "id": "valid_sql_turn",
+      "should_pass": true,
+      "payload": {
+        "session_id": "s1",
+        "sql": "SELECT 1",
+        "database_id": "default",
+        "row_count": 1,
+        "execution_time_ms": 1.0,
+        "truncated": false,
+        "warnings": [],
+        "repair_attempts": 0,
+        "used_sql": true,
+        "enhancement": { "enabled": true, "applied": [] }
+      }
+    },
+    {
+      "id": "missing_session_id",
+      "should_pass": false,
+      "payload": {
+        "session_id": "",
+        "used_sql": false,
+        "enhancement": { "enabled": false, "applied": [] }
+      }
+    },
+    {
+      "id": "refusal_requires_enhancement",
+      "should_pass": true,
+      "payload": {
+        "session_id": "s-refusal",
+        "used_sql": false,
+        "refusal": true,
+        "enhancement": { "enabled": false, "applied": [] }
+      }
+    },
+    {
+      "id": "refusal_missing_enhancement",
+      "should_pass": false,
+      "payload": {
+        "session_id": "s-refusal",
+        "used_sql": false,
+        "refusal": true
+      }
+    },
+    {
+      "id": "sql_error_with_enhancement",
+      "should_pass": true,
+      "payload": {
+        "session_id": "s-err",
+        "used_sql": false,
+        "sql_error": true,
+        "enhancement": { "enabled": true, "applied": ["schema_aware"] }
+      }
+    },
+    {
+      "id": "sql_present_missing_execution_keys",
+      "should_pass": false,
+      "payload": {
+        "session_id": "s1",
+        "sql": "SELECT 1",
+        "used_sql": true,
+        "enhancement": { "enabled": true, "applied": [] }
+      }
+    },
+    {
+      "id": "used_sql_truthy_non_boolean",
+      "should_pass": false,
+      "payload": {
+        "session_id": "s1",
+        "used_sql": 1,
+        "enhancement": { "enabled": true, "applied": [] }
+      }
+    },
+    {
+      "id": "enhancement_enabled_not_boolean",
+      "should_pass": false,
+      "payload": {
+        "session_id": "s1",
+        "used_sql": false,
+        "refusal": true,
+        "enhancement": { "enabled": "true", "applied": [] }
+      }
+    },
+    {
+      "id": "valid_scope_metadata",
+      "should_pass": true,
+      "payload": {
+        "session_id": "s-scope",
+        "used_sql": false,
+        "refusal": true,
+        "enhancement": { "enabled": false, "applied": [] },
+        "scope": { "in_scope": false, "reason": "off-topic", "source": "heuristic" }
+      }
+    },
+    {
+      "id": "invalid_scope_source",
+      "should_pass": false,
+      "payload": {
+        "session_id": "s-scope",
+        "used_sql": false,
+        "refusal": true,
+        "enhancement": { "enabled": false, "applied": [] },
+        "scope": { "in_scope": false, "reason": "off-topic", "source": "unknown" }
+      }
+    },
+    {
+      "id": "invalid_vector_skipped_reason",
+      "should_pass": false,
+      "payload": {
+        "session_id": "s1",
+        "used_sql": true,
+        "sql": "SELECT 1",
+        "database_id": "default",
+        "row_count": 1,
+        "execution_time_ms": 1.0,
+        "truncated": false,
+        "warnings": [],
+        "repair_attempts": 0,
+        "enhancement": {
+          "enabled": true,
+          "applied": [],
+          "vector_skipped_reason": "bad_reason"
+        }
+      }
+    }
+  ]
+}

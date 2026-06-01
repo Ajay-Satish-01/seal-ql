@@ -1,29 +1,22 @@
 import { formatApiError } from '@/lib/api-error';
+import type { ChatMetadata, ChatStreamMeta, ColumnDescriptor } from '@/lib/execution-metadata';
 import { flushSseRemainder, splitSseBuffer, type SseParseResult } from '@/lib/sse-parse';
+import { mapChatSseEvent, type ChatStreamEvent } from '@seal/chat-sse-events';
+
+export type { ChatMetadata, ChatStreamMeta, ColumnDescriptor, EnhancementMetadata } from '@/lib/execution-metadata';
+
+export type { ChatStreamEvent };
 
 export interface ChatApiResponse {
   session_id: string;
   message: string;
   sources?: string[];
   sql?: string | null;
-  results?: Record<string, unknown>[] | null;
+  results?: ReadonlyArray<Record<string, unknown>> | null;
   chart?: Record<string, unknown> | null;
-  columns?: Array<{ name: string; type: string }> | null;
-  metadata?: Record<string, unknown>;
+  columns?: ReadonlyArray<ColumnDescriptor> | null;
+  metadata?: ChatMetadata;
 }
-
-export interface ChatStreamMeta {
-  session_id: string;
-  sources?: string[];
-  sql?: string | null;
-  chart?: Record<string, unknown> | null;
-  enhancement?: Record<string, unknown>;
-}
-
-export type ChatStreamEvent =
-  | { type: 'meta'; data: ChatStreamMeta }
-  | { type: 'delta'; content: string }
-  | { type: 'done' };
 
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/+$/, '');
@@ -63,11 +56,9 @@ export async function postChat(
 }
 
 function mapSseEvent(event: SseParseResult): ChatStreamEvent | null {
-  if (event.kind === 'meta') {
-    return { type: 'meta', data: event.data as unknown as ChatStreamMeta };
+  if (event.kind === 'meta' || event.kind === 'delta' || event.kind === 'done') {
+    return mapChatSseEvent(event);
   }
-  if (event.kind === 'delta') return { type: 'delta', content: event.content };
-  if (event.kind === 'done') return { type: 'done' };
   return null;
 }
 

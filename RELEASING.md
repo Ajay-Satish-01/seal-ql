@@ -13,8 +13,12 @@ Published artifacts per release:
 1. Bump versions in lockstep:
    - `sdks/python/pyproject.toml`
    - `sdks/typescript/package.json`
-   - `apps/api/pyproject.toml` (and regenerate OpenAPI if the API surface changed)
-2. Run `make sync-docs-assets` when OpenAPI or demo fixtures changed; commit `apps/docs` copies.
+   - `apps/api/pyproject.toml`
+2. If the API surface changed (`apps/api/app/schemas.py`, route models, or `scripts/generate_openapi.py` injections):
+   - `make openapi-ts`
+   - `make sync-docs-assets` when demo fixtures or docs copies need refresh
+   - Commit `apps/api/openapi.{json,yaml}`, `apps/docs/src/data/openapi.json`, `apps/docs/public/openapi.json`, and `sdks/typescript/src/generated/openapi.ts`
+   - `make verify-openapi-sync` must pass (also enforced in CI `python-lint` and `package-check`)
 3. Run `make check` locally.
 4. Configure GitHub repository secrets:
 

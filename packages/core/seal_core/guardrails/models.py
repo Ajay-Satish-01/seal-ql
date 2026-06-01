@@ -19,6 +19,10 @@ class ScopeCategory(StrEnum):
 
 ScopeConfidence = Literal["high", "medium", "low"]
 
+ScopeSource = Literal["heuristic", "llm", "limits", "disabled"]
+
+GuardrailsChannel = Literal["query", "chat"]
+
 
 class ScopeDecision(BaseModel):
     """LLM scope classification result."""
@@ -45,9 +49,29 @@ class ScopeResult(BaseModel):
 
     in_scope: bool
     reason: str = ""
-    source: str = Field(
+    source: ScopeSource = Field(
         default="heuristic",
-        description="heuristic | llm | limits | disabled",
+        description="How scope was determined: heuristic, llm, limits, or disabled.",
     )
     category: ScopeCategory | None = None
     confidence: ScopeConfidence | None = None
+
+
+class ScopeMetadata(BaseModel):
+    """Scope decision embedded in chat metadata and SSE ``seal.meta``."""
+
+    in_scope: bool
+    reason: str | None = None
+    source: ScopeSource
+    category: ScopeCategory | None = None
+    confidence: ScopeConfidence | None = None
+
+    @classmethod
+    def from_result(cls, result: ScopeResult) -> ScopeMetadata:
+        return cls(
+            in_scope=result.in_scope,
+            reason=result.reason,
+            source=result.source,
+            category=result.category,
+            confidence=result.confidence,
+        )

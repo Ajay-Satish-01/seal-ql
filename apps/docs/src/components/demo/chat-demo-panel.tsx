@@ -3,6 +3,7 @@
 import type { ChatApiResponse } from '@/lib/chat-api';
 import { Badge } from '@/components/ui/badge';
 import { CodeBlock } from '@/components/code-block';
+import { MetadataJsonPreview } from '@/components/demo/metadata-json-preview';
 import { ChartPanel } from './chart-panel';
 import type { ChartSpec } from 'seal';
 
@@ -53,6 +54,8 @@ export function ChatDemoPanel({ message, response }: ChatDemoPanelProps) {
           <ChartPanel chart={chart} results={results} />
         </div>
       ) : null}
+
+      <MetadataJsonPreview metadata={response.metadata} />
     </div>
   );
 }

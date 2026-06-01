@@ -21,9 +21,10 @@ description: Step-by-step workflow for spinning up the local environment, seedin
 
 5. **Run Validations**
    - `pre-commit run --all-files`
+   - If you changed `apps/api/app/schemas.py` or metadata fields: `make openapi-ts` and `make verify-openapi-sync`
 
 6. **Run Test Suite**
-   - `uv run pytest -v`
+   - `uv run pytest -v` (or `make check` for the full CI mirror including metadata contract scripts)
 
 7. **Smoke-test chat (API running, key from `.env`)**
    ```bash

@@ -34,7 +34,9 @@ Optional frontend env vars can be added in the Vercel dashboard.
 
 The **query demo** uses static fixtures by default. The **chat panels** on `/demo` call a live API when the user sets base URL and API key in the UI — no server env required for static doc pages.
 
-Chat and catalog documentation is fully static; OpenAPI is copied from `apps/api` during `make sync-docs-assets`.
+Chat and catalog documentation is fully static; OpenAPI is copied from `apps/api` during `make sync-docs-assets` (run `make openapi-ts` first when API schemas change so docs and the linked SDK share the same spec).
+
+The linked TypeScript SDK runs `prebuild` (vendors `shared/` for SSE validation) then `tsc`. Wire types live in committed `sdks/typescript/src/generated/openapi.ts` (regenerated via `make openapi-ts`, enforced by `make verify-openapi-sync` in CI).
 
 ## Custom domain
 

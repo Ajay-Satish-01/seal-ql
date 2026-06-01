@@ -29,8 +29,9 @@ AI-powered SQL generation, validation, and visualization with **schema-grounded 
 | `docs/how-seal-works.md` | Contributor pipeline + LLM stage reference |
 | `packages/sql/` | AST validation |
 | `packages/charts/` | Vega-Lite specs |
-| `config/` | `catalog.example.yaml`, `seal-tools.openai.json` |
-| `sdks/python`, `sdks/typescript` | Client SDKs |
+| `config/` | `catalog.example.yaml`, `seal-tools.openai.json`, `stream_meta_metadata_keys.json` |
+| `shared/` | `stream-meta.ts`, `metadata-contract.ts`, `chat-sse-events.ts` (docs + dashboard; vendored into TS SDK) |
+| `sdks/python`, `sdks/typescript` | Client SDKs (`typescript`: OpenAPI-generated `src/generated/openapi.ts`) |
 
 ## 📋 Standard Operating Procedures
 
@@ -43,6 +44,7 @@ AI-powered SQL generation, validation, and visualization with **schema-grounded 
 ### TypeScript
 
 - SDK: `cd sdks/typescript && pnpm install`
+- After API schema changes: `make openapi-ts` then `make verify-openapi-sync`; commit `src/generated/openapi.ts` and OpenAPI copies
 - Docs app: `make check-docs` or `cd apps/docs && pnpm build`
 - Dashboard: `make check-dashboard` or `cd apps/web && pnpm build`
 
@@ -56,10 +58,11 @@ AI-powered SQL generation, validation, and visualization with **schema-grounded 
 
 - Preserve user descriptions on catalog re-sync (merge, do not overwrite `table_description`)
 - Default `VECTOR_STORE=none`; Chroma only via optional extra
-- Chat streaming: `seal.meta` event then OpenAI-style chunks, then `[DONE]`
+- Chat streaming: flat JSON in `seal.meta`, then token deltas, then `[DONE]`; invalid meta → client `meta_error` (see `docs/chat-metadata.md`)
+- Execution metadata: keep Python `validate_metadata.py`, `config/stream_meta_metadata_keys.json`, and `shared/*` in sync
 
 ### Code generation rules
 
 - **Safety**: Block destructive SQL; enforce LIMIT
-- **Types**: Pydantic + strict Python hints; TS types mirror OpenAPI
-- **Docs**: Update README, SETUP, DEPLOYMENT, AGENTS.md, `docs/*.md`, and `apps/docs` pages when adding API surface
+- **Types**: Pydantic in `apps/api/app/schemas.py` → `make openapi` / `make openapi-ts`; do not hand-edit SDK `types.ts` field lists
+- **Docs**: Update README, SETUP, DEPLOYMENT, AGENTS.md, `docs/*.md` (especially `docs/chat-metadata.md`), and `apps/docs` pages when adding API surface or metadata fields

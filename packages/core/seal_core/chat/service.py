@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any
 
 import litellm
@@ -18,10 +18,16 @@ from seal_core.chat.retriever import ContextRetriever
 from seal_core.database.config import DEFAULT_DATABASE_ID, planner_resources_for_database
 from seal_core.database.registry import UnknownDatabaseError
 from seal_core.enhancement.context import EnhancementContext
+from seal_core.guardrails.models import ScopeMetadata, ScopeResult
 from seal_core.guardrails.prompts import LIMIT_REFUSAL_MESSAGE, REFUSAL_SYSTEM
 from seal_core.guardrails.scope import classify_scope
 from seal_core.llm.client import get_api_base, get_api_key, get_async_client, get_model
 from seal_core.pipeline.execute import ExecuteQueryResult, execute_natural_language_query
+from seal_core.pipeline.models import build_chat_metadata, build_stream_meta_event
+from seal_core.pipeline.validate_metadata import (
+    enforce_nested_chat_metadata,
+    enforce_stream_meta_validation,
+)
 from seal_core.settings import get_settings
 
 if TYPE_CHECKING:
@@ -35,6 +41,18 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _serialize_columns(columns: list[Any] | None) -> list[dict[str, Any]] | None:
+    if columns is None:
+        return None
+    serialized: list[dict[str, Any]] = []
+    for col in columns:
+        if hasattr(col, "model_dump"):
+            serialized.append(col.model_dump())
+        else:
+            serialized.append(asdict(col))
+    return serialized
+
+
 @dataclass
 class TurnContext:
     session_id: str
@@ -44,6 +62,7 @@ class TurnContext:
     user_message: str
     metadata: dict[str, Any]
     enhancement_enabled: bool
+    enhancement_requested: bool = False
     database_id: str = DEFAULT_DATABASE_ID
 
 
@@ -224,8 +243,18 @@ class ChatService:
             user_message=message,
             metadata={"database_id": database_id},
             enhancement_enabled=enh_on and self._orchestrator is not None,
+            enhancement_requested=enh_on,
             database_id=database_id,
         )
+
+    def _enhancement_metadata_kwargs(self, ctx: TurnContext) -> dict[str, bool]:
+        return {
+            "vector_rag_available": (
+                self._orchestrator.vector_rag_available() if self._orchestrator else False
+            ),
+            "enhancement_requested": ctx.enhancement_requested,
+            "orchestrator_available": self._orchestrator is not None,
+        }
 
     def _complete_turn(self, ctx: TurnContext) -> None:
         """Pin database_id after a successful turn."""
@@ -300,22 +329,24 @@ class ChatService:
             preview_rows = turn.exec_result.rows[:50]
             preview_columns = turn.exec_result.columns
 
-        meta_event = {
-            "session_id": ctx.session_id,
-            "sources": ctx.metadata.get("sources", []),
-            "sql": turn.exec_result.sql if turn.exec_result else None,
-            "results": preview_rows,
-            "columns": (
-                [c.model_dump() for c in preview_columns] if preview_columns is not None else None
-            ),
-            "chart": turn.chart.model_dump() if turn.chart is not None else None,
-            "enhancement": {
-                "enabled": ctx.enhancement_enabled,
-                "applied": list(ctx.metadata.get("applied", [])),
-            },
-            "scope": ctx.metadata.get("scope"),
-            "database_id": ctx.database_id,
-        }
+        used_sql = turn.exec_result is not None
+        meta_event = build_stream_meta_event(
+            session_id=ctx.session_id,
+            database_id=ctx.database_id,
+            exec_result=turn.exec_result,
+            used_sql=used_sql,
+            enhancement_enabled=ctx.enhancement_enabled,
+            applied=list(ctx.metadata.get("applied", [])),
+            sources=list(ctx.metadata.get("sources", [])),
+            sql=turn.exec_result.sql if turn.exec_result else None,
+            results=preview_rows,
+            columns=_serialize_columns(preview_columns),
+            chart=turn.chart.model_dump() if turn.chart is not None else None,
+            scope=ctx.metadata.get("scope"),
+            sql_error=bool(turn.meta.get("sql_error")),
+            **self._enhancement_metadata_kwargs(ctx),
+        )
+        enforce_stream_meta_validation(meta_event)
         return f"event: seal.meta\ndata: {json.dumps(meta_event)}\n\n"
 
     async def _run_turn(self, ctx: TurnContext, *, include_charts: bool) -> ChatResult:
@@ -337,10 +368,27 @@ class ChatService:
         )
 
         preview = None
-        columns = None
+        columns: list[dict[str, Any]] | None = None
         if turn.exec_result:
             preview = turn.exec_result.rows[:50]
-            columns = turn.exec_result.columns
+            columns = _serialize_columns(turn.exec_result.columns)
+
+        # True only when SQL executed successfully; sql_error turns keep used_sql False.
+        used_sql = turn.exec_result is not None
+        metadata = build_chat_metadata(
+            database_id=ctx.database_id,
+            exec_result=turn.exec_result,
+            used_sql=used_sql,
+            enhancement_enabled=ctx.enhancement_enabled,
+            applied=list(ctx.metadata.get("applied", [])),
+            scope=ctx.metadata.get("scope"),
+            sql_error=bool(turn.meta.get("sql_error")),
+            **self._enhancement_metadata_kwargs(ctx),
+        )
+        enforce_nested_chat_metadata(
+            metadata,
+            sql=turn.exec_result.sql if turn.exec_result else None,
+        )
 
         return ChatResult(
             session_id=ctx.session_id,
@@ -350,32 +398,27 @@ class ChatService:
             results=preview,
             columns=columns,
             chart=turn.chart,
-            metadata={
-                "used_sql": turn.exec_result is not None,
-                "repair_attempts": turn.exec_result.repair_attempts if turn.exec_result else 0,
-                "enhancement": turn.meta,
-                "scope": ctx.metadata.get("scope"),
-                "database_id": ctx.database_id,
-            },
+            metadata=metadata,
         )
 
     async def _scope_gate(self, ctx: TurnContext):
         scope = await classify_scope(ctx.user_message, channel="chat")
-        ctx.metadata["scope"] = {
-            "in_scope": scope.in_scope,
-            "reason": scope.reason,
-            "source": scope.source,
-        }
+        ctx.metadata["scope"] = ScopeMetadata.from_result(scope).model_dump(exclude_none=True)
         return scope
 
-    async def _refusal_turn(self, ctx: TurnContext, scope) -> ChatResult:
-        metadata = {
-            "used_sql": False,
-            "scope": ctx.metadata.get("scope"),
-            "refusal": True,
-            "database_id": ctx.database_id,
-        }
-        if getattr(scope, "source", None) == "limits":
+    async def _refusal_turn(self, ctx: TurnContext, scope: ScopeResult) -> ChatResult:
+        metadata = build_chat_metadata(
+            database_id=ctx.database_id,
+            exec_result=None,
+            used_sql=False,
+            enhancement_enabled=False,
+            applied=[],
+            scope=ctx.metadata.get("scope"),
+            refusal=True,
+            **self._enhancement_metadata_kwargs(ctx),
+        )
+        enforce_nested_chat_metadata(metadata, sql=None)
+        if scope.source == "limits":
             return ChatResult(
                 session_id=ctx.session_id,
                 message=LIMIT_REFUSAL_MESSAGE,
@@ -401,15 +444,23 @@ class ChatService:
 
     async def _refusal_stream(self, ctx: TurnContext, scope) -> AsyncIterator[str]:
         result = await self._refusal_turn(ctx, scope)
-        meta_event = {
-            "session_id": ctx.session_id,
-            "sources": [],
-            "sql": None,
-            "chart": None,
-            "enhancement": {"enabled": False, "applied": []},
-            "scope": ctx.metadata.get("scope"),
-            "database_id": ctx.database_id,
-        }
+        meta_event = build_stream_meta_event(
+            session_id=ctx.session_id,
+            database_id=ctx.database_id,
+            exec_result=None,
+            used_sql=False,
+            enhancement_enabled=False,
+            applied=[],
+            sources=[],
+            sql=None,
+            results=None,
+            columns=None,
+            chart=None,
+            scope=ctx.metadata.get("scope"),
+            refusal=True,
+            **self._enhancement_metadata_kwargs(ctx),
+        )
+        enforce_stream_meta_validation(meta_event)
         yield f"event: seal.meta\ndata: {json.dumps(meta_event)}\n\n"
         payload = {
             "object": "chat.completion.chunk",

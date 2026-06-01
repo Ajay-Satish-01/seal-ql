@@ -87,6 +87,9 @@ test-sdk: ## Run TS SDK tests locally
 openapi: ## Generate OpenAPI json/yaml spec
 	uv run python scripts/generate_openapi.py
 
+openapi-ts: openapi ## Generate TypeScript types from OpenAPI (SDK)
+	cd sdks/typescript && pnpm install --frozen-lockfile && pnpm run generate:api-types
+
 sync-catalog: ## Sync data catalog YAML from live database schema
 	uv run python scripts/sync_catalog.py
 
@@ -103,13 +106,15 @@ sync-docs-assets: openapi docs-fixtures ## Copy seed.sql and OpenAPI into docs s
 	cp -f config/catalog.example.yaml apps/docs/public/config/catalog.example.yaml
 	@echo "✅ Synced docs assets (seed.sql, openapi.json, seal-tools, catalog.example)"
 
-verify-openapi-sync: openapi ## Fail if committed OpenAPI copies differ from generated
+verify-openapi-sync: openapi-ts ## Fail if committed OpenAPI + SDK types differ from generated
+	@test -f sdks/typescript/src/generated/openapi.ts || (echo "❌ Missing sdks/typescript/src/generated/openapi.ts — run: make openapi-ts" && exit 1)
 	cp apps/api/openapi.json apps/docs/src/data/openapi.json
 	cp apps/api/openapi.json apps/docs/public/openapi.json
 	@git diff --exit-code apps/api/openapi.json apps/api/openapi.yaml \
 		apps/docs/src/data/openapi.json apps/docs/public/openapi.json \
-		|| (echo "\n❌ OpenAPI out of sync. Run: make sync-docs-assets" && exit 1)
-	@echo "✅ OpenAPI copies are in sync"
+		sdks/typescript/src/generated/openapi.ts \
+		|| (echo "\n❌ OpenAPI out of sync. Run: make sync-docs-assets && make openapi-ts" && exit 1)
+	@echo "✅ OpenAPI spec, docs copies, and SDK openapi-typescript output are in sync"
 
 validate-query: ## Validate live POST /v1/query (ARGS="base_url query")
 	uv run python scripts/validate_query_response.py $(ARGS)
@@ -157,8 +162,9 @@ check: ## Run all checks (lint + format check + tests) — same as CI
 		--ignore=sdks/python/tests/test_sdk_e2e.py \
 		--ignore=apps/api/tests/test_e2e.py \
 		--ignore=apps/api/tests/test_catalog_workspace_integration.py
-	@echo "\n📋 5/9 — Demo fixture validation..."
-	uv run pytest tests/test_response_validation.py -v --tb=short
+	@echo "\n📋 5/9 — Demo fixture & metadata contract validation..."
+	uv run pytest tests/test_response_validation.py packages/core/tests/test_chat_flatten_contract.py -v --tb=short
+	cd apps/docs && pnpm run verify:chat-flatten && pnpm run verify:stream-meta
 	@echo "\n📋 6/9 — OpenAPI docs sync..."
 	$(MAKE) verify-openapi-sync
 	@echo "\n📋 7/10 — Docs app build..."
