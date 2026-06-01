@@ -9,5 +9,6 @@
   "enhancement",
   "scope",
   "refusal",
-  "sql_error"
+  "sql_error",
+  "suggested_queries"
 ]

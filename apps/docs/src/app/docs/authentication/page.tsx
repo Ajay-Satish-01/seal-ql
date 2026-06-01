@@ -117,7 +117,8 @@ SEAL_DISABLE_DOCS=true`}
           <strong>LLM guardrails</strong> — Every <code>POST /v1/query</code> and{' '}
           <code>POST /v1/chat</code> request passes a scope gate (input limits, heuristics, and an
           LLM classifier). Analytics and schema/catalog questions stay in scope; off-topic prompts
-          get a chat refusal (HTTP 200) or <code>query_out_of_scope</code> (HTTP 400). Configure via{' '}
+          get a chat refusal (HTTP 200, <code>metadata.suggested_queries</code>) or structured{' '}
+          <code>query_out_of_scope</code> (HTTP 400). Configure via{' '}
           <code>GUARDRAILS_*</code> and <code>MAX_*_CHARS</code> in <code>.env</code>, or hot-reload
           from the dashboard Settings page in dev. Full guide:{' '}
           <Link href="/docs/guardrails">Guardrails</Link>.

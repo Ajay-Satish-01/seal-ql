@@ -24,6 +24,7 @@ export {
   SealConnectionError,
   ConnectionError,
   QueryError,
+  QueryOutOfScopeError,
   ServerError,
 } from './errors.js';
 export type {
@@ -44,6 +45,8 @@ export type {
   QueryMetadata,
   QueryRequest,
   QueryResponse,
+  QueryOutOfScopeDetail,
+  QueryOutOfScopeErrorResponse,
   SchemaColumn,
   SchemaTable,
   TableSchema,

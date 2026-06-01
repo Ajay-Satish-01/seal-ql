@@ -90,6 +90,30 @@ def test_metric_card_empty_vega() -> None:
     assert not validate_query_response(payload)
 
 
+def test_chat_refusal_with_suggested_queries_validates() -> None:
+    payload = {
+        "session_id": "s-refusal",
+        "message": "I only answer data questions.",
+        "metadata": {
+            "database_id": "default",
+            "row_count": 0,
+            "execution_time_ms": 0,
+            "truncated": False,
+            "warnings": [],
+            "repair_attempts": 0,
+            "used_sql": False,
+            "enhancement": {"enabled": False, "applied": []},
+            "scope": {"in_scope": False, "reason": "off-topic", "source": "heuristic"},
+            "refusal": True,
+            "suggested_queries": [
+                "Show order count by month",
+                "What tables are available?",
+            ],
+        },
+    }
+    assert not validate_chat_response(payload)
+
+
 def test_chat_response_with_sql_metadata_validates() -> None:
     payload = {
         "session_id": "s1",

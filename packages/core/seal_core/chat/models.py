@@ -22,6 +22,11 @@ class ChatDecision(BaseModel):
 
 class ChatAnswer(BaseModel):
     message: str = Field(..., description="Natural language answer for the user.")
+    suggested_queries: list[str] = Field(
+        default_factory=list,
+        max_length=3,
+        description="Up to three example in-scope data questions.",
+    )
 
 
 class ChatResponsePlan(BaseModel):

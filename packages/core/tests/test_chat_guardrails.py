@@ -197,6 +197,9 @@ async def test_refusal_metadata_includes_database_id_and_does_not_pin() -> None:
     assert result.metadata["database_id"] == "analytics"
     assert result.metadata["refusal"] is True
     assert result.metadata["used_sql"] is False
+    suggestions = result.metadata.get("suggested_queries")
+    assert isinstance(suggestions, list)
+    assert 0 < len(suggestions) <= 3
 
 
 def test_handle_stream_rejects_mismatched_database_id_synchronously() -> None:

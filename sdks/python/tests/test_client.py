@@ -9,6 +9,7 @@ import pytest
 from seal import (
     AsyncSeal,
     QueryError,
+    QueryOutOfScopeError,
     Seal,
     ServerError,
 )
@@ -96,6 +97,46 @@ class TestSyncClient:
 
         with pytest.raises(QueryError, match="Validation failed"):
             client.query("bad query")
+        client.close()
+
+    def test_query_out_of_scope_structured_detail(self):
+        body = {
+            "detail": {
+                "detail": "query_out_of_scope",
+                "reason": "off-topic pattern",
+                "suggested_queries": ["Show order count by month"],
+            }
+        }
+        transport = httpx.MockTransport(_mock_transport(400, body))
+        client = Seal.__new__(Seal)
+        client._base_url = "http://testserver"
+        client._client = httpx.Client(base_url="http://testserver", transport=transport)
+
+        with pytest.raises(QueryOutOfScopeError) as exc_info:
+            client.query("write me a poem")
+        err = exc_info.value
+        assert err.reason == "off-topic pattern"
+        assert err.suggested_queries == ["Show order count by month"]
+        assert "out of scope" in str(err).lower()
+        client.close()
+
+    def test_chat_session_mismatch_structured_detail(self):
+        body = {
+            "detail": {
+                "code": "session_database_id_mismatch",
+                "message": "Session 's1' is pinned to database_id 'default'; got 'analytics'",
+                "session_id": "s1",
+                "pinned_database_id": "default",
+                "requested_database_id": "analytics",
+            }
+        }
+        transport = httpx.MockTransport(_mock_transport(400, body))
+        client = Seal.__new__(Seal)
+        client._base_url = "http://testserver"
+        client._client = httpx.Client(base_url="http://testserver", transport=transport)
+
+        with pytest.raises(QueryError, match="pinned to database_id"):
+            client.chat("follow up", session_id="s1", database_id="analytics")
         client.close()
 
     def test_server_error_500(self):
@@ -195,6 +236,45 @@ class TestAsyncClient:
 
         with pytest.raises(QueryError, match="Validation failed"):
             await client.query("bad query")
+        await client.close()
+
+    @pytest.mark.asyncio
+    async def test_query_out_of_scope_structured_detail(self):
+        body = {
+            "detail": {
+                "detail": "query_out_of_scope",
+                "reason": "off-topic pattern",
+                "suggested_queries": ["What tables are available?"],
+            }
+        }
+        transport = httpx.MockTransport(_mock_transport(400, body))
+        client = AsyncSeal.__new__(AsyncSeal)
+        client._base_url = "http://testserver"
+        client._client = httpx.AsyncClient(base_url="http://testserver", transport=transport)
+
+        with pytest.raises(QueryOutOfScopeError) as exc_info:
+            await client.query("write me a poem")
+        assert exc_info.value.suggested_queries == ["What tables are available?"]
+        await client.close()
+
+    @pytest.mark.asyncio
+    async def test_chat_session_mismatch_structured_detail(self):
+        body = {
+            "detail": {
+                "code": "session_database_id_mismatch",
+                "message": "Session 's1' is pinned to database_id 'default'; got 'analytics'",
+                "session_id": "s1",
+                "pinned_database_id": "default",
+                "requested_database_id": "analytics",
+            }
+        }
+        transport = httpx.MockTransport(_mock_transport(400, body))
+        client = AsyncSeal.__new__(AsyncSeal)
+        client._base_url = "http://testserver"
+        client._client = httpx.AsyncClient(base_url="http://testserver", transport=transport)
+
+        with pytest.raises(QueryError, match="pinned to database_id"):
+            await client.chat("follow up", session_id="s1", database_id="analytics")
         await client.close()
 
     @pytest.mark.asyncio

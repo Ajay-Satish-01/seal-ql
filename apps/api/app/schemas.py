@@ -2,7 +2,7 @@
 
 from typing import Any, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_serializer, model_validator
 from seal_charts.models import ChartSpec
 from seal_core.guardrails.models import ScopeMetadata
 from seal_core.pipeline.models import EnhancementMetadata, ExecutionMetadata
@@ -17,6 +17,27 @@ DATABASE_ID_FIELD = Field(
     min_length=1,
     description="Registered database identifier (default: 'default').",
 )
+
+
+class QueryOutOfScopeDetail(BaseModel):
+    """Structured HTTP 400 body when guardrails reject ``POST /v1/query``."""
+
+    detail: str = Field(
+        default="query_out_of_scope",
+        description="Error code for programmatic clients.",
+    )
+    reason: str = Field(default="", description="Short classification reason.")
+    suggested_queries: list[str] = Field(
+        default_factory=list,
+        max_length=3,
+        description="Up to three example in-scope data questions.",
+    )
+
+
+class QueryOutOfScopeErrorResponse(BaseModel):
+    """FastAPI error envelope for guardrails rejections on ``POST /v1/query``."""
+
+    detail: QueryOutOfScopeDetail
 
 
 class QueryRequest(BaseModel):
@@ -47,6 +68,18 @@ class ChatMetadata(QueryMetadata):
     )
     refusal: bool | None = Field(None, description="True when the turn was refused.")
     sql_error: bool | None = Field(None, description="True when SQL execution failed.")
+    suggested_queries: list[str] | None = Field(
+        None,
+        max_length=3,
+        description="Example in-scope data questions on guardrails refusal.",
+    )
+
+    @model_serializer(mode="wrap")
+    def _omit_null_suggested_queries(self, handler: Any) -> dict[str, Any]:
+        data = handler(self)
+        if data.get("suggested_queries") is None:
+            data.pop("suggested_queries", None)
+        return data
 
 
 class QueryResponse(BaseModel):
@@ -144,7 +177,7 @@ class ChatRequest(BaseModel):
         return self
 
 
-class ChatStreamMeta(QueryMetadata):
+class ChatStreamMeta(ChatMetadata):
     """Flat JSON on the ``data:`` line of the ``seal.meta`` SSE event (stream=true)."""
 
     session_id: str = Field(..., description="Conversation session id.")
@@ -153,10 +186,6 @@ class ChatStreamMeta(QueryMetadata):
     results: list[dict[str, Any]] | None = Field(None, description="Truncated result preview.")
     columns: list[ColumnMetadata] | None = Field(None, description="Column metadata.")
     chart: ChartSpec | None = Field(None, description="Chart when include_charts and SQL ran.")
-    enhancement: EnhancementInfo = Field(default_factory=EnhancementInfo)
-    scope: ScopeMetadata | None = Field(None, description="Guardrails scope decision.")
-    refusal: bool | None = Field(None, description="True when the turn was refused.")
-    sql_error: bool | None = Field(None, description="True when SQL execution failed.")
 
 
 class ChatResponse(BaseModel):

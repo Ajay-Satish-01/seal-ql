@@ -15,7 +15,7 @@ For the live API console (Query, Chat, Catalog, Settings, Vector), use **`apps/w
 | `/docs/execution-metadata` | Query/chat execution metadata (JSON + SSE) |
 | `/docs/data-catalog` | Global YAML catalog sync |
 | `/docs/prompt-enhancement` | Enhancer chain |
-| `/docs/guardrails` | Scope gate / abuse protection |
+| `/docs/guardrails` | Scope gate, refusals, `suggested_queries`, structured query 400 |
 | `/docs/zero-trust-sql` | SQLGlot validator + sanitizer boundary |
 | `/docs/workspace` | Postgres workspace settings |
 | `/docs/vector-rag` | Chroma / custom vector stores |
@@ -34,7 +34,7 @@ pnpm run verify:chat-flatten    # tests/fixtures/chat_flatten_golden.json
 pnpm run verify:stream-meta     # stream_meta_validation_matrix.json parity
 ```
 
-Demo and doc pages import `shared/stream-meta.ts` and `shared/chat-sse-events.ts` for SSE parsing (same behavior as the dashboard). Execution field enums and `ScopeMetadata` are documented on `/docs/execution-metadata` and in repo [docs/chat-metadata.md](../../docs/chat-metadata.md).
+Demo and doc pages import `shared/stream-meta.ts`, `shared/chat-sse-events.ts`, and `shared/api-error.ts` for SSE parsing and API error messages (same behavior as the dashboard). Execution field enums, `ScopeMetadata`, and `suggested_queries` on refusals are documented on `/docs/execution-metadata` and in repo [docs/chat-metadata.md](../../docs/chat-metadata.md).
 
 ## Development
 

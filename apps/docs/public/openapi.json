@@ -174,6 +174,26 @@
               }
             }
           },
+          "400": {
+            "description": "Guardrails rejected the query (out of scope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryOutOfScopeErrorResponse"
+                },
+                "example": {
+                  "detail": {
+                    "detail": "query_out_of_scope",
+                    "reason": "off-topic pattern",
+                    "suggested_queries": [
+                      "Show order count by month",
+                      "What tables are available?"
+                    ]
+                  }
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -759,86 +779,8 @@
         "title": "ChatMessageSchema"
       },
       "ChatMetadata": {
-        "properties": {
-          "database_id": {
-            "type": "string",
-            "title": "Database Id",
-            "default": "default"
-          },
-          "row_count": {
-            "type": "integer",
-            "title": "Row Count",
-            "default": 0
-          },
-          "execution_time_ms": {
-            "type": "number",
-            "title": "Execution Time Ms",
-            "default": 0
-          },
-          "truncated": {
-            "type": "boolean",
-            "title": "Truncated",
-            "default": false
-          },
-          "warnings": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Warnings"
-          },
-          "repair_attempts": {
-            "type": "integer",
-            "title": "Repair Attempts",
-            "default": 0
-          },
-          "used_sql": {
-            "type": "boolean",
-            "title": "Used Sql",
-            "default": false
-          },
-          "enhancement": {
-            "$ref": "#/components/schemas/EnhancementInfo"
-          },
-          "scope": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ScopeMetadata"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Guardrails scope decision when classified."
-          },
-          "refusal": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Refusal",
-            "description": "True when the turn was refused."
-          },
-          "sql_error": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sql Error",
-            "description": "True when SQL execution failed."
-          }
-        },
-        "type": "object",
-        "title": "ChatMetadata",
-        "description": "Execution + enhancement metadata on /v1/chat JSON responses."
+        "additionalProperties": true,
+        "type": "object"
       },
       "ChatRequest": {
         "properties": {
@@ -1878,162 +1820,48 @@
         "title": "WorkspaceStorageInfo"
       },
       "ChatStreamMeta": {
-        "description": "Flat JSON on the ``data:`` line of the ``seal.meta`` SSE event (stream=true).",
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "QueryOutOfScopeDetail": {
+        "description": "Structured HTTP 400 body when guardrails reject ``POST /v1/query``.",
         "properties": {
-          "database_id": {
-            "default": "default",
-            "title": "Database Id",
+          "detail": {
+            "default": "query_out_of_scope",
+            "description": "Error code for programmatic clients.",
+            "title": "Detail",
             "type": "string"
           },
-          "row_count": {
-            "default": 0,
-            "title": "Row Count",
-            "type": "integer"
+          "reason": {
+            "default": "",
+            "description": "Short classification reason.",
+            "title": "Reason",
+            "type": "string"
           },
-          "execution_time_ms": {
-            "default": 0,
-            "title": "Execution Time Ms",
-            "type": "number"
-          },
-          "truncated": {
-            "default": false,
-            "title": "Truncated",
-            "type": "boolean"
-          },
-          "warnings": {
+          "suggested_queries": {
+            "description": "Up to three example in-scope data questions.",
             "items": {
               "type": "string"
             },
-            "title": "Warnings",
+            "maxItems": 3,
+            "title": "Suggested Queries",
             "type": "array"
-          },
-          "repair_attempts": {
-            "default": 0,
-            "title": "Repair Attempts",
-            "type": "integer"
-          },
-          "used_sql": {
-            "default": false,
-            "title": "Used Sql",
-            "type": "boolean"
-          },
-          "session_id": {
-            "description": "Conversation session id.",
-            "title": "Session Id",
-            "type": "string"
-          },
-          "sources": {
-            "description": "Tables used in context.",
-            "items": {
-              "type": "string"
-            },
-            "title": "Sources",
-            "type": "array"
-          },
-          "sql": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Executed SQL when data was queried.",
-            "title": "Sql"
-          },
-          "results": {
-            "anyOf": [
-              {
-                "items": {
-                  "additionalProperties": true,
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Truncated result preview.",
-            "title": "Results"
-          },
-          "columns": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/ColumnMetadata"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Column metadata.",
-            "title": "Columns"
-          },
-          "chart": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ChartSpec"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Chart when include_charts and SQL ran."
-          },
-          "enhancement": {
-            "$ref": "#/components/schemas/EnhancementInfo"
-          },
-          "scope": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ScopeMetadata"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Guardrails scope decision."
-          },
-          "refusal": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "True when the turn was refused.",
-            "title": "Refusal"
-          },
-          "sql_error": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "True when SQL execution failed.",
-            "title": "Sql Error"
+          }
+        },
+        "title": "QueryOutOfScopeDetail",
+        "type": "object"
+      },
+      "QueryOutOfScopeErrorResponse": {
+        "description": "FastAPI error envelope for guardrails rejections on ``POST /v1/query``.",
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/QueryOutOfScopeDetail"
           }
         },
         "required": [
-          "session_id"
+          "detail"
         ],
-        "title": "ChatStreamMeta",
+        "title": "QueryOutOfScopeErrorResponse",
         "type": "object"
       }
     },

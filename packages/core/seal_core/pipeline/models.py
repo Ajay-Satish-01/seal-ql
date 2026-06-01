@@ -118,6 +118,7 @@ def build_chat_metadata(
     scope: ScopeMetadata | dict[str, Any] | None = None,
     refusal: bool = False,
     sql_error: bool = False,
+    suggested_queries: list[str] | None = None,
     vector_rag_available: bool,
     orchestrator_available: bool,
     enhancement_requested: bool = False,
@@ -143,6 +144,8 @@ def build_chat_metadata(
         )
     if refusal:
         payload["refusal"] = True
+    if suggested_queries:
+        payload["suggested_queries"] = suggested_queries[:3]
     if sql_error:
         payload["sql_error"] = True
     return payload
@@ -164,6 +167,7 @@ def build_stream_meta_event(
     scope: ScopeMetadata | dict[str, Any] | None,
     refusal: bool = False,
     sql_error: bool = False,
+    suggested_queries: list[str] | None = None,
     vector_rag_available: bool,
     orchestrator_available: bool,
     enhancement_requested: bool = False,
@@ -188,6 +192,7 @@ def build_stream_meta_event(
             scope=None,
             refusal=refusal,
             sql_error=sql_error,
+            suggested_queries=suggested_queries,
             vector_rag_available=vector_rag_available,
             enhancement_requested=enhancement_requested,
             orchestrator_available=orchestrator_available,

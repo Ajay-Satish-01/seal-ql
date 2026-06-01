@@ -209,7 +209,8 @@ make sync-catalog`,
             <Link href="/docs/workspace">Workspace settings</Link> — guardrails and limits in Postgres
           </li>
           <li>
-            <Link href="/docs/guardrails">Guardrails</Link> — scope gate before SQL/RAG
+            <Link href="/docs/guardrails">Guardrails</Link> — scope gate, refusals, and in-scope
+            suggestions
           </li>
           <li>
             <Link href="/docs/chat-qa">Chat &amp; Q&A</Link> — sessions, streaming, charts

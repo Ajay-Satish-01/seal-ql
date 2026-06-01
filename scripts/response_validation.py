@@ -15,6 +15,7 @@ from seal_core.pipeline.validate_metadata import (  # noqa: E402
     validate_execution_fields,
     validate_nested_chat_metadata,
     validate_stream_meta_event,
+    validate_suggested_queries,
 )
 
 VEGA_CHART_TYPES = frozenset({"bar", "line", "pie", "scatter", "area"})
@@ -83,6 +84,8 @@ def validate_chat_response(data: dict[str, Any]) -> list[str]:
         sql_value = data.get("sql")
         require_meta = isinstance(sql_value, str) and bool(sql_value.strip())
         errors.extend(validate_nested_chat_metadata(meta, sql_at_top_level=require_meta))
+        if meta.get("refusal") is True and "suggested_queries" in meta:
+            errors.extend(validate_suggested_queries(meta.get("suggested_queries")))
 
     columns = data.get("columns")
     if columns is not None and not isinstance(columns, list):

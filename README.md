@@ -91,7 +91,7 @@ console.log(chat.message, chat.sql);
 * **Modern Tooling & Environments**: Package structures utilizing `uv` workspaces for Python packages/applications, and modern typescript modules using `pnpm`.
 * **Zero-Trust SQL Safety**: SQLGlot-based AST safety checker to block destructive statements and enforce pagination limits.
 * **API Key Authentication**: Shared `X-API-Key` for `/v1/*` with production-safe env validation (`SEAL_AUTH_REQUIRED`, `SEAL_DEV_MODE`, `SEAL_DISABLE_DOCS`).
-* **LLM Guardrails**: Scope gate on `/v1/query` and `/v1/chat` (analytics/schema in-scope; chat refusal, query HTTP 400).
+* **LLM Guardrails**: Scope gate on `/v1/query` and `/v1/chat` — in-scope analytics/schema only; chat returns HTTP 200 with `metadata.suggested_queries` on refusal; query returns HTTP 400 with structured `detail` (`query_out_of_scope`, `reason`, up to three `suggested_queries`). SDKs raise `QueryOutOfScopeError` on query guardrails failures.
 * **Workspace API**: Hot-reload guardrails and chat settings in dev; catalog description overrides; vector reindex.
 * **Automated Evaluations**: Built-in eval runners to measure SQL syntax success, execution rates, and planner repair metrics against DuckDB and TimescaleDB test cases.
 
@@ -260,8 +260,8 @@ pre-commit run --all-files
 
 | Endpoint | Purpose |
 | -------- | ------- |
-| `POST /v1/query` | Natural language → validated SQL, results, chart |
-| `POST /v1/chat` | Conversational Q&A (`session_id`, `include_charts`, `stream`, `enhancement`) |
+| `POST /v1/query` | Natural language → validated SQL, results, chart; guardrails OOS → 400 structured `detail` |
+| `POST /v1/chat` | Conversational Q&A (`session_id`, `include_charts`, `stream`, `enhancement`); OOS → 200 refusal + `metadata.suggested_queries` |
 | `GET /v1/catalog` | Global data catalog (business descriptions) |
 | `POST /v1/catalog/sync` | Re-sync catalog YAML from live schema |
 | `PATCH /v1/catalog/descriptions` | Table/view description overrides |

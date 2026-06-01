@@ -15,9 +15,11 @@ make openapi-ts
 cd sdks/typescript && pnpm run build
 ```
 
-`scripts/generate_openapi.py` injects Pydantic models that appear only in manual route `responses` (for example `ChatStreamMeta` for SSE) so they land in `components/schemas`.
+`scripts/generate_openapi.py` injects Pydantic models that appear only in manual route `responses` (for example `ChatStreamMeta` for SSE and `QueryOutOfScopeErrorResponse` for guardrails 400) so they land in `components/schemas`.
 
 CI enforces this via `make verify-openapi-sync` (committed `src/generated/openapi.ts`; `src/vendor/` is gitignored and copied on `prebuild`).
+
+Public types include `QueryOutOfScopeDetail`, `QueryOutOfScopeErrorResponse`, and `QueryOutOfScopeError` for structured guardrails failures on `client.query()`.
 
 ## Runtime metadata (SSE)
 
@@ -39,3 +41,7 @@ for await (const event of client.chatStream('Summarize last quarter', { includeC
   else if (event.type === 'delta') process.stdout.write(event.content);
 }
 ```
+
+### Guardrails errors
+
+Out-of-scope **query** calls throw `QueryOutOfScopeError` with `reason` and `suggestedQueries` parsed from the API body (`detail.detail === 'query_out_of_scope'`). Out-of-scope **chat** returns HTTP 200; read `response.metadata.suggested_queries` or `event.data.suggested_queries` on the first `seal.meta` event when streaming.

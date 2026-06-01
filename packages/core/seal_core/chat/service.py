@@ -21,6 +21,7 @@ from seal_core.enhancement.context import EnhancementContext
 from seal_core.guardrails.models import ScopeMetadata, ScopeResult
 from seal_core.guardrails.prompts import LIMIT_REFUSAL_MESSAGE, REFUSAL_SYSTEM
 from seal_core.guardrails.scope import classify_scope
+from seal_core.guardrails.suggestions import merge_suggestions, suggest_queries
 from seal_core.llm.client import get_api_base, get_api_key, get_async_client, get_model
 from seal_core.pipeline.execute import ExecuteQueryResult, execute_natural_language_query
 from seal_core.pipeline.models import build_chat_metadata, build_stream_meta_event
@@ -407,6 +408,7 @@ class ChatService:
         return scope
 
     async def _refusal_turn(self, ctx: TurnContext, scope: ScopeResult) -> ChatResult:
+        heuristic = suggest_queries(scope)
         metadata = build_chat_metadata(
             database_id=ctx.database_id,
             exec_result=None,
@@ -415,6 +417,7 @@ class ChatService:
             applied=[],
             scope=ctx.metadata.get("scope"),
             refusal=True,
+            suggested_queries=heuristic,
             **self._enhancement_metadata_kwargs(ctx),
         )
         enforce_nested_chat_metadata(metadata, sql=None)
@@ -436,6 +439,10 @@ class ChatService:
             api_key=self._api_key,
             max_retries=get_settings().llm_max_retries,
         )
+        llm_suggestions = getattr(answer, "suggested_queries", None)
+        final_suggestions = merge_suggestions(heuristic, llm_suggestions)
+        metadata["suggested_queries"] = final_suggestions
+        enforce_nested_chat_metadata(metadata, sql=None)
         return ChatResult(
             session_id=ctx.session_id,
             message=answer.message,  # type: ignore[union-attr]
@@ -444,6 +451,7 @@ class ChatService:
 
     async def _refusal_stream(self, ctx: TurnContext, scope) -> AsyncIterator[str]:
         result = await self._refusal_turn(ctx, scope)
+        suggested = result.metadata.get("suggested_queries")
         meta_event = build_stream_meta_event(
             session_id=ctx.session_id,
             database_id=ctx.database_id,
@@ -458,6 +466,7 @@ class ChatService:
             chart=None,
             scope=ctx.metadata.get("scope"),
             refusal=True,
+            suggested_queries=suggested if isinstance(suggested, list) else None,
             **self._enhancement_metadata_kwargs(ctx),
         )
         enforce_stream_meta_validation(meta_event)

@@ -462,7 +462,8 @@ const chat = await client.chat('Summarize daily_revenue', { databaseId: 'analyti
             <code>session_id</code> or match the pinned id.
           </li>
           <li>
-            <strong>400</strong> <code>query_out_of_scope</code> — guardrails rejected the query
+            <strong>400</strong> structured <code>query_out_of_scope</code> (with{' '}
+            <code>suggested_queries</code>) — guardrails rejected the query
             (unrelated to database routing).
           </li>
         </ul>

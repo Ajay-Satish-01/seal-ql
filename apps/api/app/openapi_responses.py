@@ -29,6 +29,32 @@ AUTH_AND_DATABASE_RESPONSES: dict[int, dict[str, object]] = {
     **UNKNOWN_DATABASE_RESPONSE,
 }
 
+QUERY_OUT_OF_SCOPE_RESPONSE: dict[int, dict[str, object]] = {
+    400: {
+        "description": "Guardrails rejected the query (out of scope)",
+        "content": {
+            "application/json": {
+                "schema": {"$ref": "#/components/schemas/QueryOutOfScopeErrorResponse"},
+                "example": {
+                    "detail": {
+                        "detail": "query_out_of_scope",
+                        "reason": "off-topic pattern",
+                        "suggested_queries": [
+                            "Show order count by month",
+                            "What tables are available?",
+                        ],
+                    }
+                },
+            }
+        },
+    }
+}
+
+QUERY_ENDPOINT_RESPONSES: dict[int, dict[str, object]] = {
+    **AUTH_AND_DATABASE_RESPONSES,
+    **QUERY_OUT_OF_SCOPE_RESPONSE,
+}
+
 CHAT_SUCCESS_RESPONSE: dict[int, dict[str, object]] = {
     200: {
         "description": (

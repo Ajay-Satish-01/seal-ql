@@ -33,12 +33,9 @@ if TYPE_CHECKING:
 
 import httpx
 
+from seal._http_errors import raise_for_response
 from seal._sse import ChatStreamEvent, parse_sse_stream
-from seal.exceptions import (
-    QueryError,
-    SealConnectionError,
-    ServerError,
-)
+from seal.exceptions import SealConnectionError
 from seal.models import CatalogResponse, ChatResponse, DatabaseSchema, HealthResponse, QueryResponse
 
 _DEFAULT_TIMEOUT = 120.0  # seconds — queries can be slow due to LLM
@@ -60,16 +57,7 @@ def _handle_error(response: httpx.Response) -> None:
     except Exception:
         detail = response.text
 
-    if response.status_code >= 500:
-        raise ServerError(
-            f"Server error ({response.status_code}): {detail}",
-            status_code=response.status_code,
-        )
-    if response.status_code >= 400:
-        raise QueryError(
-            f"Query rejected ({response.status_code}): {detail}",
-            status_code=response.status_code,
-        )
+    raise_for_response(response.status_code, detail)
 
 
 # ============================================================

@@ -20,6 +20,17 @@ logger = logging.getLogger(__name__)
 OUT_OF_SCOPE_QUERY_DETAIL = "query_out_of_scope"
 
 
+def build_query_out_of_scope_detail(scope: ScopeResult) -> dict[str, str | list[str]]:
+    """Structured HTTP 400 body for out-of-scope ``POST /v1/query`` (no extra LLM)."""
+    from seal_core.guardrails.suggestions import suggest_queries
+
+    return {
+        "detail": OUT_OF_SCOPE_QUERY_DETAIL,
+        "reason": scope.reason or "",
+        "suggested_queries": suggest_queries(scope),
+    }
+
+
 def check_input_limits(
     text: str,
     *,
@@ -67,7 +78,7 @@ async def classify_scope(text: str, *, channel: GuardrailsChannel) -> ScopeResul
             in_scope=False,
             reason="off-topic pattern",
             source="heuristic",
-            category=ScopeCategory.ABUSE,
+            category=ScopeCategory.OFF_TOPIC,
             confidence="high",
         )
 

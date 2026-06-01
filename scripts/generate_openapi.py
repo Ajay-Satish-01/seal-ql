@@ -31,6 +31,8 @@ from app.schemas import (  # noqa: E402
     ChatResponse,
     ChatStreamMeta,
     EnhancementInfo,
+    QueryOutOfScopeDetail,
+    QueryOutOfScopeErrorResponse,
 )
 
 
@@ -63,7 +65,14 @@ def generate() -> None:
     openapi_schema = application.openapi()
     _inject_component_schemas(
         openapi_schema,
-        [ChatResponse, ChatStreamMeta, ChatMetadata, EnhancementInfo],
+        [
+            ChatResponse,
+            ChatStreamMeta,
+            ChatMetadata,
+            EnhancementInfo,
+            QueryOutOfScopeDetail,
+            QueryOutOfScopeErrorResponse,
+        ],
     )
 
     output_json_path = root_dir / "apps" / "api" / "openapi.json"

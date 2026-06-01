@@ -19,6 +19,9 @@ export type ColumnMetadata = Schemas['ColumnMetadata'];
 export type QueryMetadata = Schemas['QueryMetadata'];
 export type QueryRequest = Schemas['QueryRequest'];
 export type QueryResponse = Schemas['QueryResponse'];
+/** Guardrails rejection body nested under FastAPI ``detail`` on ``POST /v1/query`` 400. */
+export type QueryOutOfScopeDetail = Schemas['QueryOutOfScopeDetail'];
+export type QueryOutOfScopeErrorResponse = Schemas['QueryOutOfScopeErrorResponse'];
 
 /** OpenAPI name `EnhancementInfo` — same shape as core `EnhancementMetadata`. */
 export type EnhancementMetadata = Schemas['EnhancementInfo'];

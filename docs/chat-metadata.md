@@ -28,6 +28,7 @@ Same execution fields live under **`metadata`**, plus chat-specific keys:
 | `metadata.enhancement.unavailable_reason` | `orchestrator_unavailable` when the client requested enhancement (e.g. `enhancement: true`) but no orchestrator is configured — including guardrails refusals; omitted when an orchestrator exists but the turn is a refusal |
 | `metadata.scope` | Guardrails scope decision (`ScopeMetadata` in OpenAPI) |
 | `metadata.refusal` | `true` on guardrails refusal |
+| `metadata.suggested_queries` | Up to 3 example in-scope data questions on refusal (heuristic or refusal LLM) |
 | `metadata.sql_error` | `true` when the data path failed (no `sql`, `used_sql=false`) |
 
 `metadata.scope` fields:
@@ -53,7 +54,7 @@ The first event is `event: seal.meta`. Its `data:` line is a **flat** JSON objec
 
 - Stream fields: `session_id`, `sources`, `sql`, `results`, `columns`, `chart`, `scope`
 - Same execution and `enhancement` fields as JSON chat, at the top level
-- `refusal` / `sql_error` when applicable
+- `refusal` / `sql_error` / `suggested_queries` when applicable
 
 OpenAPI models this as `ChatStreamMeta`; wire format is SSE-framed (`event:` / `data:`), not a raw JSON body.
 

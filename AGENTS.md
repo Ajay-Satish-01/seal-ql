@@ -91,4 +91,4 @@ See `RELEASING.md` and `SETUP.md`. Bump aligned versions in API + both SDKs; `ma
 - Never bypass `packages/sql/` AST parser.
 - Never hardcode LLM provider — use LiteLLM.
 - Catalog is **global** (not per-request): same registry for `/v1/query` and `/v1/chat`.
-- Out-of-scope chat returns 200 refusal; out-of-scope query returns 400 `query_out_of_scope`.
+- Out-of-scope chat returns 200 refusal with `metadata.suggested_queries`; out-of-scope query returns 400 structured `detail` (`query_out_of_scope`, `reason`, `suggested_queries`).

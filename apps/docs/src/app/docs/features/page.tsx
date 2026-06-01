@@ -114,10 +114,12 @@ export default function FeaturesPage() {
             <strong>In scope:</strong> analytics, schema/catalog help, data-grounded Q&amp;A
           </li>
           <li>
-            <strong>Chat out-of-scope:</strong> HTTP 200 refusal (no SQL)
+            <strong>Chat out-of-scope:</strong> HTTP 200 refusal with{' '}
+            <code>metadata.suggested_queries</code> (no SQL)
           </li>
           <li>
-            <strong>Query out-of-scope:</strong> HTTP 400 <code>query_out_of_scope</code>
+            <strong>Query out-of-scope:</strong> HTTP 400 structured{' '}
+            <code>detail</code> with <code>suggested_queries</code>
           </li>
           <li>
             Configurable via <code>GUARDRAILS_*</code> and workspace —{' '}

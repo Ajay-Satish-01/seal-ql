@@ -92,7 +92,7 @@ On startup, Seal can auto-sync `config/catalog.yaml` from introspected schema (`
 - `GET` / `PATCH /v1/workspace/settings` — workspace settings (see [docs/workspace-api.md](docs/workspace-api.md))
 - `POST /v1/vector/reindex` — rebuild vector index when `VECTOR_STORE` is enabled
 
-**Guardrails** (see [docs/guardrails.md](docs/guardrails.md)): `GUARDRAILS_ENABLED`, `GUARDRAILS_FAIL_CLOSED`, `MAX_QUERY_CHARS`, `MAX_CHAT_MESSAGE_CHARS`, `MAX_CHAT_HISTORY_CHARS`. Out-of-scope chat returns HTTP 200 with a refusal; out-of-scope query returns HTTP 400 (`query_out_of_scope`).
+**Guardrails** (see [docs/guardrails.md](docs/guardrails.md)): `GUARDRAILS_ENABLED`, `GUARDRAILS_FAIL_CLOSED`, `MAX_QUERY_CHARS`, `MAX_CHAT_MESSAGE_CHARS`, `MAX_CHAT_HISTORY_CHARS`. Out-of-scope chat returns HTTP 200 with a refusal and `metadata.suggested_queries`; out-of-scope query returns HTTP 400 with structured `detail` (`query_out_of_scope`, `reason`, `suggested_queries`). Oversized bodies may return **422** from request validation before guardrails run.
 
 **Local UIs**: docs `apps/docs` (port 3000), dashboard `apps/web` (port 3001). Run `make up` for API, then `cd apps/docs && pnpm dev` and `cd apps/web && pnpm dev` in separate terminals.
 

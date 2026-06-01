@@ -74,7 +74,8 @@ export default function HowItWorksPage() {
           </li>
         </ol>
         <p>
-          <strong>Out-of-scope query</strong> → HTTP 400, detail <code>query_out_of_scope</code>, no
+          <strong>Out-of-scope query</strong> → HTTP 400, structured <code>detail</code> (
+          <code>query_out_of_scope</code>, <code>reason</code>, <code>suggested_queries</code>), no
           planner. <strong>Out-of-scope chat</strong> → HTTP 200 with a short refusal from{' '}
           <code>REFUSAL_SYSTEM</code> only — no <code>ChatDecision</code>, no SQL, no RAG. Metadata
           includes <code>scope</code>, <code>refusal: true</code>, and <code>database_id</code> (session
@@ -93,7 +94,7 @@ export default function HowItWorksPage() {
     │     └─ unknown → HTTP 404 unknown_database_id
     │
     ├─ classify_scope (channel=query)
-    │     └─ out of scope → HTTP 400 query_out_of_scope
+    │     └─ out of scope → HTTP 400 structured query_out_of_scope
     │
     ├─ introspect schema (chosen backend)
     │

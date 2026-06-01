@@ -33,6 +33,13 @@ export function metadataBadges(meta: ChatMetadata | ExecutionMetadata): Metadata
   const chatMeta = meta as ChatMetadata;
   if (chatMeta.refusal) {
     badges.push({ label: 'refusal', variant: 'destructive' });
+    const suggestions = chatMeta.suggested_queries;
+    if (Array.isArray(suggestions) && suggestions.length > 0) {
+      badges.push({
+        label: `${suggestions.length} suggestion(s)`,
+        variant: 'muted',
+      });
+    }
   }
   if (chatMeta.sql_error) {
     badges.push({ label: 'sql_error', variant: 'destructive' });

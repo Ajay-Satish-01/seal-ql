@@ -326,56 +326,8 @@ export interface components {
              */
             readonly content: string;
         };
-        /**
-         * ChatMetadata
-         * @description Execution + enhancement metadata on /v1/chat JSON responses.
-         */
         readonly ChatMetadata: {
-            /**
-             * Database Id
-             * @default default
-             */
-            readonly database_id: string;
-            /**
-             * Row Count
-             * @default 0
-             */
-            readonly row_count: number;
-            /**
-             * Execution Time Ms
-             * @default 0
-             */
-            readonly execution_time_ms: number;
-            /**
-             * Truncated
-             * @default false
-             */
-            readonly truncated: boolean;
-            /** Warnings */
-            readonly warnings?: readonly string[];
-            /**
-             * Repair Attempts
-             * @default 0
-             */
-            readonly repair_attempts: number;
-            /**
-             * Used Sql
-             * @default false
-             */
-            readonly used_sql: boolean;
-            readonly enhancement?: components["schemas"]["EnhancementInfo"];
-            /** @description Guardrails scope decision when classified. */
-            readonly scope?: components["schemas"]["ScopeMetadata"] | null;
-            /**
-             * Refusal
-             * @description True when the turn was refused.
-             */
-            readonly refusal?: boolean | null;
-            /**
-             * Sql Error
-             * @description True when SQL execution failed.
-             */
-            readonly sql_error?: boolean | null;
+            readonly [key: string]: unknown;
         };
         /** ChatRequest */
         readonly ChatRequest: {
@@ -966,96 +918,38 @@ export interface components {
              */
             readonly write_target: string;
         };
-        /**
-         * ChatStreamMeta
-         * @description Flat JSON on the ``data:`` line of the ``seal.meta`` SSE event (stream=true).
-         */
         readonly ChatStreamMeta: {
+            readonly [key: string]: unknown;
+        };
+        /**
+         * QueryOutOfScopeDetail
+         * @description Structured HTTP 400 body when guardrails reject ``POST /v1/query``.
+         */
+        readonly QueryOutOfScopeDetail: {
             /**
-             * Database Id
-             * @default default
+             * Detail
+             * @description Error code for programmatic clients.
+             * @default query_out_of_scope
              */
-            readonly database_id: string;
+            readonly detail: string;
             /**
-             * Row Count
-             * @default 0
+             * Reason
+             * @description Short classification reason.
+             * @default
              */
-            readonly row_count: number;
+            readonly reason: string;
             /**
-             * Execution Time Ms
-             * @default 0
+             * Suggested Queries
+             * @description Up to three example in-scope data questions.
              */
-            readonly execution_time_ms: number;
-            /**
-             * Truncated
-             * @default false
-             */
-            readonly truncated: boolean;
-            /** Warnings */
-            readonly warnings?: readonly string[];
-            /**
-             * Repair Attempts
-             * @default 0
-             */
-            readonly repair_attempts: number;
-            /**
-             * Used Sql
-             * @default false
-             */
-            readonly used_sql: boolean;
-            /**
-             * Session Id
-             * @description Conversation session id.
-             */
-            readonly session_id: string;
-            /**
-             * Sources
-             * @description Tables used in context.
-             */
-            readonly sources?: readonly string[];
-            /**
-             * Sql
-             * @description Executed SQL when data was queried.
-             * @default null
-             */
-            readonly sql: string | null;
-            /**
-             * Results
-             * @description Truncated result preview.
-             * @default null
-             */
-            readonly results: readonly {
-                readonly [key: string]: unknown;
-            }[] | null;
-            /**
-             * Columns
-             * @description Column metadata.
-             * @default null
-             */
-            readonly columns: readonly components["schemas"]["ColumnMetadata"][] | null;
-            /**
-             * @description Chart when include_charts and SQL ran.
-             * @default null
-             */
-            readonly chart: components["schemas"]["ChartSpec"] | null;
-            readonly enhancement?: components["schemas"]["EnhancementInfo"];
-            /**
-             * @description Guardrails scope decision.
-             * @default null
-             */
-            readonly scope: components["schemas"]["ScopeMetadata"] | null;
-            /**
-             * Refusal
-             * @description True when the turn was refused.
-             * @default null
-             */
-            readonly refusal: boolean | null;
-            /**
-             * Sql Error
-             * @description True when SQL execution failed.
-             * @default null
-             */
-            readonly sql_error: boolean | null;
+            readonly suggested_queries?: readonly string[];
+        };
+        /**
+         * QueryOutOfScopeErrorResponse
+         * @description FastAPI error envelope for guardrails rejections on ``POST /v1/query``.
+         */
+        readonly QueryOutOfScopeErrorResponse: {
+            readonly detail: components["schemas"]["QueryOutOfScopeDetail"];
         };
     };
     responses: never;
@@ -1200,6 +1094,27 @@ export interface operations {
                 };
                 content: {
                     readonly "application/json": components["schemas"]["QueryResponse"];
+                };
+            };
+            /** @description Guardrails rejected the query (out of scope) */
+            readonly 400: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": {
+                     *         "detail": "query_out_of_scope",
+                     *         "reason": "off-topic pattern",
+                     *         "suggested_queries": [
+                     *           "Show order count by month",
+                     *           "What tables are available?"
+                     *         ]
+                     *       }
+                     *     }
+                     */
+                    readonly "application/json": components["schemas"]["QueryOutOfScopeErrorResponse"];
                 };
             };
             /** @description Invalid or missing API key */
