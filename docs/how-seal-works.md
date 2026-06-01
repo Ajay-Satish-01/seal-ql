@@ -31,24 +31,32 @@ See [guardrails.md](guardrails.md).
 
 `apps/api/app/routes/query.py`:
 
-1. `classify_scope`
-2. `introspector.introspect()`
-3. `execute_natural_language_query()` — planner → validate → sanitize → execute → repair loop
-4. `ChartEngine.generate()`
+1. Resolve `database_id` → `DatabaseRegistry.get()` (**404** if unknown)
+2. `classify_scope`
+3. `bundle.introspector.introspect()` — catalog/semantic only when `database_id=default`
+4. `execute_natural_language_query()` — planner → validate → sanitize → execute → repair loop
+5. `ChartEngine.generate()` — response `metadata.database_id`
 
 No chat enhancement chain on this path.
+
+See [multi-database.md](multi-database.md) for registry config, DuckDB URL normalization, and limitations.
 
 ## Chat path
 
 `seal_core/chat/service.py` (`ChatService`):
 
-1. `SessionStore` — TTL, `CHAT_MAX_HISTORY_MESSAGES`, `MAX_CHAT_HISTORY_CHARS` on overrides
-2. `_scope_gate` → metadata `scope`
-3. `_chat_decision` → `ChatDecision.needs_data` (enhancement at `stage=decision` when enabled)
-4. If `needs_data`: `ContextRetriever.select_tables` + `execute_natural_language_query` (+ optional chart)
-5. `_answer_system` (enhancement at `stage=answer`) + answer LLM or SSE stream
+1. API resolves `database_id` → registry (**404** if unknown)
+2. `SessionStore` — reject `database_id` change after pin (`SessionDatabaseMismatchError` → HTTP 400)
+3. `_scope_gate` → metadata `scope`
+4. `_chat_decision` → `ChatDecision.needs_data` (enhancement at `stage=decision` when enabled)
+5. If `needs_data`: `ContextRetriever.select_tables` + `execute_natural_language_query` using bundle executor (+ optional chart)
+6. `_answer_system` (enhancement at `stage=answer`) + answer LLM or SSE stream
 
-Streaming: `seal.meta` event then token deltas; partial assistant text persisted on stream end/error.
+Streaming: `seal.meta` (includes `database_id`) then token deltas; mismatch errors before SSE starts.
+
+**Session pinning:** `_complete_turn` sets `state.database_id` only after a successful in-scope JSON or completed stream turn. Refusals do not pin. Follow-ups must repeat the same `database_id`.
+
+Non-default `database_id`: catalog/semantic omitted from planner; `VectorRagEnhancer` skipped (index built from default only).
 
 ## Shared SQL pipeline
 
@@ -64,7 +72,7 @@ Streaming: `seal.meta` event then token deltas; partial assistant text persisted
 Default order (`EnhancementOrchestrator`):
 
 1. `SchemaAwareEnhancer`
-2. `VectorRagEnhancer` (skipped if `in_scope=false` or `VECTOR_STORE=none`)
+2. `VectorRagEnhancer` (skipped if `in_scope=false`, `VECTOR_STORE=none`, or non-default `database_id`)
 3. `MultiTurnEnhancer`
 
 Append: `SEAL_ENHANCERS=dotted.path.Class`
@@ -83,6 +91,7 @@ See [workspace-api.md](workspace-api.md). Full env tables: docs site `/docs/conf
 
 | Doc | Topic |
 |-----|--------|
+| [multi-database.md](multi-database.md) | `database_id` routing and registry |
 | [guardrails.md](guardrails.md) | Scope gate env and behavior |
 | [chat-enhancement.md](chat-enhancement.md) | Enhancer hooks and env |
 | [workspace-api.md](workspace-api.md) | Workspace HTTP API |

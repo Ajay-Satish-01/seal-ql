@@ -10,6 +10,12 @@ from seal_sql.result import ColumnMetadata
 _MAX_QUERY_CHARS = 4000
 _MAX_CHAT_MESSAGE_CHARS = 8000
 
+DATABASE_ID_FIELD = Field(
+    default="default",
+    min_length=1,
+    description="Registered database identifier (default: 'default').",
+)
+
 
 class QueryRequest(BaseModel):
     """The incoming query request from a user."""
@@ -19,7 +25,7 @@ class QueryRequest(BaseModel):
         max_length=_MAX_QUERY_CHARS,
         description="The natural language query to translate to SQL and execute.",
     )
-    database_id: str = Field("default", description="The identifier for the target database.")
+    database_id: str = DATABASE_ID_FIELD
 
 
 class QueryResponse(BaseModel):
@@ -40,6 +46,23 @@ class HealthResponse(BaseModel):
     """Health check response."""
 
     status: str = Field(..., description="The health status of the API.")
+
+
+class DatabaseInfo(BaseModel):
+    """One entry in the configured database registry."""
+
+    database_id: str = Field(..., description="Registered identifier passed as database_id.")
+    dialect: str = Field(..., description="SQL dialect (postgres, duckdb, …).")
+    is_default: bool = Field(..., description="True for the primary DATABASE_URL backend.")
+
+
+class DatabasesListResponse(BaseModel):
+    """Registered databases available for routing."""
+
+    databases: list[DatabaseInfo] = Field(
+        default_factory=list,
+        description="Sorted list of configured database_id values.",
+    )
 
 
 class ChatMessageSchema(BaseModel):
@@ -81,7 +104,7 @@ class ChatRequest(BaseModel):
     enhancement: bool | None = Field(
         None, description="Override CHAT_ENHANCEMENT_ENABLED for this request."
     )
-    database_id: str = Field("default", description="Target database identifier.")
+    database_id: str = DATABASE_ID_FIELD
 
     @model_validator(mode="after")
     def validate_history_size(self) -> Self:

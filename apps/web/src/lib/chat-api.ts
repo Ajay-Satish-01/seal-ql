@@ -14,6 +14,7 @@ export interface ChatApiResponse {
 
 export interface ChatStreamMeta {
   session_id: string;
+  database_id?: string;
   sources?: string[];
   sql?: string | null;
   results?: Record<string, unknown>[] | null;
@@ -48,6 +49,7 @@ export async function postChat(
   body: {
     message: string;
     session_id?: string;
+    database_id?: string;
     include_charts?: boolean;
     stream?: boolean;
     enhancement?: boolean;
@@ -79,6 +81,7 @@ export async function* streamChat(
   body: {
     message: string;
     session_id?: string;
+    database_id?: string;
     include_charts?: boolean;
     enhancement?: boolean;
   },

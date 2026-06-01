@@ -5,6 +5,7 @@ Contributor docs for extending Seal. User-facing copies live on the docs site (`
 | Doc | Topic | Docs site |
 | --- | ----- | --------- |
 | [agent-frameworks.md](./agent-frameworks.md) | HTTP tools (`seal-tools.openai.json`), Mastra/LangChain patterns | `/docs/agent-frameworks` |
+| [multi-database.md](../multi-database.md) | `database_id` routing, `DatabaseRegistry` | `/docs/multi-database` |
 | [vector-stores.md](./vector-stores.md) | `VECTOR_STORE`, Chroma, custom `VECTOR_STORE_CLASS` | `/docs/vector-rag` |
 | [custom-enhancers.md](./custom-enhancers.md) | `SEAL_ENHANCERS`, `PromptEnhancer` protocol | `/docs/prompt-enhancement` |
 

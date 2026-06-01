@@ -33,11 +33,28 @@ export default function ChatStreamingPage() {
       <h2 className="font-heading mt-8 text-xl font-semibold">TypeScript SDK</h2>
       <CodeBlock language="typescript" code={tsChatStreamSnippet(base, 'Summarize revenue trends')} />
 
+      <h2 className="font-heading mt-8 text-xl font-semibold">database_id and seal.meta</h2>
+      <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+        Pass <code>database_id</code> in the JSON body the same as non-streaming chat. The first
+        event includes <code>database_id</code> so clients can confirm which backend ran before
+        reading streamed text. Use the same <code>database_id</code> on every message in a{' '}
+        <code>session_id</code> — see{' '}
+        <Link href="/docs/multi-database" className="text-primary underline-offset-4 hover:underline">
+          Multi-database routing
+        </Link>
+        .
+      </p>
+      <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+        Invalid <code>database_id</code> or session mismatch errors return HTTP 400 before any SSE
+        events are sent.
+      </p>
+
       <h2 className="font-heading mt-8 text-xl font-semibold">SSE event order</h2>
       <ol className="text-muted-foreground mt-4 list-decimal space-y-2 pl-6 text-sm">
         <li>
-          <code>event: seal.meta</code> — <code>session_id</code>, <code>sources</code>,{' '}
-          <code>sql</code>, <code>chart</code>, <code>enhancement</code>
+          <code>event: seal.meta</code> — <code>session_id</code>, <code>database_id</code>,{' '}
+          <code>sources</code>, <code>sql</code>, <code>chart</code>, <code>enhancement</code>,{' '}
+          <code>scope</code>
         </li>
         <li>
           <code>data: {'{...}'}</code> — OpenAI-style <code>chat.completion.chunk</code> deltas

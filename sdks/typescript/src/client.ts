@@ -132,8 +132,9 @@ export class Seal {
   /**
    * Fetch the introspected database schema.
    */
-  async schema(): Promise<DatabaseSchema> {
-    return this.request<DatabaseSchema>('GET', '/v1/schema');
+  async schema(options?: { databaseId?: string }): Promise<DatabaseSchema> {
+    const databaseId = encodeURIComponent(options?.databaseId ?? 'default');
+    return this.request<DatabaseSchema>('GET', `/v1/schema?database_id=${databaseId}`);
   }
 
   /**

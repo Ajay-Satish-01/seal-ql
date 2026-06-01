@@ -44,6 +44,25 @@ npm install react react-dom vega vega-lite vega-embed`}
           language="typescript"
           code={tsQuerySnippet(SITE.defaultBaseUrl, 'Orders by region')}
         />
+        <p>
+          Multiple databases: pass the id as the <strong>second argument</strong> to{' '}
+          <code>query</code>, and use <code>databaseId</code> in the options object for chat and
+          schema:
+        </p>
+        <CodeBlock
+          language="typescript"
+          code={`const orders = await client.query('Total orders today', 'default');
+const revenue = await client.query('Daily revenue trend', 'analytics');
+const schema = await client.schema({ databaseId: 'analytics' });
+const reply = await client.chat('Summarize revenue', { databaseId: 'analytics' });
+for await (const event of client.chatStream('Trend by week', { databaseId: 'analytics' })) {
+  if (event.type === 'meta') console.log(event.data.database_id, event.data.sql);
+}`}
+        />
+        <p>
+          See <Link href="/docs/multi-database">Multi-database routing</Link> for configuration and
+          chat session pinning.
+        </p>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">VegaChart (React)</h2>
         <p>

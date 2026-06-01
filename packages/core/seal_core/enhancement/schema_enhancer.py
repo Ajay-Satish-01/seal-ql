@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from seal_core.chat.retriever import ContextRetriever
+from seal_core.database.config import database_id_from_metadata, planner_resources_for_database
 from seal_core.schema.models import DatabaseSchema
 
 if TYPE_CHECKING:
@@ -30,11 +31,16 @@ class SchemaAwareEnhancer:
 
     async def enhance_system_prompt(self, ctx: EnhancementContext) -> str:
         assert ctx.database_schema is not None
+        semantic_registry, data_catalog = planner_resources_for_database(
+            database_id_from_metadata(ctx.metadata),
+            catalog=self._catalog,
+            semantic_registry=self._semantic,
+        )
         history = " ".join(m.content for m in ctx.messages[-4:])
         table_names = self._retriever.select_tables(
             ctx.user_message,
             ctx.database_schema,
-            self._catalog,
+            data_catalog,
             history,
             full_schema=ctx.include_charts,
         )
@@ -51,10 +57,10 @@ class SchemaAwareEnhancer:
             has_timescaledb=ctx.database_schema.has_timescaledb,
         )
         parts = [ctx.base_system_prompt, "\n## Schema\n", subset.to_prompt_context()]
-        if self._catalog:
-            parts.append(self._catalog.to_prompt_context(table_names))
-        if self._semantic is not None:
-            parts.append(self._semantic.get_context_string())
+        if data_catalog:
+            parts.append(data_catalog.to_prompt_context(table_names))
+        if semantic_registry is not None:
+            parts.append(semantic_registry.get_context_string())
         return "\n".join(parts)
 
     async def enhance_user_messages(self, ctx: EnhancementContext) -> list[ChatMessage]:

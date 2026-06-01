@@ -16,6 +16,20 @@ def test_chat_json_response(monkeypatch) -> None:
     assert "message" in body
 
 
+def test_chat_with_database_id(monkeypatch) -> None:
+    from tests.mocks import MockChatService
+
+    MockChatService.last_database_id = None
+    client: TestClient = build_client(monkeypatch)
+    r = client.post(
+        "/v1/chat",
+        json={"message": "Hi", "database_id": "default"},
+        headers=AUTH_HEADERS,
+    )
+    assert r.status_code == 200
+    assert MockChatService.last_database_id == "default"
+
+
 def test_chat_session_persistence(monkeypatch) -> None:
     client: TestClient = build_client(monkeypatch)
     r1 = client.post("/v1/chat", json={"message": "Hello"}, headers=AUTH_HEADERS)

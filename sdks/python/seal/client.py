@@ -162,8 +162,11 @@ class Seal:
         _handle_error(resp)
         return QueryResponse.model_validate(resp.json())
 
-    def schema(self) -> DatabaseSchema:
+    def schema(self, *, database_id: str = "default") -> DatabaseSchema:
         """Fetch the introspected database schema.
+
+        Args:
+            database_id: Registered database identifier (default ``default``).
 
         Returns:
             DatabaseSchema with all tables, columns, and metadata.
@@ -172,7 +175,7 @@ class Seal:
             SealConnectionError: If the API is unreachable.
         """
         try:
-            resp = self._client.get("/v1/schema")
+            resp = self._client.get("/v1/schema", params={"database_id": database_id})
         except httpx.RequestError as exc:
             raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
 
@@ -196,6 +199,7 @@ class Seal:
         include_charts: bool = False,
         stream: bool = False,
         enhancement: bool | None = None,
+        database_id: str = "default",
     ) -> ChatResponse:
         """Send a conversational message to /v1/chat."""
         if stream:
@@ -204,6 +208,7 @@ class Seal:
             "message": message,
             "include_charts": include_charts,
             "stream": False,
+            "database_id": database_id,
         }
         if session_id:
             body["session_id"] = session_id
@@ -223,12 +228,14 @@ class Seal:
         session_id: str | None = None,
         include_charts: bool = False,
         enhancement: bool | None = None,
+        database_id: str = "default",
     ) -> Iterator[ChatStreamEvent]:
         """Stream chat answer events from /v1/chat (SSE)."""
         body: dict[str, Any] = {
             "message": message,
             "include_charts": include_charts,
             "stream": True,
+            "database_id": database_id,
         }
         if session_id:
             body["session_id"] = session_id
@@ -334,8 +341,11 @@ class AsyncSeal:
         _handle_error(resp)
         return QueryResponse.model_validate(resp.json())
 
-    async def schema(self) -> DatabaseSchema:
+    async def schema(self, *, database_id: str = "default") -> DatabaseSchema:
         """Fetch the introspected database schema.
+
+        Args:
+            database_id: Registered database identifier (default ``default``).
 
         Returns:
             DatabaseSchema with all tables, columns, and metadata.
@@ -344,7 +354,7 @@ class AsyncSeal:
             SealConnectionError: If the API is unreachable.
         """
         try:
-            resp = await self._client.get("/v1/schema")
+            resp = await self._client.get("/v1/schema", params={"database_id": database_id})
         except httpx.RequestError as exc:
             raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
 
@@ -366,11 +376,13 @@ class AsyncSeal:
         session_id: str | None = None,
         include_charts: bool = False,
         enhancement: bool | None = None,
+        database_id: str = "default",
     ) -> ChatResponse:
         body: dict[str, Any] = {
             "message": message,
             "include_charts": include_charts,
             "stream": False,
+            "database_id": database_id,
         }
         if session_id:
             body["session_id"] = session_id
@@ -390,12 +402,14 @@ class AsyncSeal:
         session_id: str | None = None,
         include_charts: bool = False,
         enhancement: bool | None = None,
+        database_id: str = "default",
     ) -> AsyncIterator[ChatStreamEvent]:
         """Stream chat answer events from /v1/chat (SSE)."""
         body: dict[str, Any] = {
             "message": message,
             "include_charts": include_charts,
             "stream": True,
+            "database_id": database_id,
         }
         if session_id:
             body["session_id"] = session_id

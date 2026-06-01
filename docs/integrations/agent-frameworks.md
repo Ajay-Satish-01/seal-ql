@@ -18,17 +18,32 @@ When your agent already has RAG, call `seal_query` / `seal_chat` with **`enhance
 
 | Tool | Behavior |
 |------|----------|
-| `seal_get_schema` | Live DDL introspection JSON — no LLM |
+| `seal_get_schema` | Live DDL introspection JSON for `database_id` — no LLM |
 | `seal_get_catalog` | Global catalog YAML as JSON — no LLM |
-| `seal_query` | Guardrails → planner → SQL → chart; out-of-scope → error |
-| `seal_chat` | Session + guardrails + enhancement + optional SQL; out-of-scope → 200 refusal |
+| `seal_query` | Guardrails → planner → SQL → chart; `database_id` selects backend |
+| `seal_chat` | Session + guardrails + enhancement + optional SQL; `database_id` on each turn |
 
 Pass `X-API-Key` when `SEAL_API_KEY` is set. Use a backend proxy — do not embed production keys in browser agents.
 
+Register additional backends with `SEAL_DATABASES_PATH` or `SEAL_DATABASES`; pass `database_id` on tools that accept it. See [../multi-database.md](../multi-database.md).
+
+### `database_id` per tool
+
+| Tool | `database_id` | Notes |
+| ---- | ------------- | ----- |
+| `seal_get_schema` | Optional (default `default`) | Live DDL for that backend |
+| `seal_get_catalog` | N/A | Global catalog from default DB sync |
+| `seal_query` | Optional (default `default`) | Unknown id → HTTP 404 before guardrails |
+| `seal_chat` | Optional (default `default`) | Pass on **every** turn; session pins after first successful in-scope reply |
+
+DuckDB entries use `duckdb:///path/file.duckdb` or `:memory:` in config (see multi-database guide).
+
 ## Scope and errors
 
+- Unknown `database_id`: HTTP 404 `unknown_database_id`
+- Chat session id mismatch: HTTP 400 `session_database_id_mismatch` (structured `detail.code`)
 - Query off-topic: HTTP 400 `query_out_of_scope` (see [../guardrails.md](../guardrails.md))
-- Chat off-topic: HTTP 200 with `metadata.scope.in_scope: false`
+- Chat off-topic: HTTP 200 with `metadata.scope.in_scope: false` and `metadata.database_id` set
 
 Full pipeline: [../how-seal-works.md](../how-seal-works.md).
 

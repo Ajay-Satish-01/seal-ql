@@ -49,6 +49,14 @@ export default function ChatQaPage() {
           <code>session_id</code> — return value from prior response for follow-ups
         </li>
         <li>
+          <code>database_id</code> — registered backend (default <code>&quot;default&quot;</code>).
+          Send on <strong>every</strong> turn when using <code>session_id</code>. See{' '}
+          <Link href="/docs/multi-database" className="text-primary underline-offset-4 hover:underline">
+            Multi-database routing
+          </Link>{' '}
+          for pinning rules (successful turns pin the id; refusals do not).
+        </li>
+        <li>
           <code>include_charts</code> — attach Vega-Lite chart when SQL runs (default false)
         </li>
         <li>
@@ -92,9 +100,18 @@ ${curlChat(base, 'Show revenue for the largest table', { sessionId: 'YOUR_SESSIO
           <code>sql</code>, <code>results</code>, <code>chart</code> — when the turn runs SQL
         </li>
         <li>
-          <code>sources</code>, <code>metadata</code> — tables used and enhancement timing
+          <code>sources</code>, <code>metadata</code> — tables used, enhancement timing,{' '}
+          <code>metadata.database_id</code>, and <code>metadata.scope</code> (refusals include{' '}
+          <code>database_id</code> but not SQL)
         </li>
       </ul>
+
+      <Callout variant="warning" title="Multi-database sessions">
+        If you use <code>database_id=&quot;analytics&quot;</code> on the first message, repeat{' '}
+        <code>database_id=&quot;analytics&quot;</code> on all follow-ups with the same{' '}
+        <code>session_id</code>. Switching ids mid-session returns HTTP 400{' '}
+        <code>session_database_id_mismatch</code> after the session is pinned.
+      </Callout>
 
       <h2 className="font-heading mt-8 text-xl font-semibold">Batteries included</h2>
       <p className="text-muted-foreground mt-4 text-sm leading-relaxed">

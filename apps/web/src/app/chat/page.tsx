@@ -8,7 +8,7 @@ import { useConnection } from '@/hooks/use-connection';
 import { streamChat } from '@/lib/chat-api';
 import { notifyErrorFrom, notifyInfo, notifySuccess } from '@/lib/toast';
 import type { ChartSpec } from 'seal';
-import { useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 
 type ChatTurn = {
   id: string;
@@ -23,9 +23,10 @@ function turnId(): string {
 }
 
 export default function ChatPage() {
-  const { apiUrl, apiKey } = useConnection();
+  const { apiUrl, apiKey, databaseId } = useConnection();
   const [message, setMessage] = useState('What tables are in the database?');
   const [sessionId, setSessionId] = useState<string | undefined>();
+  const [activeDatabaseId, setActiveDatabaseId] = useState<string | undefined>();
   const [history, setHistory] = useState<ChatTurn[]>([]);
   const [answer, setAnswer] = useState('');
   const [sql, setSql] = useState<string | null>(null);
@@ -33,6 +34,27 @@ export default function ChatPage() {
   const [chart, setChart] = useState<ChartSpec | null>(null);
   const [isPending, startTransition] = useTransition();
   const abortRef = useRef<AbortController | null>(null);
+  const prevDatabaseRef = useRef(databaseId);
+
+  useEffect(() => {
+    if (prevDatabaseRef.current === databaseId) {
+      return;
+    }
+    const hadSession =
+      sessionId !== undefined || history.length > 0 || activeDatabaseId !== undefined;
+    prevDatabaseRef.current = databaseId;
+    if (!hadSession) {
+      return;
+    }
+    setSessionId(undefined);
+    setActiveDatabaseId(undefined);
+    setHistory([]);
+    setAnswer('');
+    setSql(null);
+    setResults([]);
+    setChart(null);
+    notifyInfo(`Database changed to "${databaseId}" — chat session cleared`);
+  }, [databaseId, sessionId, history, activeDatabaseId]);
 
   function send() {
     abortRef.current?.abort();
@@ -55,12 +77,19 @@ export default function ChatPage() {
       try {
         for await (const event of streamChat(
           apiUrl,
-          { message: userMessage, session_id: sessionId, include_charts: true, enhancement: true },
+          {
+            message: userMessage,
+            session_id: sessionId,
+            database_id: databaseId,
+            include_charts: true,
+            enhancement: true,
+          },
           apiKey.trim(),
           controller.signal,
         )) {
           if (event.type === 'meta') {
             setSessionId(event.data.session_id);
+            if (event.data.database_id) setActiveDatabaseId(event.data.database_id);
             setSql(event.data.sql ?? null);
             if (event.data.results?.length) setResults(event.data.results);
             if (event.data.chart) setChart(event.data.chart as unknown as ChartSpec);
@@ -81,8 +110,22 @@ export default function ChatPage() {
     });
   }
 
+  function newSession() {
+    setSessionId(undefined);
+    setActiveDatabaseId(undefined);
+    setHistory([]);
+    setAnswer('');
+    setSql(null);
+    setResults([]);
+    setChart(null);
+    notifyInfo('Started a new chat session');
+  }
+
   return (
-    <PageShell title="Chat" description="POST /v1/chat with SSE streaming against your live API.">
+    <PageShell
+      title="Chat"
+      description={`POST /v1/chat (SSE) on database "${databaseId}" — send the same database_id every turn.`}
+    >
       {history.length > 0 && (
         <Card className="console-panel max-h-64 space-y-3 overflow-y-auto p-4">
           {history.map((turn) => (
@@ -97,21 +140,25 @@ export default function ChatPage() {
       )}
 
       <Card className="console-panel space-y-4 p-4">
-        {sessionId && (
-          <p className="text-muted-foreground font-mono text-xs">Session: {sessionId}</p>
-        )}
+        <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs">
+          <span>database_id: {activeDatabaseId ?? databaseId}</span>
+          {sessionId && <span>session: {sessionId}</span>}
+        </div>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={3}
           className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
         />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button onClick={send} disabled={isPending || !message.trim()}>
             {isPending ? 'Streaming…' : 'Send'}
           </Button>
           <Button variant="outline" onClick={() => abortRef.current?.abort()} disabled={!isPending}>
             Stop
+          </Button>
+          <Button variant="outline" onClick={newSession} disabled={isPending}>
+            New session
           </Button>
         </div>
       </Card>

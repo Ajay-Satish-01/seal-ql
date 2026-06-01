@@ -74,6 +74,47 @@ export default function AgentFrameworksPage() {
         code={tsChatSnippet(base, 'Explain revenue last quarter', { includeCharts: true })}
       />
 
+      <h2 className="font-heading mt-8 text-xl font-semibold">database_id on tools</h2>
+      <p className="text-muted-foreground mt-2 text-sm">
+        Register backends in <code>SEAL_DATABASES_PATH</code> or <code>SEAL_DATABASES</code>, then pass
+        the id on tools that run SQL or introspect schema:
+      </p>
+      <ul className="text-muted-foreground mt-3 list-disc space-y-2 pl-6 text-sm">
+        <li>
+          <code>seal_get_schema</code> — optional <code>database_id</code> (default{' '}
+          <code>&quot;default&quot;</code>)
+        </li>
+        <li>
+          <code>seal_query</code> — optional <code>database_id</code>; unknown id → HTTP 404
+        </li>
+        <li>
+          <code>seal_chat</code> — optional <code>database_id</code> on <strong>every</strong> turn;
+          sessions pin after the first successful in-scope reply
+        </li>
+        <li>
+          <code>seal_get_catalog</code> — global catalog from the default database only (no per-id
+          catalog)
+        </li>
+      </ul>
+      <CodeBlock
+        language="json"
+        code={`{
+  "name": "seal_query",
+  "arguments": {
+    "query": "Monthly active users",
+    "database_id": "analytics"
+  }
+}`}
+      />
+
+      <p className="text-muted-foreground mt-6 text-sm">
+        Configuration, DuckDB URL formats, and session rules:{' '}
+        <Link href="/docs/multi-database" className="text-primary underline-offset-4 hover:underline">
+          Multi-database routing
+        </Link>
+        .
+      </p>
+
       <h2 className="font-heading mt-8 text-xl font-semibold">Composition patterns</h2>
       <ul className="text-muted-foreground mt-4 list-disc space-y-2 pl-6 text-sm">
         <li>

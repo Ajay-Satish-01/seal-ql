@@ -2,13 +2,14 @@
 
 import { SealLogo } from '@/components/seal-logo';
 import { cn } from '@/lib/utils';
-import { Database, MessageSquare, Search, Settings, Sparkles } from 'lucide-react';
+import { Database, MessageSquare, Search, Settings, Sparkles, Table2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const NAV = [
   { href: '/query', label: 'Query', icon: Search },
   { href: '/chat', label: 'Chat', icon: MessageSquare },
+  { href: '/schema', label: 'Schema', icon: Table2 },
   { href: '/catalog', label: 'Catalog', icon: Database },
   { href: '/settings', label: 'Settings', icon: Settings },
   { href: '/vector', label: 'Vector', icon: Sparkles },
