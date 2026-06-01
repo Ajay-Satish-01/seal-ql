@@ -741,12 +741,8 @@
         "properties": {
           "role": {
             "type": "string",
-            "enum": [
-              "user",
-              "assistant"
-            ],
             "title": "Role",
-            "description": "Conversation role."
+            "description": "user or assistant (system not allowed)."
           },
           "content": {
             "type": "string",
@@ -1565,9 +1561,15 @@
             "title": "In Scope"
           },
           "reason": {
-            "type": "string",
-            "title": "Reason",
-            "default": ""
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
           },
           "source": {
             "type": "string",

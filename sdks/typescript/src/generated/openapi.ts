@@ -317,10 +317,9 @@ export interface components {
         readonly ChatMessageSchema: {
             /**
              * Role
-             * @description Conversation role.
-             * @enum {string}
+             * @description user or assistant (system not allowed).
              */
-            readonly role: "user" | "assistant";
+            readonly role: string;
             /**
              * Content
              * @description Message content.
@@ -827,11 +826,8 @@ export interface components {
         readonly ScopeMetadata: {
             /** In Scope */
             readonly in_scope: boolean;
-            /**
-             * Reason
-             * @default
-             */
-            readonly reason: string;
+            /** Reason */
+            readonly reason?: string | null;
             /**
              * Source
              * @enum {string}

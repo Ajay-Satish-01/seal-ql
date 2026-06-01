@@ -467,11 +467,8 @@ components:
       properties:
         role:
           type: string
-          enum:
-          - user
-          - assistant
           title: Role
-          description: Conversation role.
+          description: user or assistant (system not allowed).
         content:
           type: string
           maxLength: 8000
@@ -1044,9 +1041,10 @@ components:
           type: boolean
           title: In Scope
         reason:
-          type: string
+          anyOf:
+          - type: string
+          - type: 'null'
           title: Reason
-          default: ''
         source:
           type: string
           enum:
