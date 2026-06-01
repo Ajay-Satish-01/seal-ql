@@ -268,6 +268,25 @@ class TestColumnValidation:
         )
         assert result.valid
 
+    def test_ambiguous_unqualified_column(self, validator: SQLValidator) -> None:
+        """Unqualified columns shared by multiple joined tables must be qualified."""
+        result = validator.validate("SELECT id FROM users u JOIN orders o ON u.id = o.user_id")
+        assert not result.valid
+        assert any("Ambiguous column" in e and "id" in e for e in result.errors)
+
+    def test_ambiguous_column_per_union_branch(self, validator: SQLValidator) -> None:
+        """Each UNION branch with ambiguous id produces its own error."""
+        result = validator.validate(
+            "SELECT id FROM users u JOIN orders o ON u.id = o.user_id "
+            "UNION ALL "
+            "SELECT id FROM products p JOIN orders o2 ON p.id = o2.user_id"
+        )
+        assert not result.valid
+        ambiguous_errors = [e for e in result.errors if "Ambiguous column" in e]
+        assert len(ambiguous_errors) == 2
+        assert any("users" in e and "orders" in e for e in ambiguous_errors)
+        assert any("products" in e for e in ambiguous_errors)
+
 
 # ---------------------------------------------------------------------------
 # Warnings

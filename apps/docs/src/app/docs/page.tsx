@@ -74,8 +74,8 @@ const CAPABILITY_CARDS = [
   {
     icon: Database,
     title: 'Zero-trust SQL',
-    desc: 'SQLGlot AST validation blocks destructive SQL and enforces LIMIT on selects.',
-    href: '/docs/features#sql-safety',
+    desc: 'SQLGlot AST validation, sanitization, and LIMIT policy before any query runs.',
+    href: '/docs/zero-trust-sql',
   },
   {
     icon: LineChart,

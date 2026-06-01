@@ -1,12 +1,8 @@
 """Tests for the SQL sanitizer module."""
 
 import pytest
-from seal_sql.sanitizer import (
-    DEFAULT_MAX_JOINS,
-    DEFAULT_MAX_ROWS,
-    DEFAULT_MAX_SUBQUERY_DEPTH,
-    SQLSanitizer,
-)
+from seal_sql.limits import DEFAULT_MAX_JOINS, DEFAULT_MAX_ROWS, DEFAULT_MAX_SUBQUERY_DEPTH
+from seal_sql.sanitizer import SQLSanitizer
 
 
 @pytest.fixture
@@ -120,6 +116,77 @@ class TestBlockedOperations:
         result = sanitizer.sanitize("REVOKE ALL ON users FROM good_user")
         assert not result.safe
 
+    def test_merge(self, sanitizer: SQLSanitizer) -> None:
+        result = sanitizer.sanitize(
+            "MERGE INTO users u USING orders o ON u.id = o.user_id "
+            "WHEN MATCHED THEN UPDATE SET name = 'x'"
+        )
+        assert not result.safe
+        assert any("MERGE" in op for op in result.blocked_operations)
+
+    def test_select_into(self, sanitizer: SQLSanitizer) -> None:
+        result = sanitizer.sanitize("SELECT * INTO new_users FROM users")
+        assert not result.safe
+        assert any("INTO" in op for op in result.blocked_operations)
+
+    def test_copy(self, sanitizer: SQLSanitizer) -> None:
+        result = sanitizer.sanitize("COPY users TO STDOUT")
+        assert not result.safe
+        assert any("COPY" in op for op in result.blocked_operations)
+
+    def test_execute(self, sanitizer: SQLSanitizer) -> None:
+        result = sanitizer.sanitize("EXECUTE my_proc()")
+        assert not result.safe
+
+    def test_pragma(self, sanitizer: SQLSanitizer) -> None:
+        result = sanitizer.sanitize("PRAGMA table_info(users)")
+        assert not result.safe
+
+    def test_set(self, sanitizer: SQLSanitizer) -> None:
+        result = sanitizer.sanitize("SET search_path = public")
+        assert not result.safe
+
+    def test_for_update(self, sanitizer: SQLSanitizer) -> None:
+        result = sanitizer.sanitize("SELECT * FROM users FOR UPDATE")
+        assert not result.safe
+        assert any("LOCK" in op for op in result.blocked_operations)
+
+    def test_for_share(self, sanitizer: SQLSanitizer) -> None:
+        result = sanitizer.sanitize("SELECT * FROM users FOR SHARE")
+        assert not result.safe
+
+    def test_dynamic_limit(self, sanitizer: SQLSanitizer) -> None:
+        result = sanitizer.sanitize("SELECT id FROM users LIMIT (SELECT 1000)")
+        assert not result.safe
+        assert any("Dynamic LIMIT" in op for op in result.blocked_operations)
+
+    def test_negative_limit(self, sanitizer: SQLSanitizer) -> None:
+        result = sanitizer.sanitize("SELECT id FROM users LIMIT -1")
+        assert not result.safe
+        assert any("LIMIT -1" in op for op in result.blocked_operations)
+
+    def test_excessive_offset_rejected(self, strict_sanitizer: SQLSanitizer) -> None:
+        result = strict_sanitizer.sanitize("SELECT id FROM users LIMIT 10 OFFSET 500")
+        assert not result.safe
+        assert any("OFFSET" in op for op in result.blocked_operations)
+
+    def test_inner_limit_clamped(self, strict_sanitizer: SQLSanitizer) -> None:
+        result = strict_sanitizer.sanitize("SELECT * FROM (SELECT id FROM users LIMIT 999) AS u")
+        assert result.safe
+        assert "100" in result.sanitized_sql
+
+    def test_nested_delete_in_select(self, sanitizer: SQLSanitizer) -> None:
+        """Destructive ops nested anywhere in the AST must be blocked."""
+        result = sanitizer.sanitize(
+            "SELECT * FROM users WHERE id IN (SELECT user_id FROM deleted_orders)"
+        )
+        assert result.safe
+        result = sanitizer.sanitize(
+            "WITH d AS (DELETE FROM orders RETURNING user_id) SELECT * FROM users"
+        )
+        assert not result.safe
+        assert any("DELETE" in op for op in result.blocked_operations)
+
 
 # ---------------------------------------------------------------------------
 # Multi-statement blocking
@@ -156,6 +223,12 @@ class TestLimitEnforcement:
         assert result.safe
         assert "LIMIT" in result.sanitized_sql.upper()
         assert any("No LIMIT" in w for w in result.warnings)
+
+    def test_inject_outer_limit_when_subquery_has_limit(self, sanitizer: SQLSanitizer) -> None:
+        sql = "SELECT * FROM (SELECT id FROM users LIMIT 5) AS u"
+        result = sanitizer.sanitize(sql)
+        assert result.safe
+        assert result.sanitized_sql.upper().count("LIMIT") >= 2
 
     def test_preserve_existing_limit(self, sanitizer: SQLSanitizer) -> None:
         result = sanitizer.sanitize("SELECT id FROM users LIMIT 50")

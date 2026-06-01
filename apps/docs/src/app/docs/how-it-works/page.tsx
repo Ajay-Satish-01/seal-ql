@@ -98,8 +98,8 @@ export default function HowItWorksPage() {
     │
     └─ execute_natural_language_query (shared pipeline)
           ├─ planner.generate_plan → QueryPlan (LLM + Instructor)
-          ├─ SQLValidator (SQLGlot AST)
-          ├─ SQLSanitizer (LIMIT, no DROP/DELETE/…)
+          ├─ SQLValidator (schema: tables / columns)
+          ├─ SQLSanitizer (read-only AST, LIMIT, complexity)
           ├─ executor.execute
           └─ repair loop (feed DB/validation errors back to planner, up to 3 attempts)
     │
@@ -109,6 +109,10 @@ export default function HowItWorksPage() {
           You should expect one primary planner LLM call per attempt, plus extra calls only when SQL
           validation or the database returns a repairable error. Charts are derived from the plan and
           result shape — not from a separate chart LLM.
+        </p>
+        <p>
+          SQL validation and sanitization are documented in{' '}
+          <Link href="/docs/zero-trust-sql">Zero-trust SQL boundary</Link>.
         </p>
 
         <h2>Chat path (after guardrails)</h2>

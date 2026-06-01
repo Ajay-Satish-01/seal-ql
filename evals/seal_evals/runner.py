@@ -7,9 +7,8 @@ from typing import Any
 from seal_core.planner.planner import QueryPlanner
 from seal_core.schema.introspector import get_introspector
 from seal_core.schema.models import DatabaseSchema
+from seal_sql.boundary import format_boundary_errors, validate_and_sanitize
 from seal_sql.executor import QueryExecutor
-from seal_sql.sanitizer import SQLSanitizer
-from seal_sql.validator import SQLValidator
 
 logger = logging.getLogger(__name__)
 
@@ -71,25 +70,14 @@ class EvalRunner:
                 if current_attempt == 1:
                     plan = await self.planner.generate_plan(schema, question)
 
-                # Validation
-                validator = SQLValidator(schema)
-                val_result = validator.validate(plan.sql)
-                if not val_result.valid:
-                    raise ValueError(f"Validation failed: {val_result.errors}")
+                boundary = validate_and_sanitize(plan.sql, schema)
+                if not boundary.valid:
+                    raise ValueError(format_boundary_errors(boundary.errors))
 
                 metrics["validation_success"] += 1
 
-                # Sanitization
-                sanitizer = SQLSanitizer()
-                san_result = sanitizer.sanitize(val_result.normalized_sql)
-                if not san_result.safe:
-                    raise ValueError("Sanitization failed")
-
-                # Execution
-                # Note: This might fail if the DB doesn't match the schema/query perfectly
-                # In real evals, we'd have a seeded DB.
                 try:
-                    await self.executor.execute(san_result.sanitized_sql)
+                    await self.executor.execute(boundary.executable_sql)
                     metrics["execution_success"] += 1
 
                     if should_fail:

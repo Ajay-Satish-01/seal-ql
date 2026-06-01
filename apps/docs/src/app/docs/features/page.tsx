@@ -68,14 +68,18 @@ export default function FeaturesPage() {
         </ul>
 
         <h2 id="sql-safety">Zero-trust SQL (SQLGlot)</h2>
-        <p>Every generated statement is parsed to an AST before execution.</p>
+        <p>
+          Every generated statement is parsed to an AST before execution — validator, sanitizer, then
+          executor. Full reference: <Link href="/docs/zero-trust-sql">Zero-trust SQL boundary</Link>.
+        </p>
         <ul>
+          <li>Schema validation (tables, columns, ambiguous unqualified names)</li>
           <li>
-            Blocks <code>DROP</code>, <code>DELETE</code>, <code>TRUNCATE</code>, <code>UPDATE</code>,{' '}
-            <code>ALTER</code>
+            Blocks DML/DDL, <code>COPY</code>, <code>SELECT INTO</code>, locking clauses, and admin
+            statements
           </li>
-          <li>Enforces <code>LIMIT</code> on unbounded selects</li>
-          <li>Dialect-aware validation in <code>packages/sql</code></li>
+          <li>Rejects dynamic <code>LIMIT</code>; injects/clamps outer <code>LIMIT</code></li>
+          <li>Dialect-aware (<code>postgres</code> / <code>duckdb</code>) in <code>packages/sql</code></li>
         </ul>
 
         <h2 id="multi-database">Multi-database routing</h2>
