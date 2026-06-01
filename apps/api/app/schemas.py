@@ -1,9 +1,10 @@
 """API Request and Response Models."""
 
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 from seal_charts.models import ChartSpec
+from seal_core.guardrails.models import ScopeMetadata
 from seal_core.pipeline.models import EnhancementMetadata, ExecutionMetadata
 from seal_core.settings import get_settings
 from seal_sql.result import ColumnMetadata
@@ -41,7 +42,7 @@ class ChatMetadata(QueryMetadata):
     """Execution + enhancement metadata on /v1/chat JSON responses."""
 
     enhancement: EnhancementInfo = Field(default_factory=EnhancementInfo)
-    scope: dict[str, Any] | None = Field(
+    scope: ScopeMetadata | None = Field(
         None, description="Guardrails scope decision when classified."
     )
     refusal: bool | None = Field(None, description="True when the turn was refused.")
@@ -86,8 +87,11 @@ class DatabasesListResponse(BaseModel):
     )
 
 
+ChatMessageRole = Literal["user", "assistant"]
+
+
 class ChatMessageSchema(BaseModel):
-    role: str = Field(..., description="user or assistant")
+    role: ChatMessageRole = Field(..., description="Conversation role.")
     content: str = Field(
         ...,
         max_length=_MAX_CHAT_MESSAGE_CHARS,
@@ -153,7 +157,7 @@ class ChatStreamMeta(QueryMetadata):
     columns: list[ColumnMetadata] | None = Field(None, description="Column metadata.")
     chart: ChartSpec | None = Field(None, description="Chart when include_charts and SQL ran.")
     enhancement: EnhancementInfo = Field(default_factory=EnhancementInfo)
-    scope: dict[str, Any] | None = Field(None, description="Guardrails scope decision.")
+    scope: ScopeMetadata | None = Field(None, description="Guardrails scope decision.")
     refusal: bool | None = Field(None, description="True when the turn was refused.")
     sql_error: bool | None = Field(None, description="True when SQL execution failed.")
 

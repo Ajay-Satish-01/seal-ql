@@ -5,7 +5,7 @@ TypeScript modules consumed by `apps/docs` and `apps/web` via tsconfig path alia
 | Module | Purpose |
 |--------|---------|
 | `stream-meta.ts` | Runtime validation for SSE `seal.meta` (`parseStreamMeta`, `tryParseStreamMeta`, `partialStreamMetaFromRaw`) |
-| `metadata-contract.ts` | Execution metadata types, `STREAM_META_METADATA_KEYS`, `chatResponseToStreamMeta` |
+| `metadata-contract.ts` | Execution metadata types (`ScopeSource`, enhancement reason unions), `STREAM_META_METADATA_KEYS`, `chatResponseToStreamMeta` |
 | `metadata-summary.ts` | Badge labels for dashboard metadata panels |
 | `chat-sse-events.ts` | `mapChatSseEvent` — shared SSE → chat stream event mapping (docs + web) |
 

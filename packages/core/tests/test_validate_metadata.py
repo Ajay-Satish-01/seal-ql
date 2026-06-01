@@ -7,6 +7,7 @@ from seal_core.pipeline.validate_metadata import (
     validate_enhancement_block,
     validate_nested_chat_metadata,
     validate_query_metadata,
+    validate_scope_block,
     validate_stream_meta_event,
 )
 
@@ -113,3 +114,20 @@ def test_validate_nested_chat_metadata_sql_error_with_enhancement_ok() -> None:
         sql_at_top_level=False,
     )
     assert not errors
+
+
+def test_validate_scope_block_rejects_unknown_source() -> None:
+    errors = validate_scope_block({"in_scope": False, "reason": "off-topic", "source": "custom"})
+    assert any("scope.source" in e for e in errors)
+
+
+def test_validate_enhancement_block_rejects_unknown_vector_skipped() -> None:
+    errors = validate_enhancement_block(
+        {
+            "enabled": True,
+            "applied": [],
+            "vector_skipped_reason": "not_a_real_reason",
+        },
+        required=True,
+    )
+    assert any("vector_skipped_reason" in e for e in errors)

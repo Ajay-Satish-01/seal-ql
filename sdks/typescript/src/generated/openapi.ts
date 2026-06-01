@@ -317,9 +317,10 @@ export interface components {
         readonly ChatMessageSchema: {
             /**
              * Role
-             * @description user or assistant
+             * @description Conversation role.
+             * @enum {string}
              */
-            readonly role: string;
+            readonly role: "user" | "assistant";
             /**
              * Content
              * @description Message content.
@@ -364,13 +365,8 @@ export interface components {
              */
             readonly used_sql: boolean;
             readonly enhancement?: components["schemas"]["EnhancementInfo"];
-            /**
-             * Scope
-             * @description Guardrails scope decision when classified.
-             */
-            readonly scope?: {
-                readonly [key: string]: unknown;
-            } | null;
+            /** @description Guardrails scope decision when classified. */
+            readonly scope?: components["schemas"]["ScopeMetadata"] | null;
             /**
              * Refusal
              * @description True when the turn was refused.
@@ -647,12 +643,12 @@ export interface components {
             /** Applied */
             readonly applied?: readonly string[];
             /** Vector Skipped Reason */
-            readonly vector_skipped_reason?: string | null;
+            readonly vector_skipped_reason?: ("non_default_database" | "vector_store_disabled") | null;
             /**
              * Unavailable Reason
              * @description Set when enhancement was requested but the orchestrator is not active.
              */
-            readonly unavailable_reason?: string | null;
+            readonly unavailable_reason?: "orchestrator_unavailable" | null;
         };
         /** HTTPValidationError */
         readonly HTTPValidationError: {
@@ -817,6 +813,33 @@ export interface components {
              * @description FK constraint name
              */
             readonly constraint_name?: string | null;
+        };
+        /**
+         * ScopeCategory
+         * @description High-level scope classification bucket.
+         * @enum {string}
+         */
+        readonly ScopeCategory: "data" | "off_topic" | "abuse" | "ambiguous";
+        /**
+         * ScopeMetadata
+         * @description Scope decision embedded in chat metadata and SSE ``seal.meta``.
+         */
+        readonly ScopeMetadata: {
+            /** In Scope */
+            readonly in_scope: boolean;
+            /**
+             * Reason
+             * @default
+             */
+            readonly reason: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            readonly source: "heuristic" | "llm" | "limits" | "disabled";
+            readonly category?: components["schemas"]["ScopeCategory"] | null;
+            /** Confidence */
+            readonly confidence?: ("high" | "medium" | "low") | null;
         };
         /**
          * TableKind
@@ -1021,13 +1044,10 @@ export interface components {
             readonly chart: components["schemas"]["ChartSpec"] | null;
             readonly enhancement?: components["schemas"]["EnhancementInfo"];
             /**
-             * Scope
              * @description Guardrails scope decision.
              * @default null
              */
-            readonly scope: {
-                readonly [key: string]: unknown;
-            } | null;
+            readonly scope: components["schemas"]["ScopeMetadata"] | null;
             /**
              * Refusal
              * @description True when the turn was refused.

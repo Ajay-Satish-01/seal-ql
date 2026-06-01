@@ -741,8 +741,12 @@
         "properties": {
           "role": {
             "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
             "title": "Role",
-            "description": "user or assistant"
+            "description": "Conversation role."
           },
           "content": {
             "type": "string",
@@ -803,14 +807,12 @@
           "scope": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/ScopeMetadata"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Scope",
             "description": "Guardrails scope decision when classified."
           },
           "refusal": {
@@ -1272,7 +1274,11 @@
           "vector_skipped_reason": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "non_default_database",
+                  "vector_store_disabled"
+                ]
               },
               {
                 "type": "null"
@@ -1283,7 +1289,8 @@
           "unavailable_reason": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "const": "orchestrator_unavailable"
               },
               {
                 "type": "null"
@@ -1539,6 +1546,73 @@
         ],
         "title": "RelationshipInfo",
         "description": "A foreign key relationship between two tables."
+      },
+      "ScopeCategory": {
+        "type": "string",
+        "enum": [
+          "data",
+          "off_topic",
+          "abuse",
+          "ambiguous"
+        ],
+        "title": "ScopeCategory",
+        "description": "High-level scope classification bucket."
+      },
+      "ScopeMetadata": {
+        "properties": {
+          "in_scope": {
+            "type": "boolean",
+            "title": "In Scope"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "heuristic",
+              "llm",
+              "limits",
+              "disabled"
+            ],
+            "title": "Source"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScopeCategory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "in_scope",
+          "source"
+        ],
+        "title": "ScopeMetadata",
+        "description": "Scope decision embedded in chat metadata and SSE ``seal.meta``."
       },
       "TableKind": {
         "type": "string",
@@ -1918,16 +1992,14 @@
           "scope": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/ScopeMetadata"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "description": "Guardrails scope decision.",
-            "title": "Scope"
+            "description": "Guardrails scope decision."
           },
           "refusal": {
             "anyOf": [

@@ -18,6 +18,7 @@ from seal_core.chat.retriever import ContextRetriever
 from seal_core.database.config import DEFAULT_DATABASE_ID, planner_resources_for_database
 from seal_core.database.registry import UnknownDatabaseError
 from seal_core.enhancement.context import EnhancementContext
+from seal_core.guardrails.models import ScopeMetadata, ScopeResult
 from seal_core.guardrails.prompts import LIMIT_REFUSAL_MESSAGE, REFUSAL_SYSTEM
 from seal_core.guardrails.scope import classify_scope
 from seal_core.llm.client import get_api_base, get_api_key, get_async_client, get_model
@@ -402,14 +403,10 @@ class ChatService:
 
     async def _scope_gate(self, ctx: TurnContext):
         scope = await classify_scope(ctx.user_message, channel="chat")
-        ctx.metadata["scope"] = {
-            "in_scope": scope.in_scope,
-            "reason": scope.reason,
-            "source": scope.source,
-        }
+        ctx.metadata["scope"] = ScopeMetadata.from_result(scope).model_dump(exclude_none=True)
         return scope
 
-    async def _refusal_turn(self, ctx: TurnContext, scope) -> ChatResult:
+    async def _refusal_turn(self, ctx: TurnContext, scope: ScopeResult) -> ChatResult:
         metadata = build_chat_metadata(
             database_id=ctx.database_id,
             exec_result=None,
@@ -421,7 +418,7 @@ class ChatService:
             **self._enhancement_metadata_kwargs(ctx),
         )
         enforce_nested_chat_metadata(metadata, sql=None)
-        if getattr(scope, "source", None) == "limits":
+        if scope.source == "limits":
             return ChatResult(
                 session_id=ctx.session_id,
                 message=LIMIT_REFUSAL_MESSAGE,

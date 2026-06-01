@@ -26,9 +26,24 @@ Same execution fields live under **`metadata`**, plus chat-specific keys:
 | `metadata.enhancement.applied` | Enhancer names applied (e.g. `schema_aware`, `vector_rag`) |
 | `metadata.enhancement.vector_skipped_reason` | `non_default_database` or `vector_store_disabled` when RAG cannot run |
 | `metadata.enhancement.unavailable_reason` | `orchestrator_unavailable` when the client requested enhancement (e.g. `enhancement: true`) but no orchestrator is configured — including guardrails refusals; omitted when an orchestrator exists but the turn is a refusal |
-| `metadata.scope` | Guardrails scope decision |
+| `metadata.scope` | Guardrails scope decision (`ScopeMetadata` in OpenAPI) |
 | `metadata.refusal` | `true` on guardrails refusal |
 | `metadata.sql_error` | `true` when the data path failed (no `sql`, `used_sql=false`) |
+
+`metadata.scope` fields:
+
+| Field | Type / values |
+|-------|----------------|
+| `in_scope` | `boolean` |
+| `reason` | Short classifier or heuristic reason (string) |
+| `source` | `heuristic` \| `llm` \| `limits` \| `disabled` (see [guardrails.md](guardrails.md)) |
+
+`metadata.enhancement` enum fields (when set):
+
+| Field | Allowed values |
+|-------|----------------|
+| `vector_skipped_reason` | `non_default_database`, `vector_store_disabled` |
+| `unavailable_reason` | `orchestrator_unavailable` |
 
 `used_sql` is `true` only after **successful** SQL execution.
 
@@ -47,7 +62,7 @@ OpenAPI models this as `ChatStreamMeta`; wire format is SSE-framed (`event:` / `
 - Demo query fixtures: `scripts/response_validation.py` → `validate_query_response`
 - Chat JSON shape: `validate_chat_response`
 - Query `metadata`: `validate_query_metadata` (successful queries require full execution keys and `used_sql: true`)
-- `seal.meta` payload: `validate_stream_meta_event`
+- `seal.meta` payload: `validate_stream_meta_event` (includes `scope.source` and enhancement reason enums when present)
 - At runtime, `ChatService` and the query route call `enforce_*` helpers; invalid payloads are logged. Under strict mode, raises `InvalidQueryMetadataError`, `InvalidStreamMetaError`, or `InvalidChatMetadataError` (subclasses of `MetadataValidationError`). Set `STRICT_STREAM_META_VALIDATION=true` (alias `STRICT_METADATA_VALIDATION`, workspace hot-reload key `strict_stream_meta_validation`) to fail the HTTP request instead of only logging.
 
 Flatten helpers (keep in sync): `chat_response_to_stream_meta` (Python) and `chatResponseToStreamMeta` (`shared/metadata-contract.ts`); metadata keys in `config/stream_meta_metadata_keys.json`. Golden cases in `tests/fixtures/chat_flatten_golden.json` (`pnpm run verify:chat-flatten`). Validation parity matrix in `tests/fixtures/stream_meta_validation_matrix.json` (`pnpm run verify:stream-meta` in `apps/docs` / `make check`).

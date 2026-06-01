@@ -5,9 +5,21 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, get_args
 
+from seal_core.guardrails.models import ScopeSource
+from seal_core.pipeline.models import (
+    ENHANCEMENT_UNAVAILABLE_ORCHESTRATOR,
+    VECTOR_SKIPPED_NON_DEFAULT,
+    VECTOR_SKIPPED_VECTOR_STORE_DISABLED,
+)
 from seal_core.settings import get_settings
+
+_SCOPE_SOURCES = frozenset(get_args(ScopeSource))
+_VECTOR_SKIPPED_REASONS = frozenset(
+    {VECTOR_SKIPPED_NON_DEFAULT, VECTOR_SKIPPED_VECTOR_STORE_DISABLED}
+)
+_UNAVAILABLE_REASONS = frozenset({ENHANCEMENT_UNAVAILABLE_ORCHESTRATOR})
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +92,40 @@ def validate_enhancement_block(
         errors.append("enhancement.applied must be an array")
     elif not all(isinstance(item, str) for item in enh["applied"]):
         errors.append("enhancement.applied must be an array of strings")
+    vector_skipped = enh.get("vector_skipped_reason")
+    if vector_skipped is not None and (
+        not isinstance(vector_skipped, str) or vector_skipped not in _VECTOR_SKIPPED_REASONS
+    ):
+        errors.append(
+            "enhancement.vector_skipped_reason must be non_default_database or "
+            "vector_store_disabled"
+        )
+    unavailable = enh.get("unavailable_reason")
+    if unavailable is not None and (
+        not isinstance(unavailable, str) or unavailable not in _UNAVAILABLE_REASONS
+    ):
+        errors.append("enhancement.unavailable_reason must be orchestrator_unavailable")
+    return errors
+
+
+def validate_scope_block(scope: Any) -> list[str]:
+    """Validate nested or flat ``scope`` metadata."""
+    errors: list[str] = []
+    if scope is None:
+        return errors
+    if not isinstance(scope, dict):
+        errors.append("scope must be an object")
+        return errors
+    if "in_scope" not in scope or not isinstance(scope["in_scope"], bool):
+        errors.append("scope.in_scope must be a boolean")
+    reason = scope.get("reason")
+    if reason is not None and not isinstance(reason, str):
+        errors.append("scope.reason must be a string")
+    source = scope.get("source")
+    if source is None:
+        errors.append("scope.source is required")
+    elif not isinstance(source, str) or source not in _SCOPE_SOURCES:
+        errors.append("scope.source must be heuristic, llm, limits, or disabled")
     return errors
 
 
@@ -139,6 +185,8 @@ def validate_nested_chat_metadata(meta: dict[str, Any], *, sql_at_top_level: boo
             required=_requires_enhancement_block(meta),
         )
     )
+    if "scope" in meta:
+        errors.extend(validate_scope_block(meta.get("scope")))
     return errors
 
 
@@ -212,4 +260,6 @@ def validate_stream_meta_event(event: dict[str, Any]) -> list[str]:
         for i, col in enumerate(columns):
             if not isinstance(col, dict) or "name" not in col or "type" not in col:
                 errors.append(f"columns[{i}] must have name and type")
+    if "scope" in event:
+        errors.extend(validate_scope_block(event.get("scope")))
     return errors

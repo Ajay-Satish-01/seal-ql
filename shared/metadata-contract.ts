@@ -12,17 +12,21 @@ export interface ColumnDescriptor {
   nullable?: boolean;
 }
 
+export type VectorSkippedReason = 'non_default_database' | 'vector_store_disabled';
+export type EnhancementUnavailableReason = 'orchestrator_unavailable';
+export type ScopeSource = 'heuristic' | 'llm' | 'limits' | 'disabled';
+
 export interface EnhancementMetadata {
   enabled: boolean;
   applied: string[];
-  vector_skipped_reason?: string | null;
-  unavailable_reason?: string | null;
+  vector_skipped_reason?: VectorSkippedReason | null;
+  unavailable_reason?: EnhancementUnavailableReason | null;
 }
 
 export interface ScopeMetadata {
   in_scope: boolean;
   reason: string;
-  source: string;
+  source: ScopeSource;
 }
 
 /** Shared execution fields on query and chat. */

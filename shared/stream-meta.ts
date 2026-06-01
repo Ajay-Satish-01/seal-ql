@@ -4,6 +4,32 @@
  * `seal_core.pipeline.validate_metadata.validate_stream_meta_event`.
  */
 
+import type {
+  EnhancementUnavailableReason,
+  ScopeMetadata,
+  ScopeSource,
+  VectorSkippedReason,
+} from './metadata-contract';
+
+const SCOPE_SOURCES: readonly ScopeSource[] = ['heuristic', 'llm', 'limits', 'disabled'];
+const VECTOR_SKIPPED_REASONS: readonly VectorSkippedReason[] = [
+  'non_default_database',
+  'vector_store_disabled',
+];
+const UNAVAILABLE_REASONS: readonly EnhancementUnavailableReason[] = ['orchestrator_unavailable'];
+
+function isScopeSource(value: string): value is ScopeSource {
+  return (SCOPE_SOURCES as readonly string[]).includes(value);
+}
+
+function isVectorSkippedReason(value: string): value is VectorSkippedReason {
+  return (VECTOR_SKIPPED_REASONS as readonly string[]).includes(value);
+}
+
+function isUnavailableReason(value: string): value is EnhancementUnavailableReason {
+  return (UNAVAILABLE_REASONS as readonly string[]).includes(value);
+}
+
 export interface StreamMetaPayload {
   session_id: string;
   sources?: string[] | null;
@@ -21,10 +47,10 @@ export interface StreamMetaPayload {
   enhancement?: {
     enabled: boolean;
     applied: string[];
-    vector_skipped_reason?: string | null;
-    unavailable_reason?: string | null;
+    vector_skipped_reason?: VectorSkippedReason | null;
+    unavailable_reason?: EnhancementUnavailableReason | null;
   };
-  scope?: Record<string, unknown>;
+  scope?: ScopeMetadata;
   refusal?: boolean;
   sql_error?: boolean;
 }
@@ -66,18 +92,11 @@ export function parseStreamMeta(data: unknown): StreamMetaPayload {
 
   const needsEnhancement =
     record.used_sql === true || record.refusal === true || record.sql_error === true;
-  const enhancement = record.enhancement;
-  if (needsEnhancement) {
-    if (enhancement == null || typeof enhancement !== 'object') {
-      throw new Error('seal.meta missing enhancement object');
-    }
-    const enh = enhancement as Record<string, unknown>;
-    if (typeof enh.enabled !== 'boolean' || !Array.isArray(enh.applied)) {
-      throw new Error('seal.meta enhancement must include enabled and applied');
-    }
-    if (!enh.applied.every((item) => typeof item === 'string')) {
-      throw new Error('seal.meta enhancement.applied must be an array of strings');
-    }
+  if (needsEnhancement && readEnhancement(record.enhancement) === undefined) {
+    throw new Error('seal.meta invalid enhancement object');
+  }
+  if ('scope' in record && readScope(record.scope) === undefined) {
+    throw new Error('seal.meta invalid scope object');
   }
 
   const columns = record.columns;
@@ -125,13 +144,35 @@ function readEnhancement(raw: unknown): StreamMetaPayload['enhancement'] | undef
   if (!enh.applied.every((item) => typeof item === 'string')) {
     return undefined;
   }
+  if (
+    enh.vector_skipped_reason !== undefined &&
+    enh.vector_skipped_reason !== null &&
+    (typeof enh.vector_skipped_reason !== 'string' ||
+      !isVectorSkippedReason(enh.vector_skipped_reason))
+  ) {
+    return undefined;
+  }
+  if (
+    enh.unavailable_reason !== undefined &&
+    enh.unavailable_reason !== null &&
+    (typeof enh.unavailable_reason !== 'string' || !isUnavailableReason(enh.unavailable_reason))
+  ) {
+    return undefined;
+  }
+  const vectorSkipped =
+    typeof enh.vector_skipped_reason === 'string' &&
+    isVectorSkippedReason(enh.vector_skipped_reason)
+      ? enh.vector_skipped_reason
+      : null;
+  const unavailable =
+    typeof enh.unavailable_reason === 'string' && isUnavailableReason(enh.unavailable_reason)
+      ? enh.unavailable_reason
+      : null;
   return {
     enabled: enh.enabled,
     applied: enh.applied as string[],
-    vector_skipped_reason:
-      typeof enh.vector_skipped_reason === 'string' ? enh.vector_skipped_reason : null,
-    unavailable_reason:
-      typeof enh.unavailable_reason === 'string' ? enh.unavailable_reason : null,
+    vector_skipped_reason: vectorSkipped,
+    unavailable_reason: unavailable,
   };
 }
 
@@ -143,7 +184,8 @@ function readScope(raw: unknown): StreamMetaPayload['scope'] | undefined {
   if (
     typeof scope.in_scope === 'boolean' &&
     typeof scope.reason === 'string' &&
-    typeof scope.source === 'string'
+    typeof scope.source === 'string' &&
+    isScopeSource(scope.source)
   ) {
     return {
       in_scope: scope.in_scope,

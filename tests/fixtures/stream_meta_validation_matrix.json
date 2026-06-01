@@ -83,6 +83,48 @@
         "refusal": true,
         "enhancement": { "enabled": "true", "applied": [] }
       }
+    },
+    {
+      "id": "valid_scope_metadata",
+      "should_pass": true,
+      "payload": {
+        "session_id": "s-scope",
+        "used_sql": false,
+        "refusal": true,
+        "enhancement": { "enabled": false, "applied": [] },
+        "scope": { "in_scope": false, "reason": "off-topic", "source": "heuristic" }
+      }
+    },
+    {
+      "id": "invalid_scope_source",
+      "should_pass": false,
+      "payload": {
+        "session_id": "s-scope",
+        "used_sql": false,
+        "refusal": true,
+        "enhancement": { "enabled": false, "applied": [] },
+        "scope": { "in_scope": false, "reason": "off-topic", "source": "unknown" }
+      }
+    },
+    {
+      "id": "invalid_vector_skipped_reason",
+      "should_pass": false,
+      "payload": {
+        "session_id": "s1",
+        "used_sql": true,
+        "sql": "SELECT 1",
+        "database_id": "default",
+        "row_count": 1,
+        "execution_time_ms": 1.0,
+        "truncated": false,
+        "warnings": [],
+        "repair_attempts": 0,
+        "enhancement": {
+          "enabled": true,
+          "applied": [],
+          "vector_skipped_reason": "bad_reason"
+        }
+      }
     }
   ]
 }

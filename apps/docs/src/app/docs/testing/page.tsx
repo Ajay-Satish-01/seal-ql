@@ -45,6 +45,11 @@ export default function TestingPage() {
             <code>test_catalog_workspace_integration.py</code>, and the TypeScript SDK Vitest suite.
           </li>
           <li>
+            <strong>Python — Ruff + OpenAPI sync</strong> — Lint/format and{' '}
+            <code>make verify-openapi-sync</code> (committed OpenAPI spec +{' '}
+            <code>sdks/typescript/src/generated/openapi.ts</code>).
+          </li>
+          <li>
             <strong>Docs &amp; dashboard builds</strong> — Ensures the marketing/docs site and
             operational dashboard compile; catches broken imports such as the linked{' '}
             <code>seal</code> TypeScript SDK in the demo.
@@ -86,7 +91,8 @@ docker compose exec -T api uv run pytest -v \\
         <h3>What each command gives you</h3>
         <p>
           <strong><code>make check</code></strong> — Runs Ruff, pytest with E2E files ignored,
-          OpenAPI sync verification, and production builds for <code>apps/docs</code> and{' '}
+          metadata contract scripts (<code>verify:chat-flatten</code>, stream-meta parity), OpenAPI
+          sync verification, and production builds for <code>apps/docs</code> and{' '}
           <code>apps/web</code>. Expect a green summary locally to match the majority of CI; it does{' '}
           <em>not</em> call a live LLM.
         </p>

@@ -52,7 +52,7 @@ See [multi-database.md](multi-database.md) for registry config, DuckDB URL norma
 5. If `needs_data`: `ContextRetriever.select_tables` + `execute_natural_language_query` using bundle executor (+ optional chart)
 6. `_answer_system` (enhancement at `stage=answer`) + answer LLM or SSE stream
 
-Streaming: `seal.meta` (flat JSON with `database_id`, execution fields, `enhancement`, `scope`, optional `refusal` / `sql_error`) then token deltas; mismatch errors before SSE starts. Server validates with `validate_stream_meta_event`; clients use `shared/stream-meta.ts` and `mapChatSseEvent` (`meta_error` on malformed payloads).
+Streaming: `seal.meta` (flat JSON with `database_id`, execution fields, `enhancement`, `scope` as `ScopeMetadata` with typed `source`, optional `refusal` / `sql_error`) then token deltas; mismatch errors before SSE starts. Server validates with `validate_stream_meta_event`; clients use `shared/stream-meta.ts` and `mapChatSseEvent` (`meta_error` on malformed payloads).
 
 **Session pinning:** `_complete_turn` sets `state.database_id` only after a successful in-scope JSON or completed stream turn. Refusals do not pin. Follow-ups must repeat the same `database_id`.
 

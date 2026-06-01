@@ -54,6 +54,15 @@ export default function ExecutionMetadataPage() {
       </p>
       <MetadataJsonBlock code={CHAT_STREAM_META_JSON} className="mt-4" />
 
+      <Callout variant="info" title="Typed fields (OpenAPI)">
+        OpenAPI components <code>ScopeMetadata</code>, <code>EnhancementInfo</code>, and{' '}
+        <code>QueryMetadata</code> use constrained enums where applicable — for example{' '}
+        <code>scope.source</code> is one of <code>heuristic</code>, <code>llm</code>,{' '}
+        <code>limits</code>, <code>disabled</code>. TypeScript SDK types come from{' '}
+        <code>make openapi-ts</code>; docs and the dashboard validate SSE payloads with{' '}
+        <code>shared/stream-meta.ts</code> (unknown enum values fail client parse).
+      </Callout>
+
       <Callout variant="info" title="Strict validation">
         Set <code>STRICT_STREAM_META_VALIDATION=true</code> (alias{' '}
         <code>STRICT_METADATA_VALIDATION</code>) to fail requests when metadata or{' '}
@@ -85,8 +94,13 @@ export default function ExecutionMetadataPage() {
           <code>metadata.enhancement.*</code>
         </li>
         <li>
+          <DocLink href="/docs/guardrails">Guardrails</DocLink> —{' '}
+          <code>metadata.scope.source</code> values
+        </li>
+        <li>
           <DocLink href="/docs/api-reference">API reference</DocLink> — OpenAPI components{' '}
-          <code>QueryMetadata</code>, <code>ChatMetadata</code>, <code>ChatStreamMeta</code>
+          <code>QueryMetadata</code>, <code>ChatMetadata</code>, <code>ScopeMetadata</code>,{' '}
+          <code>ChatStreamMeta</code>
         </li>
         <li>
           <DocLink href="/demo">Interactive demo</DocLink> — fixture chat panels show metadata JSON

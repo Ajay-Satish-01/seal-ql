@@ -73,6 +73,15 @@ export default function ChatStreamingPage() {
       <h3 className="text-foreground mt-6 text-lg font-medium">Example seal.meta payload</h3>
       <MetadataJsonBlock title="Example seal.meta payload" code={CHAT_STREAM_META_JSON} className="mt-6" />
 
+      <Callout variant="info" title="Client validation (SDK / dashboard / demo)">
+        The TypeScript SDK maps SSE frames with <code>mapChatSseEvent</code>. Malformed{' '}
+        <code>seal.meta</code> (for example invalid <code>scope.source</code>) yields a{' '}
+        <code>meta_error</code> event with <code>partial</code> fields when{' '}
+        <code>session_id</code> / <code>database_id</code> are still readable; answer deltas may
+        continue. Same rules in <code>shared/stream-meta.ts</code> used by the dashboard and docs
+        demo.
+      </Callout>
+
       <p className="text-muted-foreground mt-6 text-sm">
         Non-streaming JSON: set <code>stream: false</code> (default). See{' '}
         <DocLink href="/docs/chat-qa">Chat &amp; Q&amp;A</DocLink> and the{' '}

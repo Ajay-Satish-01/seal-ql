@@ -34,7 +34,7 @@ pnpm run verify:chat-flatten    # tests/fixtures/chat_flatten_golden.json
 pnpm run verify:stream-meta     # stream_meta_validation_matrix.json parity
 ```
 
-Demo and doc pages import `shared/stream-meta.ts` and `shared/chat-sse-events.ts` for SSE parsing (same behavior as the dashboard).
+Demo and doc pages import `shared/stream-meta.ts` and `shared/chat-sse-events.ts` for SSE parsing (same behavior as the dashboard). Execution field enums and `ScopeMetadata` are documented on `/docs/execution-metadata` and in repo [docs/chat-metadata.md](../../docs/chat-metadata.md).
 
 ## Development
 

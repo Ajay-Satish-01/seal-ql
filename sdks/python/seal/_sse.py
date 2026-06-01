@@ -9,6 +9,15 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
+ScopeSource = Literal["heuristic", "llm", "limits", "disabled"]
+
+
+class ChatStreamScope(TypedDict, total=False):
+    in_scope: bool
+    reason: str
+    source: ScopeSource
+
+
 class ChatStreamMeta(TypedDict, total=False):
     session_id: str
     sources: list[str]
@@ -24,7 +33,7 @@ class ChatStreamMeta(TypedDict, total=False):
     repair_attempts: int
     used_sql: bool
     enhancement: dict[str, Any]
-    scope: dict[str, Any]
+    scope: ChatStreamScope
     refusal: bool
     sql_error: bool
 

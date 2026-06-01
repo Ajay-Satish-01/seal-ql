@@ -56,7 +56,12 @@ export const CHAT_METADATA_EXTRA_FIELDS: MetadataFieldDef[] = [
   },
   {
     name: 'metadata.scope',
-    description: 'Guardrails decision (in_scope, reason, source)',
+    description:
+      'ScopeMetadata: in_scope, reason, source (heuristic | llm | limits | disabled)',
+  },
+  {
+    name: 'metadata.refusal',
+    description: 'true on guardrails refusal (HTTP 200, no SQL)',
   },
   {
     name: 'metadata.sql_error',

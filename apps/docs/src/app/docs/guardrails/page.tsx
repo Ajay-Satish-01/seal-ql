@@ -25,7 +25,7 @@ export default function GuardrailsPage() {
         <p>
           Implementation lives in <code>packages/core/seal_core/guardrails/</code>. The API routes
           call <code>classify_scope</code>; chat additionally records results in{' '}
-          <code>metadata.scope</code> on every response.
+          <code>metadata.scope</code> (<code>ScopeMetadata</code> in OpenAPI) on every response.
         </p>
 
         <Callout variant="info" title="Different HTTP semantics by design">

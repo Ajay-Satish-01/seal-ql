@@ -37,7 +37,14 @@ Set `CORS_ORIGINS` to include `http://localhost:3001` (default in `.env.example`
 
 ## Shared metadata modules
 
-The dashboard imports `shared/stream-meta.ts`, `shared/chat-sse-events.ts`, and `shared/metadata-contract.ts` (same as `apps/docs`). Invalid `seal.meta` payloads surface as `meta_error` while preserving partial `session_id` / `database_id` when present. Field reference: repo [docs/chat-metadata.md](../../docs/chat-metadata.md) and docs site `/docs/execution-metadata`.
+The dashboard imports `shared/stream-meta.ts`, `shared/chat-sse-events.ts`, and `shared/metadata-contract.ts` (same as `apps/docs`). Invalid `seal.meta` payloads (including unknown `scope.source` or enhancement reason strings) surface as `meta_error` while preserving partial `session_id` / `database_id` when present.
+
+| UI | Data |
+|----|------|
+| **Query** (`/query`) | `response.metadata` (`QueryMetadata` from OpenAPI) |
+| **Chat** (`/chat`) | Flat fields from first SSE `seal.meta`; badges via `metadata-summary.ts` |
+
+Allowed `metadata.scope.source` values: `heuristic`, `llm`, `limits`, `disabled`. Field reference: [docs/chat-metadata.md](../../docs/chat-metadata.md) and docs site `/docs/execution-metadata`.
 
 ## Build
 

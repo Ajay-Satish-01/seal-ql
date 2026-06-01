@@ -8,18 +8,22 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, Field
 
 from seal_core.database.config import DEFAULT_DATABASE_ID, is_default_database_id
+from seal_core.guardrails.models import ScopeMetadata
 
 if TYPE_CHECKING:
     from seal_core.pipeline.execute import ExecuteQueryResult
 
-VECTOR_SKIPPED_NON_DEFAULT = "non_default_database"
-VECTOR_SKIPPED_VECTOR_STORE_DISABLED = "vector_store_disabled"
-ENHANCEMENT_UNAVAILABLE_ORCHESTRATOR = "orchestrator_unavailable"
+VectorSkippedReason = Literal["non_default_database", "vector_store_disabled"]
+EnhancementUnavailableReason = Literal["orchestrator_unavailable"]
+
+VECTOR_SKIPPED_NON_DEFAULT: VectorSkippedReason = "non_default_database"
+VECTOR_SKIPPED_VECTOR_STORE_DISABLED: VectorSkippedReason = "vector_store_disabled"
+ENHANCEMENT_UNAVAILABLE_ORCHESTRATOR: EnhancementUnavailableReason = "orchestrator_unavailable"
 
 
 class EnhancementMetadata(BaseModel):
@@ -27,8 +31,8 @@ class EnhancementMetadata(BaseModel):
 
     enabled: bool = False
     applied: list[str] = Field(default_factory=list)
-    vector_skipped_reason: str | None = None
-    unavailable_reason: str | None = Field(
+    vector_skipped_reason: VectorSkippedReason | None = None
+    unavailable_reason: EnhancementUnavailableReason | None = Field(
         None,
         description="Set when enhancement was requested but the orchestrator is not active.",
     )
@@ -87,13 +91,13 @@ def build_enhancement_metadata(
     ``unavailable_reason`` is set when enhancement was requested but no orchestrator is
     configured (not when enhancement is intentionally off for a turn, e.g. guardrails refusal).
     """
-    reason: str | None = None
+    reason: VectorSkippedReason | None = None
     if enabled:
         if not is_default_database_id(database_id):
             reason = VECTOR_SKIPPED_NON_DEFAULT
         elif not vector_rag_available:
             reason = VECTOR_SKIPPED_VECTOR_STORE_DISABLED
-    unavailable: str | None = None
+    unavailable: EnhancementUnavailableReason | None = None
     if enhancement_requested and not orchestrator_available:
         unavailable = ENHANCEMENT_UNAVAILABLE_ORCHESTRATOR
     return EnhancementMetadata(
@@ -111,7 +115,7 @@ def build_chat_metadata(
     used_sql: bool,
     enhancement_enabled: bool,
     applied: list[str] | None = None,
-    scope: dict[str, Any] | None = None,
+    scope: ScopeMetadata | dict[str, Any] | None = None,
     refusal: bool = False,
     sql_error: bool = False,
     vector_rag_available: bool,
@@ -134,7 +138,9 @@ def build_chat_metadata(
     )
     payload["enhancement"] = enh.model_dump(exclude_none=True)
     if scope is not None:
-        payload["scope"] = scope
+        payload["scope"] = (
+            scope.model_dump(exclude_none=True) if isinstance(scope, ScopeMetadata) else scope
+        )
     if refusal:
         payload["refusal"] = True
     if sql_error:
@@ -155,7 +161,7 @@ def build_stream_meta_event(
     results: list[dict[str, Any]] | None,
     columns: list[dict[str, Any]] | None,
     chart: dict[str, Any] | None,
-    scope: dict[str, Any] | None,
+    scope: ScopeMetadata | dict[str, Any] | None,
     refusal: bool = False,
     sql_error: bool = False,
     vector_rag_available: bool,

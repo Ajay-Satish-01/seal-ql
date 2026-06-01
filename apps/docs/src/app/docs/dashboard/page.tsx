@@ -42,9 +42,10 @@ export default function DashboardPage() {
             full <code>metadata</code> (row count, timing, warnings, <code>used_sql</code>).
           </li>
           <li>
-            <strong>Chat</strong> — SSE <code>seal.meta</code> before token deltas; execution metadata
-            panel (enhancement, scope, refusal, <code>sql_error</code>). Same <code>database_id</code> on
-            every turn; changing the dropdown clears the session. See{' '}
+            <strong>Chat</strong> — SSE <code>seal.meta</code> before token deltas; metadata panel
+            (enhancement, <code>scope.source</code>, refusal, <code>sql_error</code>). Invalid meta
+            shows a toast but keeps partial session fields when possible. Same <code>database_id</code>{' '}
+            on every turn; changing the dropdown clears the session. See{' '}
             <Link href="/docs/execution-metadata">Execution metadata</Link>.
           </li>
           <li>

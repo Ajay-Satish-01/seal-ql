@@ -7,7 +7,7 @@ so the SDK has zero dependency on the internal server packages.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -56,6 +56,11 @@ class ExecutionMetadata(BaseModel):
     used_sql: bool = False
 
 
+VectorSkippedReason = Literal["non_default_database", "vector_store_disabled"]
+EnhancementUnavailableReason = Literal["orchestrator_unavailable"]
+ScopeSource = Literal["heuristic", "llm", "limits", "disabled"]
+
+
 class EnhancementMetadata(BaseModel):
     """Enhancement chain metadata on chat responses.
 
@@ -64,15 +69,23 @@ class EnhancementMetadata(BaseModel):
 
     enabled: bool = False
     applied: list[str] = Field(default_factory=list)
-    vector_skipped_reason: str | None = None
-    unavailable_reason: str | None = None
+    vector_skipped_reason: VectorSkippedReason | None = None
+    unavailable_reason: EnhancementUnavailableReason | None = None
+
+
+class ScopeMetadata(BaseModel):
+    """Guardrails scope decision on chat metadata and SSE seal.meta."""
+
+    in_scope: bool
+    reason: str = ""
+    source: ScopeSource
 
 
 class ChatMetadata(ExecutionMetadata):
     """Metadata on POST /v1/chat JSON responses."""
 
     enhancement: EnhancementMetadata = Field(default_factory=EnhancementMetadata)
-    scope: dict[str, Any] | None = None
+    scope: ScopeMetadata | None = None
     refusal: bool | None = None
     sql_error: bool | None = None
 
