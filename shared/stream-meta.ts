@@ -216,7 +216,6 @@ function readScope(raw: unknown): StreamMetaPayload['scope'] | undefined {
     ...(scope.reason !== undefined && scope.reason !== null ? { reason: scope.reason } : {}),
     source: scope.source,
   };
-  return undefined;
 }
 
 /**
