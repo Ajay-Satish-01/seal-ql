@@ -37,18 +37,24 @@ export default function ChatPage() {
   const prevDatabaseRef = useRef(databaseId);
 
   useEffect(() => {
-    if (prevDatabaseRef.current !== databaseId) {
-      prevDatabaseRef.current = databaseId;
-      setSessionId(undefined);
-      setActiveDatabaseId(undefined);
-      setHistory([]);
-      setAnswer('');
-      setSql(null);
-      setResults([]);
-      setChart(null);
-      notifyInfo(`Database changed to "${databaseId}" — chat session cleared`);
+    if (prevDatabaseRef.current === databaseId) {
+      return;
     }
-  }, [databaseId]);
+    const hadSession =
+      sessionId !== undefined || history.length > 0 || activeDatabaseId !== undefined;
+    prevDatabaseRef.current = databaseId;
+    if (!hadSession) {
+      return;
+    }
+    setSessionId(undefined);
+    setActiveDatabaseId(undefined);
+    setHistory([]);
+    setAnswer('');
+    setSql(null);
+    setResults([]);
+    setChart(null);
+    notifyInfo(`Database changed to "${databaseId}" — chat session cleared`);
+  }, [databaseId, sessionId, history, activeDatabaseId]);
 
   function send() {
     abortRef.current?.abort();

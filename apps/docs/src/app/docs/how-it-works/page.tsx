@@ -74,7 +74,7 @@ export default function HowItWorksPage() {
         </ol>
         <p>
           <strong>Out-of-scope query</strong> → HTTP 400, detail <code>query_out_of_scope</code>, no
-          planner.           <strong>Out-of-scope chat</strong> → HTTP 200 with a short refusal from{' '}
+          planner. <strong>Out-of-scope chat</strong> → HTTP 200 with a short refusal from{' '}
           <code>REFUSAL_SYSTEM</code> only — no <code>ChatDecision</code>, no SQL, no RAG. Metadata
           includes <code>scope</code>, <code>refusal: true</code>, and <code>database_id</code> (session
           is not pinned on refusal).

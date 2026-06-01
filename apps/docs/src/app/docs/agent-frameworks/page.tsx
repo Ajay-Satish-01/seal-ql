@@ -82,7 +82,7 @@ export default function AgentFrameworksPage() {
       <ul className="text-muted-foreground mt-3 list-disc space-y-2 pl-6 text-sm">
         <li>
           <code>seal_get_schema</code> — optional <code>database_id</code> (default{' '}
-          <code>default</code>)
+          <code>&quot;default&quot;</code>)
         </li>
         <li>
           <code>seal_query</code> — optional <code>database_id</code>; unknown id → HTTP 404
