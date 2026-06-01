@@ -309,9 +309,10 @@ async def test_refusal_metadata_omits_unavailable_when_orchestrator_present() ->
             True,
             "default",
         )
+        # Use limits source to skip refusal LLM; metadata is built the same path.
         result = await service._refusal_turn(
             ctx,
-            scope=ScopeResult(in_scope=False, reason="off-topic", source="heuristic"),
+            scope=ScopeResult(in_scope=False, reason="off-topic", source="limits"),
         )
 
     assert result.metadata["refusal"] is True
