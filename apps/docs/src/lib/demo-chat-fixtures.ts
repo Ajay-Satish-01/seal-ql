@@ -33,7 +33,13 @@ export function chatResponseFromPreset(preset: DemoPreset): ChatApiResponse {
     results: rows.slice(0, 5),
     chart: preset.response.chart as ChatApiResponse['chart'],
     columns: preset.response.columns,
-    metadata: buildDemoChatMetadata(preset.response.metadata),
+    metadata: buildDemoChatMetadata({
+      row_count: rows.length,
+      execution_time_ms: 48,
+      truncated: false,
+      warnings: [],
+      repair_attempts: 0,
+    }),
   };
 }
 

@@ -12,9 +12,9 @@ export interface ChatApiResponse {
   message: string;
   sources?: string[];
   sql?: string | null;
-  results?: Record<string, unknown>[] | null;
+  results?: ReadonlyArray<Record<string, unknown>> | null;
   chart?: Record<string, unknown> | null;
-  columns?: ColumnDescriptor[] | null;
+  columns?: ReadonlyArray<ColumnDescriptor> | null;
   metadata?: ChatMetadata;
 }
 

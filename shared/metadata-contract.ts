@@ -75,8 +75,8 @@ export function chatResponseToStreamMeta(response: {
   session_id: string;
   sources?: string[];
   sql?: string | null;
-  results?: Record<string, unknown>[] | null;
-  columns?: ColumnDescriptor[] | null;
+  results?: ReadonlyArray<Record<string, unknown>> | null;
+  columns?: ReadonlyArray<ColumnDescriptor> | null;
   chart?: Record<string, unknown> | null;
   metadata?: ChatMetadata;
 }): ChatStreamMeta {
