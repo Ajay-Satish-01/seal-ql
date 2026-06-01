@@ -1,4 +1,10 @@
 import openapi from '@/data/openapi.json';
+import {
+  CHAT_METADATA_REFUSAL_EXAMPLE,
+  CHAT_METADATA_SQL_EXAMPLE,
+  QUERY_METADATA_EXAMPLE,
+  chatStreamMetaExample,
+} from '@/lib/execution-metadata';
 
 export type OpenAPISpec = typeof openapi;
 
@@ -87,12 +93,7 @@ export function schemaToExample(schemaName: string): string {
           color_field: null,
         },
       },
-      metadata: {
-        row_count: 1,
-        execution_time_ms: 24.5,
-        truncated: false,
-        warnings: [],
-      },
+      metadata: QUERY_METADATA_EXAMPLE,
     },
     HealthResponse: { status: 'ok' },
     ChatRequest: {
@@ -107,12 +108,25 @@ export function schemaToExample(schemaName: string): string {
       session_id: '550e8400-e29b-41d4-a716-446655440000',
       message: 'The database includes products, orders, and events_hourly among others.',
       sources: ['products', 'orders'],
+      sql: 'SELECT COUNT(*) AS n FROM orders',
+      results: [{ n: 12840 }],
+      columns: [{ name: 'n', type: 'int8', nullable: true }],
+      chart: null,
+      metadata: CHAT_METADATA_SQL_EXAMPLE,
+    },
+    ChatStreamMeta: chatStreamMetaExample(),
+    ChatMetadata: CHAT_METADATA_SQL_EXAMPLE,
+    ChatResponseRefusal: {
+      session_id: '550e8400-e29b-41d4-a716-446655440001',
+      message: 'I can only help with questions about your connected data and analytics.',
+      sources: [],
       sql: null,
       results: null,
       columns: null,
       chart: null,
-      metadata: { used_sql: false, enhancement: { applied: ['schema_aware', 'multi_turn'] } },
+      metadata: CHAT_METADATA_REFUSAL_EXAMPLE,
     },
+    QueryMetadata: QUERY_METADATA_EXAMPLE,
     CatalogResponse: {
       version: 1,
       generated_at: '2026-01-01T00:00:00Z',

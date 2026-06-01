@@ -209,7 +209,8 @@ Once registered:
   * Python files are reformatted and linted using `ruff` (extremely fast!).
   * TypeScript files are formatted with `prettier` and linted with `eslint`.
   * Standard file sanity checks are done (JSON, TOML, YAML parsing, merge conflict resolution).
-* **Tests** run in CI on every PR (`Python — Tests` + `E2E Tests`). Locally: `make check` (unit) and `make check-e2e` (live stack).
+* **Tests** run in CI on every PR (`Python — Tests` + `E2E Tests`). Locally: `make check` (unit, OpenAPI sync, metadata contract checks, docs/dashboard builds) and `make check-e2e` (live stack).
+* **API types** — After changing Pydantic models in `apps/api/app/schemas.py`, run `make openapi-ts` and commit `apps/api/openapi.{json,yaml}`, docs OpenAPI copies, and `sdks/typescript/src/generated/openapi.ts`. CI enforces via `make verify-openapi-sync`.
 
 To run all formatting and linting controls manually:
 ```bash
@@ -233,17 +234,21 @@ pre-commit run --all-files
 │   └── semantic/                # Semantic metrics registries
 ├── config
 │   ├── catalog.example.yaml     # Sample data catalog (descriptions)
-│   └── seal-tools.openai.json   # OpenAI tool manifest for agents
+│   ├── seal-tools.openai.json   # OpenAI tool manifest for agents
+│   └── stream_meta_metadata_keys.json  # Shared metadata key manifest (Python + TS)
+├── shared/                      # Cross-app TS: stream-meta, metadata-contract (docs + dashboard)
 ├── docs
+│   ├── chat-metadata.md         # Query/chat execution metadata (JSON vs SSE)
 │   ├── chat-enhancement.md      # Prompt enhancer chain (contributors)
 │   ├── guardrails.md            # Scope gate (contributors)
 │   ├── workspace-api.md         # Workspace settings API (contributors)
 │   └── integrations/            # Vector stores, agent frameworks, custom enhancers
 ├── sdks
 │   ├── python/                  # Python SDK wrapper
-│   └── typescript/              # TypeScript SDK wrapper
+│   └── typescript/              # TypeScript SDK (OpenAPI-generated types + vendored shared/)
 ├── scripts
 │   ├── seed.sql                 # TimescaleDB & Postgres analytics schema seed
+│   ├── generate_openapi.py      # OpenAPI spec + injected SSE/chat component schemas
 │   └── sync_catalog.py          # CLI catalog sync
 ├── pyproject.toml               # Master uv Workspace Configuration
 └── docker-compose.yml           # Core Docker services manifest
@@ -265,7 +270,7 @@ pre-commit run --all-files
 | `GET /v1/workspace/export` | Export settings + catalog overrides |
 | `POST /v1/vector/reindex` | Rebuild vector index |
 
-User-facing guides: docs site at `http://localhost:3000` (`/docs/how-it-works`, `/docs/configuration`, `/docs/guardrails`), dashboard at `http://localhost:3001`, plus [SETUP.md](SETUP.md), [docs/how-seal-works.md](docs/how-seal-works.md), and [DEPLOYMENT.md](DEPLOYMENT.md).
+User-facing guides: docs site at `http://localhost:3000` (`/docs/how-it-works`, `/docs/execution-metadata`, `/docs/configuration`, `/docs/guardrails`), dashboard at `http://localhost:3001`, plus [SETUP.md](SETUP.md), [docs/how-seal-works.md](docs/how-seal-works.md), [docs/chat-metadata.md](docs/chat-metadata.md), and [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## 📦 Publishing
 

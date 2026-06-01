@@ -18,7 +18,9 @@
     "start": "next start",
     "lint": "eslint . --fix",
     "format": "prettier --write .",
-    "fbl": "pnpm install --frozen-lockfile && pnpm format && pnpm lint && pnpm build"
+    "fbl": "pnpm install --frozen-lockfile && pnpm format && pnpm lint && pnpm build",
+    "verify:chat-flatten": "tsx ../../scripts/verify_chat_flatten_contract.ts",
+    "verify:stream-meta": "tsx ../../scripts/verify_stream_meta_validation_parity.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -49,6 +51,7 @@
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }

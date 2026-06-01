@@ -19,7 +19,8 @@ We use a monorepo architecture managed by modern tooling:
 * **Frontend (TypeScript)**:
   * `apps/docs` — docs site + fixture demo (port 3000, `pnpm`)
   * `apps/web` — operational dashboard (port 3001, `pnpm`)
-  * `sdks/typescript/` — published `seal` npm package
+  * `shared/` — stream-meta, metadata-contract, metadata-summary (imported by docs + dashboard; vendored into the TS SDK on `prebuild`)
+  * `sdks/typescript/` — published `seal` npm package (OpenAPI-generated wire types in `src/generated/openapi.ts`)
 
 ---
 
@@ -153,6 +154,39 @@ Seal features self-correcting query mechanisms and domain-aware schema reasoning
 
 ---
 
+## 📡 API schema and TypeScript types
+
+Request/response shapes are defined in **`apps/api/app/schemas.py`** (Pydantic v2). The TypeScript SDK does **not** duplicate field lists in `types.ts` by hand.
+
+After changing API models or route response types:
+
+```bash
+make openapi-ts          # openapi.json + openapi-typescript → sdks/typescript/src/generated/openapi.ts
+make sync-docs-assets    # when demo fixtures or docs copies need refresh
+make verify-openapi-sync # same gate as CI — must be clean before merge
+```
+
+Commit together: `apps/api/openapi.json`, `apps/api/openapi.yaml`, `apps/docs/src/data/openapi.json`, `apps/docs/public/openapi.json`, and `sdks/typescript/src/generated/openapi.ts`.
+
+`scripts/generate_openapi.py` also injects component schemas referenced only in manual route responses (for example `ChatStreamMeta` on SSE). See [sdks/typescript/README.md](sdks/typescript/README.md).
+
+---
+
+## 📊 Execution metadata contract
+
+Query and chat share execution fields (`database_id`, `row_count`, `used_sql`, `enhancement`, `scope`, `refusal`, `sql_error`, etc.). JSON chat nests them under `metadata`; SSE `seal.meta` uses a **flat** object.
+
+| Layer | Location |
+|-------|----------|
+| Server validation | `packages/core/seal_core/pipeline/validate_metadata.py` |
+| Key manifest | `config/stream_meta_metadata_keys.json` |
+| Shared TS (docs + dashboard) | `shared/stream-meta.ts`, `shared/metadata-contract.ts`, `shared/chat-sse-events.ts` |
+| Contributor reference | [docs/chat-metadata.md](docs/chat-metadata.md) |
+
+When adding or renaming metadata fields, update the manifest, flatten golden (`tests/fixtures/chat_flatten_golden.json`), validation matrix (`tests/fixtures/stream_meta_validation_matrix.json`), and run `make check` (includes `verify:chat-flatten` and stream-meta parity).
+
+---
+
 ## 🧪 Testing Guidelines
 
 No code should be pushed or merged without comprehensive test coverage.
@@ -182,5 +216,7 @@ Before submitting a Pull Request, ensure that:
 
 - [ ] All new files and modules have thorough unit tests in their respective `tests/` folders.
 - [ ] You have run `pre-commit run --all-files` and all lints/formatters pass cleanly.
-- [ ] Local tests pass successfully (`uv run pytest`).
+- [ ] Local tests pass successfully (`uv run pytest` or `make check` for the full CI mirror).
+- [ ] API schema changes: `make verify-openapi-sync` is clean and committed generated types are included.
+- [ ] Metadata contract changes: golden/parity fixtures updated; [docs/chat-metadata.md](docs/chat-metadata.md) and docs site `/docs/execution-metadata` reviewed if user-facing.
 - [ ] You have documented your changes clearly in code comments and updated any relevant README guides.

@@ -18,10 +18,13 @@ from seal_sql.result import ColumnMetadata, QueryResult  # noqa: E402
 OUTPUT_PATH = root_dir / "apps" / "docs" / "src" / "data" / "demo-fixtures.json"
 
 METADATA_BASE = {
+    "database_id": "default",
     "row_count": 0,
     "execution_time_ms": 24.5,
     "truncated": False,
     "warnings": [],
+    "repair_attempts": 0,
+    "used_sql": True,
 }
 
 

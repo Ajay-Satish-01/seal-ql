@@ -34,7 +34,11 @@ def test_chat_stream_sse(monkeypatch) -> None:
         assert r.status_code == 200
         text = "".join(r.iter_text())
     assert "seal.meta" in text
-    assert '"database_id":"analytics"' in text.replace(" ", "")
+    compact = text.replace(" ", "")
+    assert '"database_id":"analytics"' in compact
+    assert '"repair_attempts":' in compact
+    assert '"row_count":' in compact
+    assert '"enhancement":' in compact
     assert MockChatService.last_database_id == "analytics"
     assert "[DONE]" in text
 

@@ -1,10 +1,12 @@
 'use client';
 
 import { ChartPanel } from '@/components/dashboard/chart-panel';
+import { MetadataPanel } from '@/components/dashboard/metadata-panel';
 import { PageShell } from '@/components/dashboard/page-shell';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useConnection } from '@/hooks/use-connection';
+import type { QueryMetadata } from '@/lib/execution-metadata';
 import { postQuery } from '@/lib/seal-api';
 import { notifyErrorFrom, notifyInfo, notifySuccess } from '@/lib/toast';
 import type { ChartSpec } from 'seal';
@@ -16,7 +18,7 @@ export default function QueryPage() {
   const [sql, setSql] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, unknown>[]>([]);
   const [chart, setChart] = useState<ChartSpec | null>(null);
-  const [resolvedDatabaseId, setResolvedDatabaseId] = useState<string | null>(null);
+  const [metadata, setMetadata] = useState<QueryMetadata | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function runQuery() {
@@ -31,9 +33,9 @@ export default function QueryPage() {
         setSql(res.sql);
         setResults(res.results);
         setChart(res.chart);
+        setMetadata(res.metadata ?? null);
         const metaDb =
           typeof res.metadata?.database_id === 'string' ? res.metadata.database_id : databaseId;
-        setResolvedDatabaseId(metaDb);
         notifySuccess(`Query returned ${res.results.length} row(s) on "${metaDb}"`);
       } catch (e) {
         notifyErrorFrom(e, 'Query failed');
@@ -44,7 +46,7 @@ export default function QueryPage() {
   return (
     <PageShell
       title="Query"
-      description={`POST /v1/query — NL → SQL on database "${databaseId}".`}
+      description={`POST /v1/query — NL → SQL on database "${databaseId}". Execution metadata is returned under metadata.`}
     >
       <Card className="console-panel space-y-4 p-4">
         <label
@@ -65,11 +67,7 @@ export default function QueryPage() {
         </Button>
       </Card>
 
-      {resolvedDatabaseId && (
-        <p className="text-muted-foreground font-mono text-xs">
-          database_id: {resolvedDatabaseId}
-        </p>
-      )}
+      <MetadataPanel metadata={metadata} title="Query metadata" />
 
       {sql && (
         <Card className="console-panel p-4">

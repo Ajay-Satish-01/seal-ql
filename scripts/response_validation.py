@@ -2,12 +2,26 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from typing import Any
+
+_ROOT = Path(__file__).resolve().parents[1]
+_CORE = _ROOT / "packages" / "core"
+if str(_CORE) not in sys.path:
+    sys.path.insert(0, str(_CORE))
+
+from seal_core.pipeline.validate_metadata import (  # noqa: E402
+    validate_execution_fields,
+    validate_nested_chat_metadata,
+    validate_stream_meta_event,
+)
 
 VEGA_CHART_TYPES = frozenset({"bar", "line", "pie", "scatter", "area"})
 NATIVE_CHART_TYPES = frozenset({"table", "metric_card"})
 CHART_TYPES = VEGA_CHART_TYPES | NATIVE_CHART_TYPES
 REQUIRED_TOP = frozenset({"sql", "columns", "results", "metadata"})
+CHAT_REQUIRED_TOP = frozenset({"session_id", "message", "metadata"})
 
 
 def validate_query_response(data: dict[str, Any]) -> list[str]:
@@ -42,8 +56,48 @@ def validate_query_response(data: dict[str, Any]) -> list[str]:
     meta = data.get("metadata")
     if meta is not None and not isinstance(meta, dict):
         errors.append("metadata must be an object")
+    elif isinstance(meta, dict):
+        sql_value = data.get("sql")
+        require_meta = isinstance(sql_value, str) and bool(sql_value.strip())
+        errors.extend(validate_execution_fields(meta, require_when_sql=require_meta))
 
     return errors
+
+
+def validate_chat_response(data: dict[str, Any]) -> list[str]:
+    """Validate top-level ChatResponse fields and metadata shape."""
+    errors: list[str] = []
+    missing = CHAT_REQUIRED_TOP - set(data.keys())
+    if missing:
+        errors.append(f"Missing top-level keys: {sorted(missing)}")
+
+    if "session_id" in data and not isinstance(data["session_id"], str):
+        errors.append("session_id must be a string")
+    if "message" in data and not isinstance(data["message"], str):
+        errors.append("message must be a string")
+
+    meta = data.get("metadata")
+    if meta is not None and not isinstance(meta, dict):
+        errors.append("metadata must be an object")
+    elif isinstance(meta, dict):
+        sql_value = data.get("sql")
+        require_meta = isinstance(sql_value, str) and bool(sql_value.strip())
+        errors.extend(validate_nested_chat_metadata(meta, sql_at_top_level=require_meta))
+
+    columns = data.get("columns")
+    if columns is not None and not isinstance(columns, list):
+        errors.append("columns must be an array or null")
+    elif isinstance(columns, list):
+        for i, col in enumerate(columns):
+            if not isinstance(col, dict) or "name" not in col or "type" not in col:
+                errors.append(f"columns[{i}] must have name and type")
+
+    return errors
+
+
+def validate_chat_stream_meta(data: dict[str, Any]) -> list[str]:
+    """Validate flat JSON on the ``data:`` line of a ``seal.meta`` SSE event."""
+    return validate_stream_meta_event(data)
 
 
 def validate_chart_object(chart: Any, results: list[dict[str, Any]]) -> list[str]:

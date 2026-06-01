@@ -68,3 +68,5 @@ Docs site **Configuration reference** (`/docs/configuration#guardrails`) include
 - `packages/core/seal_core/guardrails/` — models, heuristics, `classify_scope`, prompts
 - `packages/core/seal_core/chat/service.py` — `_scope_gate`, `_refusal_turn`, `_refusal_stream`
 - `apps/api/app/routes/query.py` — query gate before planner
+
+Refusal and scope fields on chat responses: [chat-metadata.md](chat-metadata.md).

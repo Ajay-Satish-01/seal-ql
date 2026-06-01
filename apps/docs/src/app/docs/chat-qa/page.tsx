@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Callout } from '@/components/docs/callout';
+import { DocLink } from '@/components/docs/doc-link';
 import { CodeBlock } from '@/components/code-block';
 import { PageHeader } from '@/components/page-header';
 import { SITE } from '@/lib/constants';
@@ -100,11 +101,21 @@ ${curlChat(base, 'Show revenue for the largest table', { sessionId: 'YOUR_SESSIO
           <code>sql</code>, <code>results</code>, <code>chart</code> — when the turn runs SQL
         </li>
         <li>
-          <code>sources</code>, <code>metadata</code> — tables used, enhancement timing,{' '}
-          <code>metadata.database_id</code>, and <code>metadata.scope</code> (refusals include{' '}
-          <code>database_id</code> but not SQL)
+          <code>columns</code> — typed result columns when SQL runs (same as query)
+        </li>
+        <li>
+          <code>sources</code>, <code>metadata</code> — tables used, execution stats (
+          <code>row_count</code>, <code>execution_time_ms</code>, <code>repair_attempts</code>,{' '}
+          <code>used_sql</code>), <code>metadata.enhancement</code> (
+          <code>enabled</code>, <code>applied</code>, optional skip/unavailable reasons), and{' '}
+          <code>metadata.scope</code> (refusals set <code>refusal: true</code>,{' '}
+          <code>used_sql: false</code>, no <code>sql</code>)
         </li>
       </ul>
+
+      <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
+        Full field reference: <DocLink href="/docs/execution-metadata">Execution metadata</DocLink>.
+      </p>
 
       <Callout variant="warning" title="Multi-database sessions">
         If you use <code>database_id=&quot;analytics&quot;</code> on the first message, repeat{' '}

@@ -40,6 +40,43 @@ class ChartSpec(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class ExecutionMetadata(BaseModel):
+    """Execution metadata shared by query and chat.
+
+    ``used_sql`` is True only after successful SQL execution. Chat may set ``sql_error``
+    when the data path fails without populating ``sql``.
+    """
+
+    database_id: str = "default"
+    row_count: int = 0
+    execution_time_ms: float = 0
+    truncated: bool = False
+    warnings: list[str] = Field(default_factory=list)
+    repair_attempts: int = 0
+    used_sql: bool = False
+
+
+class EnhancementMetadata(BaseModel):
+    """Enhancement chain metadata on chat responses.
+
+    Mirrors ``packages/core/seal_core/pipeline/models.py`` (SDK stays decoupled from core).
+    """
+
+    enabled: bool = False
+    applied: list[str] = Field(default_factory=list)
+    vector_skipped_reason: str | None = None
+    unavailable_reason: str | None = None
+
+
+class ChatMetadata(ExecutionMetadata):
+    """Metadata on POST /v1/chat JSON responses."""
+
+    enhancement: EnhancementMetadata = Field(default_factory=EnhancementMetadata)
+    scope: dict[str, Any] | None = None
+    refusal: bool | None = None
+    sql_error: bool | None = None
+
+
 class QueryResponse(BaseModel):
     """The complete response from a /v1/query call."""
 
@@ -47,7 +84,7 @@ class QueryResponse(BaseModel):
     columns: list[ColumnMetadata]
     results: list[dict[str, Any]]
     chart: ChartSpec | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: ExecutionMetadata | dict[str, Any] = Field(default_factory=ExecutionMetadata)
 
 
 class HealthResponse(BaseModel):
@@ -88,8 +125,9 @@ class ChatResponse(BaseModel):
     sources: list[str] = Field(default_factory=list)
     sql: str | None = None
     results: list[dict[str, Any]] | None = None
+    columns: list[ColumnMetadata] | None = None
     chart: ChartSpec | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: ChatMetadata | dict[str, Any] = Field(default_factory=ChatMetadata)
 
 
 class CatalogResponse(BaseModel):

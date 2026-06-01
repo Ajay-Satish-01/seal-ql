@@ -129,6 +129,36 @@ describe('Seal', () => {
     });
   });
 
+  // -- Chat --
+
+  describe('chat()', () => {
+    it('should parse execution metadata on chat responses', async () => {
+      globalThis.fetch = mockFetch(200, {
+        session_id: 's1',
+        message: 'Ten orders.',
+        sql: 'SELECT COUNT(*) AS n FROM orders',
+        columns: [{ name: 'n', type: 'int8', nullable: true }],
+        results: [{ n: 10 }],
+        metadata: {
+          database_id: 'default',
+          row_count: 1,
+          execution_time_ms: 2,
+          truncated: false,
+          warnings: [],
+          repair_attempts: 1,
+          used_sql: true,
+          enhancement: { enabled: false, applied: [] },
+        },
+      });
+
+      const result = await client.chat('How many orders?');
+      expect(result.metadata?.row_count).toBe(1);
+      expect(result.metadata?.repair_attempts).toBe(1);
+      expect(result.metadata?.enhancement?.enabled).toBe(false);
+      expect(result.columns?.[0]?.name).toBe('n');
+    });
+  });
+
   // -- Schema --
 
   describe('schema()', () => {

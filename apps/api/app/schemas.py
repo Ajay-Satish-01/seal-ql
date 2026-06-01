@@ -4,6 +4,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, Field, model_validator
 from seal_charts.models import ChartSpec
+from seal_core.pipeline.models import EnhancementMetadata, ExecutionMetadata
 from seal_core.settings import get_settings
 from seal_sql.result import ColumnMetadata
 
@@ -28,6 +29,25 @@ class QueryRequest(BaseModel):
     database_id: str = DATABASE_ID_FIELD
 
 
+class QueryMetadata(ExecutionMetadata):
+    """Execution metadata returned on successful /v1/query responses."""
+
+
+class EnhancementInfo(EnhancementMetadata):
+    """Re-exports core ``EnhancementMetadata`` for OpenAPI (see ``pipeline.models``)."""
+
+
+class ChatMetadata(QueryMetadata):
+    """Execution + enhancement metadata on /v1/chat JSON responses."""
+
+    enhancement: EnhancementInfo = Field(default_factory=EnhancementInfo)
+    scope: dict[str, Any] | None = Field(
+        None, description="Guardrails scope decision when classified."
+    )
+    refusal: bool | None = Field(None, description="True when the turn was refused.")
+    sql_error: bool | None = Field(None, description="True when SQL execution failed.")
+
+
 class QueryResponse(BaseModel):
     """The complete response containing SQL, data, and visualization."""
 
@@ -37,8 +57,9 @@ class QueryResponse(BaseModel):
     chart: ChartSpec | None = Field(
         None, description="The Vega-Lite chart specification, if applicable."
     )
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Execution metadata (time, row count, limits, etc.)."
+    metadata: QueryMetadata | dict[str, Any] = Field(
+        default_factory=QueryMetadata,
+        description="Execution metadata (time, row count, limits, etc.).",
     )
 
 
@@ -102,7 +123,12 @@ class ChatRequest(BaseModel):
         False, description="When true, attach Vega-Lite chart if SQL runs."
     )
     enhancement: bool | None = Field(
-        None, description="Override CHAT_ENHANCEMENT_ENABLED for this request."
+        None,
+        description=(
+            "Override CHAT_ENHANCEMENT_ENABLED for this request. When true but the "
+            "deployment has no active orchestrator, metadata.enhancement.enabled is false "
+            "and metadata.enhancement.unavailable_reason is orchestrator_unavailable."
+        ),
     )
     database_id: str = DATABASE_ID_FIELD
 
@@ -117,6 +143,21 @@ class ChatRequest(BaseModel):
         return self
 
 
+class ChatStreamMeta(QueryMetadata):
+    """Flat JSON on the ``data:`` line of the ``seal.meta`` SSE event (stream=true)."""
+
+    session_id: str = Field(..., description="Conversation session id.")
+    sources: list[str] = Field(default_factory=list, description="Tables used in context.")
+    sql: str | None = Field(None, description="Executed SQL when data was queried.")
+    results: list[dict[str, Any]] | None = Field(None, description="Truncated result preview.")
+    columns: list[ColumnMetadata] | None = Field(None, description="Column metadata.")
+    chart: ChartSpec | None = Field(None, description="Chart when include_charts and SQL ran.")
+    enhancement: EnhancementInfo = Field(default_factory=EnhancementInfo)
+    scope: dict[str, Any] | None = Field(None, description="Guardrails scope decision.")
+    refusal: bool | None = Field(None, description="True when the turn was refused.")
+    sql_error: bool | None = Field(None, description="True when SQL execution failed.")
+
+
 class ChatResponse(BaseModel):
     session_id: str = Field(..., description="Session id for follow-up messages.")
     message: str = Field(..., description="Assistant natural language answer.")
@@ -127,7 +168,10 @@ class ChatResponse(BaseModel):
     results: list[dict[str, Any]] | None = Field(None, description="Truncated result preview.")
     columns: list[ColumnMetadata] | None = Field(None, description="Column metadata.")
     chart: ChartSpec | None = Field(None, description="Chart when include_charts and SQL ran.")
-    metadata: dict[str, Any] = Field(default_factory=dict, description="Enhancement and timing.")
+    metadata: ChatMetadata | dict[str, Any] = Field(
+        default_factory=ChatMetadata,
+        description="Execution, enhancement, and guardrails metadata.",
+    )
 
 
 class CatalogSyncResponse(BaseModel):

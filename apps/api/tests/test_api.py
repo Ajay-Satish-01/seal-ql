@@ -26,3 +26,16 @@ def test_query(api_client: TestClient) -> None:
     assert data["sql"] == "SELECT 1 AS id LIMIT 10000"  # Sanitizer injects LIMIT
     assert len(data["results"]) == 1
     assert data["results"][0]["id"] == 1
+
+
+def test_query_returns_execution_metadata(api_client: TestClient) -> None:
+    response = api_client.post("/v1/query", json={"query": "test query"}, headers=AUTH_HEADERS)
+    assert response.status_code == 200
+    meta = response.json()["metadata"]
+    assert meta["used_sql"] is True
+    assert meta["database_id"] == "default"
+    assert meta["row_count"] == 1
+    assert isinstance(meta["execution_time_ms"], (int, float))
+    assert meta["truncated"] is False
+    assert isinstance(meta["warnings"], list)
+    assert isinstance(meta["repair_attempts"], int)

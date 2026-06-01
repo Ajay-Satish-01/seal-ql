@@ -510,6 +510,17 @@ class Settings(BaseSettings):
         default=True,
         description="Enable prompt enhancement orchestrator for /v1/chat.",
     )
+    strict_stream_meta_validation: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "STRICT_STREAM_META_VALIDATION",
+            "STRICT_METADATA_VALIDATION",
+        ),
+        description=(
+            "When true, invalid chat metadata (JSON) or seal.meta (SSE) payloads raise "
+            "instead of only logging a warning."
+        ),
+    )
     chat_session_ttl_seconds: int = Field(default=3600, description="Session TTL in seconds.")
     chat_max_history_messages: int = Field(default=20, description="Max messages per session.")
     chat_summarize_after_messages: int = Field(

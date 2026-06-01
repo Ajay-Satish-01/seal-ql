@@ -1,5 +1,6 @@
 import { PageHeader } from '@/components/page-header';
 import { Callout } from '@/components/docs/callout';
+import { DocLink } from '@/components/docs/doc-link';
 import { CodeBlock } from '@/components/code-block';
 import { ConfigReference } from '@/components/docs/config-reference';
 import { DocsProse } from '@/components/docs/docs-prose';
@@ -53,7 +54,16 @@ export default function PromptEnhancementPage() {
           Each enhancer exposes <code>enhance_system_prompt</code> (once per stage invocation) and{' '}
           <code>enhance_user_messages</code> (can trim or augment the message list). Applied enhancer
           names accumulate in <code>metadata.enhancement.applied</code> on chat responses and in{' '}
-          <code>seal.meta</code> SSE events.
+          <code>seal.meta</code> SSE events. When vector RAG cannot run but enhancement is on,{' '}
+          <code>metadata.enhancement.vector_skipped_reason</code> is{' '}
+          <code>non_default_database</code> or <code>vector_store_disabled</code>. If enhancement was
+          requested but no orchestrator is configured,{' '}
+          <code>metadata.enhancement.unavailable_reason</code> is{' '}
+          <code>orchestrator_unavailable</code> when enhancement was requested but no orchestrator
+          is configured (including refusals); omitted when an orchestrator exists but the turn is a
+          refusal. See{' '}
+          <DocLink href="/docs/execution-metadata">Execution metadata</DocLink>
+          .
         </p>
 
         <h2>Built-in enhancers</h2>

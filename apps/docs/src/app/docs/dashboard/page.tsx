@@ -38,13 +38,14 @@ export default function DashboardPage() {
         </p>
         <ul>
           <li>
-            <strong>Query</strong> — <code>POST /v1/query</code> with <code>database_id</code>; response{' '}
-            <code>metadata.database_id</code> is shown after each run.
+            <strong>Query</strong> — <code>POST /v1/query</code> with <code>database_id</code>; shows
+            full <code>metadata</code> (row count, timing, warnings, <code>used_sql</code>).
           </li>
           <li>
-            <strong>Chat</strong> — same <code>database_id</code> on every turn in a session; changing
-            the dropdown clears the session; <strong>New session</strong> resets without changing the
-            database. Session/database mismatch returns HTTP 400 with a readable message.
+            <strong>Chat</strong> — SSE <code>seal.meta</code> before token deltas; execution metadata
+            panel (enhancement, scope, refusal, <code>sql_error</code>). Same <code>database_id</code> on
+            every turn; changing the dropdown clears the session. See{' '}
+            <Link href="/docs/execution-metadata">Execution metadata</Link>.
           </li>
           <li>
             <strong>Schema</strong> — <code>GET /v1/schema?database_id=…</code> for live DDL on the

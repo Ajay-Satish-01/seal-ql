@@ -119,9 +119,11 @@ const client = new Seal({ baseUrl: "http://localhost:8000", apiKey: "your-secret
 await client.chat("Revenue last quarter?", { includeCharts: true });
 ```
 
-Contributor docs: `docs/how-seal-works.md` (pipeline + LLM stages), `docs/guardrails.md`, `docs/chat-enhancement.md`, `docs/workspace-api.md`, `docs/integrations/`. User-facing: docs site `http://localhost:3000` (`/docs/how-it-works`, `/docs/configuration`, `/docs/guardrails`); dashboard `http://localhost:3001`.
+Contributor docs: `docs/how-seal-works.md` (pipeline + LLM stages), `docs/chat-metadata.md` (query/chat execution metadata), `docs/guardrails.md`, `docs/chat-enhancement.md`, `docs/workspace-api.md`, `docs/integrations/`. User-facing: docs site `http://localhost:3000` (`/docs/how-it-works`, `/docs/execution-metadata`, `/docs/configuration`, `/docs/guardrails`); dashboard `http://localhost:3001`.
 
-**Tests:** CI runs unit tests and live E2E on every PR. Locally: `make check` (unit, mirrors most of CI) and `make check-e2e` (requires `make up`). Pre-commit hooks do not run pytest.
+**API schema changes:** edit `apps/api/app/schemas.py`, then from repo root run `make openapi-ts` and commit the OpenAPI spec, docs copies, and `sdks/typescript/src/generated/openapi.ts`. Verify with `make verify-openapi-sync` (also run in CI).
+
+**Tests:** CI runs unit tests and live E2E on every PR. Locally: `make check` (unit, OpenAPI sync, metadata contract checks, docs/dashboard builds — mirrors most of CI) and `make check-e2e` (requires `make up`). Pre-commit hooks do not run pytest.
 
 ## Docker database
 

@@ -13,8 +13,26 @@ class ChatStreamMeta(TypedDict, total=False):
     session_id: str
     sources: list[str]
     sql: str | None
+    results: list[dict[str, Any]] | None
+    columns: list[dict[str, Any]] | None
     chart: dict[str, Any] | None
+    database_id: str
+    row_count: int
+    execution_time_ms: float
+    truncated: bool
+    warnings: list[str]
+    repair_attempts: int
+    used_sql: bool
     enhancement: dict[str, Any]
+    scope: dict[str, Any]
+    refusal: bool
+    sql_error: bool
+
+
+class ChatStreamMetaErrorEvent(TypedDict):
+    type: Literal["meta_error"]
+    error: str
+    partial: ChatStreamMeta
 
 
 class ChatStreamMetaEvent(TypedDict):
@@ -31,7 +49,9 @@ class ChatStreamDoneEvent(TypedDict):
     type: Literal["done"]
 
 
-ChatStreamEvent = ChatStreamMetaEvent | ChatStreamDeltaEvent | ChatStreamDoneEvent
+ChatStreamEvent = (
+    ChatStreamMetaEvent | ChatStreamMetaErrorEvent | ChatStreamDeltaEvent | ChatStreamDoneEvent
+)
 
 
 def parse_sse_stream(lines: Iterator[str]) -> Iterator[ChatStreamEvent]:

@@ -1,91 +1,41 @@
 # Seal TypeScript SDK
 
-The official TypeScript SDK for interacting with the Seal API.
+## Type generation (OpenAPI)
 
-## Installation
+API request/response types are **not** hand-maintained. They are generated from the FastAPI OpenAPI spec (Pydantic v2 models in `apps/api/app/schemas.py`):
+
+1. `make openapi` — writes `apps/api/openapi.json`
+2. `make openapi-ts` — runs [openapi-typescript](https://github.com/openapi-ts/openapi-typescript) → `src/generated/openapi.ts`
+3. `src/types.ts` re-exports `components['schemas'][…]` for the public SDK surface
+
+After changing API models, run from the repo root:
 
 ```bash
-npm install seal
-# or
-yarn add seal
-# or
-pnpm add seal
+make openapi-ts
+cd sdks/typescript && pnpm run build
 ```
 
-## Basic Usage
+`scripts/generate_openapi.py` injects Pydantic models that appear only in manual route `responses` (for example `ChatStreamMeta` for SSE) so they land in `components/schemas`.
+
+CI enforces this via `make verify-openapi-sync` (committed `src/generated/openapi.ts`; `src/vendor/` is gitignored and copied on `prebuild`).
+
+## Runtime metadata (SSE)
+
+Wire types (`ChatStreamMeta`, `ChatMetadata`, `QueryMetadata`) come from OpenAPI. **Runtime** checks for streaming use vendored copies of `shared/stream-meta.ts` and `shared/chat-sse-events.ts` (`mapChatSseEvent` → `meta` | `meta_error` | `delta` | `done`), aligned with server `validate_metadata.py`. See [docs/chat-metadata.md](../../docs/chat-metadata.md).
+
+## Usage
 
 ```typescript
 import { Seal } from 'seal';
 
-const client = new Seal({
-  baseUrl: 'http://localhost:8000',
-  apiKey: process.env.SEAL_API_KEY,
-});
+const client = new Seal({ baseUrl: 'http://localhost:8000', apiKey: process.env.SEAL_API_KEY });
 
-async function run() {
-  // 1. Get database schema
-  const schema = await client.schema();
-  console.log(
-    'Tables:',
-    schema.tables.map((t) => t.name),
-  );
+const result = await client.query('Monthly revenue by region');
+console.log(result.metadata?.database_id, result.sql);
 
-  // 2. Query data with natural language
-  const response = await client.query('Show me daily active users for the last 30 days');
-
-  console.log('SQL executed:', response.sql);
-  console.log('Results:', response.results);
-
-  const catalog = await client.catalog();
-  console.log('Catalog tables:', catalog.tables.length);
-
-  const chat = await client.chat('What tables exist?', { sessionId: 'demo' });
-  console.log(chat.message);
-
-  for await (const event of client.chatStream('Explain revenue trends', { includeCharts: true })) {
-    if (event.type === 'meta') console.log('SQL:', event.data.sql);
-    if (event.type === 'delta') process.stdout.write(event.content);
-  }
-}
-run();
-```
-
-## React Integration
-
-The SDK ships with an optional React component to effortlessly render Vega-Lite charts returned by the API.
-
-### Peer Dependencies
-
-To use the React component, you must install the required peer dependencies:
-
-```bash
-npm install react react-dom vega vega-lite vega-embed
-```
-
-### Usage
-
-```tsx
-import React, { useState } from 'react';
-import { Seal, VegaChart } from 'seal';
-
-const client = new Seal({ baseUrl: 'http://localhost:8000' });
-
-export function Dashboard() {
-  const [result, setResult] = useState(null);
-
-  const handleQuery = async () => {
-    const data = await client.query('Revenue by month as a bar chart');
-    setResult(data);
-  };
-
-  return (
-    <div>
-      <button onClick={handleQuery}>Ask Question</button>
-
-      {result && result.chart?.chart_type !== 'table' && (
-        <VegaChart spec={result.chart} theme="light" actions={true} />
-      )}
-    </div>
-  );
+for await (const event of client.chatStream('Summarize last quarter', { includeCharts: true })) {
+  if (event.type === 'meta') console.log(event.data.sql);
+  else if (event.type === 'meta_error') console.warn('Invalid seal.meta', event.data);
+  else if (event.type === 'delta') process.stdout.write(event.content);
 }
 ```

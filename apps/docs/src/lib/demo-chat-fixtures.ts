@@ -1,4 +1,9 @@
-import type { ChatApiResponse, ChatStreamMeta } from '@/lib/chat-api';
+import type { ChatApiResponse } from '@/lib/chat-api';
+import {
+  buildDemoChatMetadata,
+  chatResponseToStreamMeta,
+  type ChatStreamMeta,
+} from '@/lib/execution-metadata';
 import type { DemoPreset } from '@/lib/demo-fixtures';
 import { chatMessageFromQuery } from '@/lib/doc-snippets';
 
@@ -27,11 +32,8 @@ export function chatResponseFromPreset(preset: DemoPreset): ChatApiResponse {
     sql: preset.response.sql,
     results: rows.slice(0, 5),
     chart: preset.response.chart as ChatApiResponse['chart'],
-    metadata: {
-      used_sql: true,
-      repair_attempts: 0,
-      enhancement: { applied: ['schema_aware', 'multi_turn'] },
-    },
+    columns: preset.response.columns,
+    metadata: buildDemoChatMetadata(preset.response.metadata),
   };
 }
 
@@ -39,13 +41,7 @@ export function chatStreamDemoFromPreset(preset: DemoPreset): ChatStreamDemo {
   const chat = chatResponseFromPreset(preset);
   return {
     message: chatMessageFromQuery(preset.query),
-    meta: {
-      session_id: chat.session_id,
-      sources: chat.sources,
-      sql: chat.sql,
-      chart: chat.chart,
-      enhancement: chat.metadata?.enhancement as Record<string, unknown> | undefined,
-    },
+    meta: chatResponseToStreamMeta(chat),
     answerText: chat.message,
   };
 }

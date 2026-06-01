@@ -12,6 +12,7 @@ For the live API console (Query, Chat, Catalog, Settings, Vector), use **`apps/w
 | `/docs/configuration` | Environment reference with “what to expect” |
 | `/docs/architecture` | System diagram and deployment topology |
 | `/docs/chat-qa` | Chat overview |
+| `/docs/execution-metadata` | Query/chat execution metadata (JSON + SSE) |
 | `/docs/data-catalog` | Global YAML catalog sync |
 | `/docs/prompt-enhancement` | Enhancer chain |
 | `/docs/guardrails` | Scope gate / abuse protection |
@@ -22,9 +23,18 @@ For the live API console (Query, Chat, Catalog, Settings, Vector), use **`apps/w
 | `/docs/testing` | CI and local test commands |
 | `/docs/agent-frameworks` | `seal-tools.openai.json` |
 
-Contributor markdown mirrors: `docs/how-seal-works.md`, `docs/guardrails.md`, `docs/chat-enhancement.md`, etc.
+Contributor markdown mirrors: `docs/how-seal-works.md`, `docs/chat-metadata.md`, `docs/guardrails.md`, `docs/chat-enhancement.md`, etc.
 
-Public assets: `/seal-tools.openai.json`, `/config/catalog.example.yaml` (synced via `make sync-docs-assets`).
+Public assets: `/openapi.json`, `/seal-tools.openai.json`, `/config/catalog.example.yaml` (synced via `make sync-docs-assets`).
+
+**Contract checks** (from `apps/docs` after `pnpm install`):
+
+```bash
+pnpm run verify:chat-flatten    # tests/fixtures/chat_flatten_golden.json
+pnpm run verify:stream-meta     # stream_meta_validation_matrix.json parity
+```
+
+Demo and doc pages import `shared/stream-meta.ts` and `shared/chat-sse-events.ts` for SSE parsing (same behavior as the dashboard).
 
 ## Development
 

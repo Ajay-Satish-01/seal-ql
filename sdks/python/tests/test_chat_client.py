@@ -54,6 +54,33 @@ class TestChatClient:
         assert result.message == "Hello"
         client.close()
 
+    def test_chat_parses_execution_metadata(self) -> None:
+        body = {
+            "session_id": "s1",
+            "message": "ok",
+            "sql": "SELECT 1",
+            "columns": [{"name": "n", "type": "int"}],
+            "metadata": {
+                "database_id": "default",
+                "row_count": 1,
+                "execution_time_ms": 1.0,
+                "truncated": False,
+                "warnings": [],
+                "repair_attempts": 0,
+                "used_sql": True,
+                "enhancement": {"enabled": False, "applied": []},
+            },
+        }
+        transport = _mock_transport({"POST /v1/chat": (200, body)})
+        client = Seal.__new__(Seal)
+        client._base_url = "http://testserver"
+        client._client = httpx.Client(base_url="http://testserver", transport=transport)
+        resp = client.chat("count")
+        assert resp.metadata.row_count == 1  # type: ignore[union-attr]
+        assert resp.metadata.repair_attempts == 0  # type: ignore[union-attr]
+        assert resp.metadata.enhancement.enabled is False  # type: ignore[union-attr]
+        client.close()
+
     def test_chat_sends_database_id(self) -> None:
         captured: dict[str, object] = {}
 

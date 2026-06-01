@@ -1,117 +1,51 @@
 /**
- * TypeScript types for the Seal API.
+ * Public SDK types — generated from the FastAPI OpenAPI spec (Pydantic v2 models).
  *
- * These mirror the Pydantic models on the server side,
- * keeping the SDK fully decoupled from server internals.
+ * Regenerate after API schema changes:
+ *   make openapi && cd sdks/typescript && pnpm run generate:api-types
+ *
+ * Runtime SSE validation uses vendored copies of `shared/stream-meta.ts` (see prebuild).
  */
 
-// ============================================================
-// Enums
-// ============================================================
+import type { components } from './generated/openapi.js';
 
-export type ChartType = 'bar' | 'line' | 'pie' | 'scatter' | 'area' | 'table' | 'metric_card';
+type Schemas = components['schemas'];
 
-// ============================================================
-// Response Types
-// ============================================================
+/** API chart type enum from OpenAPI. */
+export type ChartType = Schemas['ChartType'];
 
-export interface ColumnMetadata {
-  name: string;
-  type: string;
-  nullable?: boolean;
-}
+export type ChartSpec = Schemas['ChartSpec'];
+export type ColumnMetadata = Schemas['ColumnMetadata'];
+export type QueryMetadata = Schemas['QueryMetadata'];
+export type QueryRequest = Schemas['QueryRequest'];
+export type QueryResponse = Schemas['QueryResponse'];
 
-export interface ChartSpec {
-  chart_type: ChartType;
-  vega_lite_spec: Record<string, unknown>;
-  metadata: Record<string, unknown>;
-}
+/** OpenAPI name `EnhancementInfo` — same shape as core `EnhancementMetadata`. */
+export type EnhancementMetadata = Schemas['EnhancementInfo'];
+export type EnhancementInfo = Schemas['EnhancementInfo'];
 
-export interface QueryResponse {
-  sql: string;
-  columns: ColumnMetadata[];
-  results: Record<string, unknown>[];
-  chart: ChartSpec | null;
-  metadata: Record<string, unknown>;
-}
+export type ChatMetadata = Schemas['ChatMetadata'];
+export type ChatRequest = Schemas['ChatRequest'];
+export type ChatResponse = Schemas['ChatResponse'];
+export type ChatStreamMeta = Schemas['ChatStreamMeta'];
 
-export interface HealthResponse {
-  status: string;
-}
+export type HealthResponse = Schemas['HealthResponse'];
+export type CatalogResponse = Schemas['CatalogResponse'];
+export type DatabaseSchema = Schemas['DatabaseSchema'];
+export type TableSchema = Schemas['TableSchema'];
 
-export interface SchemaColumn {
-  name: string;
-  type: string;
-  nullable?: boolean;
-}
+/** Convenience aliases for schema introspection columns. */
+export type SchemaTable = Pick<TableSchema, 'name' | 'columns'> & {
+  kind?: TableSchema['kind'];
+};
+export type SchemaColumn = NonNullable<TableSchema['columns']>[number];
 
-export interface SchemaTable {
-  name: string;
-  columns: SchemaColumn[];
-  kind?: string;
-}
-
-export interface DatabaseSchema {
-  dialect: string;
-  tables: SchemaTable[];
-}
-
-// ============================================================
-// Request Types
-// ============================================================
-
-export interface QueryRequest {
-  query: string;
-  database_id?: string;
-}
-
-export interface ChatRequest {
-  message: string;
-  session_id?: string;
-  include_charts?: boolean;
-  stream?: boolean;
-  enhancement?: boolean;
-  database_id?: string;
-}
-
-export interface ChatResponse {
-  session_id: string;
-  message: string;
-  sources?: string[];
-  sql?: string | null;
-  results?: Record<string, unknown>[] | null;
-  columns?: ColumnMetadata[] | null;
-  chart?: ChartSpec | null;
-  metadata?: Record<string, unknown>;
-}
-
-export interface CatalogResponse {
-  version: number;
-  generated_at?: string | null;
-  schema_hash?: string | null;
-  tables: Record<string, unknown>[];
-}
-
-/** Payload on SSE `seal.meta` before streamed answer tokens. */
-export interface ChatStreamMeta {
-  session_id: string;
-  sources?: string[];
-  sql?: string | null;
-  results?: Record<string, unknown>[] | null;
-  columns?: ColumnMetadata[] | null;
-  chart?: ChartSpec | null;
-  enhancement?: Record<string, unknown>;
-  scope?: Record<string, unknown>;
-}
-
+/** SDK-only: streamed chat events (includes client-side meta_error). */
 export type ChatStreamEvent =
   | { type: 'meta'; data: ChatStreamMeta }
+  | { type: 'meta_error'; error: string; partial: Partial<ChatStreamMeta> }
   | { type: 'delta'; content: string }
   | { type: 'done' };
-
-// ============================================================
-// Client Options
-// ============================================================
 
 export interface SealOptions {
   /** Base URL of the Seal API (e.g., "http://localhost:8000"). */

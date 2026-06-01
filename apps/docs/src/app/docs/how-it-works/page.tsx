@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { Callout } from '@/components/docs/callout';
+import { DocLink } from '@/components/docs/doc-link';
 import { DocsProse } from '@/components/docs/docs-prose';
 
 export default function HowItWorksPage() {
@@ -249,10 +250,12 @@ export default function HowItWorksPage() {
 
         <h2>Streaming (chat)</h2>
         <p>
-          With <code>stream=true</code>, the API emits <code>event: seal.meta</code> first (session,
-          sql, preview rows, chart, scope, enhancement applied list), then OpenAI-style token deltas,
-          then <code>[DONE]</code>. Refusals still stream as a single content delta after meta. See{' '}
-          <Link href="/docs/chat-streaming">SSE streaming</Link>.
+          With <code>stream=true</code>, the API emits <code>event: seal.meta</code> first (flat JSON:
+          session, sql, results, columns, chart, execution fields, enhancement, scope), then
+          OpenAI-style token deltas, then <code>[DONE]</code>. Refusals still stream as a single
+          content delta after meta. See{' '}
+          <DocLink href="/docs/execution-metadata">Execution metadata</DocLink> and{' '}
+          <DocLink href="/docs/chat-streaming">SSE streaming</DocLink>.
         </p>
 
         <Callout variant="info" title="Where to tune behavior">

@@ -35,7 +35,7 @@ See [guardrails.md](guardrails.md).
 2. `classify_scope`
 3. `bundle.introspector.introspect()` — catalog/semantic only when `database_id=default`
 4. `execute_natural_language_query()` — planner → validate → sanitize → execute → repair loop
-5. `ChartEngine.generate()` — response `metadata.database_id`
+5. `ChartEngine.generate()` — response `metadata` with `database_id`, `used_sql: true`, execution stats (`enforce_query_metadata` on success)
 
 No chat enhancement chain on this path.
 
@@ -52,7 +52,7 @@ See [multi-database.md](multi-database.md) for registry config, DuckDB URL norma
 5. If `needs_data`: `ContextRetriever.select_tables` + `execute_natural_language_query` using bundle executor (+ optional chart)
 6. `_answer_system` (enhancement at `stage=answer`) + answer LLM or SSE stream
 
-Streaming: `seal.meta` (includes `database_id`) then token deltas; mismatch errors before SSE starts.
+Streaming: `seal.meta` (flat JSON with `database_id`, execution fields, `enhancement`, `scope`, optional `refusal` / `sql_error`) then token deltas; mismatch errors before SSE starts. Server validates with `validate_stream_meta_event`; clients use `shared/stream-meta.ts` and `mapChatSseEvent` (`meta_error` on malformed payloads).
 
 **Session pinning:** `_complete_turn` sets `state.database_id` only after a successful in-scope JSON or completed stream turn. Refusals do not pin. Follow-ups must repeat the same `database_id`.
 
@@ -94,5 +94,6 @@ See [workspace-api.md](workspace-api.md). Full env tables: docs site `/docs/conf
 | [multi-database.md](multi-database.md) | `database_id` routing and registry |
 | [guardrails.md](guardrails.md) | Scope gate env and behavior |
 | [chat-enhancement.md](chat-enhancement.md) | Enhancer hooks and env |
+| [chat-metadata.md](chat-metadata.md) | Query/chat execution metadata (JSON vs SSE) |
 | [workspace-api.md](workspace-api.md) | Workspace HTTP API |
 | [integrations/](integrations/) | Agents, vector stores, custom enhancers |

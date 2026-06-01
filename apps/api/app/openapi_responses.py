@@ -28,3 +28,28 @@ AUTH_AND_DATABASE_RESPONSES: dict[int, dict[str, object]] = {
     **UNAUTHORIZED_RESPONSE,
     **UNKNOWN_DATABASE_RESPONSE,
 }
+
+CHAT_SUCCESS_RESPONSE: dict[int, dict[str, object]] = {
+    200: {
+        "description": (
+            "JSON ChatResponse when stream=false; SSE (seal.meta + answer chunks) when stream=true"
+        ),
+        "content": {
+            "application/json": {
+                "schema": {"$ref": "#/components/schemas/ChatResponse"},
+            },
+            "text/event-stream": {
+                "schema": {"$ref": "#/components/schemas/ChatStreamMeta"},
+                "description": (
+                    "SSE wire format: `event: seal.meta` whose `data:` line matches "
+                    "ChatStreamMeta, then OpenAI-style `data:` answer chunks, then `data: [DONE]`"
+                ),
+            },
+        },
+    }
+}
+
+CHAT_ENDPOINT_RESPONSES: dict[int, dict[str, object]] = {
+    **CHAT_SUCCESS_RESPONSE,
+    **AUTH_AND_DATABASE_RESPONSES,
+}

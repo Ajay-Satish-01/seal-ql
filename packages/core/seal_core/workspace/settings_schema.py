@@ -69,6 +69,17 @@ def settings_schema() -> list[SettingField]:
             default=True,
         ),
         SettingField(
+            key="strict_stream_meta_validation",
+            env_name="STRICT_STREAM_META_VALIDATION",
+            hot_reload=True,
+            value_type="bool",
+            description=(
+                "Fail chat requests when metadata or seal.meta fails contract validation "
+                "(alias: STRICT_METADATA_VALIDATION)."
+            ),
+            default=False,
+        ),
+        SettingField(
             key="vector_store",
             env_name="VECTOR_STORE",
             hot_reload=False,

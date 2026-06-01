@@ -1,4 +1,5 @@
 import { formatApiError } from '@/lib/api-error';
+import type { QueryMetadata } from '@/lib/execution-metadata';
 import { authHeaders, normalizeBaseUrl } from '@/lib/connection';
 import type { ChartSpec } from 'seal';
 
@@ -80,7 +81,7 @@ export interface QueryResponse {
   columns: Array<{ name: string; type: string }>;
   results: Record<string, unknown>[];
   chart: ChartSpec | null;
-  metadata?: Record<string, unknown>;
+  metadata?: QueryMetadata;
 }
 
 export interface CatalogTable {

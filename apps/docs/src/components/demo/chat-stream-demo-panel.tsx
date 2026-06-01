@@ -2,6 +2,8 @@
 
 import type { ChatStreamDemo } from '@/lib/demo-chat-fixtures';
 import { Badge } from '@/components/ui/badge';
+import { MetadataJsonBlock } from '@/components/docs/metadata-json-block';
+import { formatMetadataJson } from '@/lib/execution-metadata';
 import { CodeBlock } from '@/components/code-block';
 
 interface ChatStreamDemoPanelProps {
@@ -25,10 +27,7 @@ export function ChatStreamDemoPanel({ demo }: ChatStreamDemoPanelProps) {
         <p className="text-sm leading-relaxed">&ldquo;{demo.message}&rdquo;</p>
       </div>
 
-      <div>
-        <p className="text-foreground mb-2 text-sm font-semibold">event: seal.meta</p>
-        <CodeBlock language="json" code={JSON.stringify(demo.meta, null, 2)} />
-      </div>
+      <MetadataJsonBlock title="event: seal.meta" code={formatMetadataJson(demo.meta)} />
 
       <div>
         <p className="text-foreground mb-2 text-sm font-semibold">Answer tokens (data: chunks)</p>

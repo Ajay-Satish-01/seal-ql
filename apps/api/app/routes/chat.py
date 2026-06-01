@@ -9,7 +9,7 @@ from seal_core.database.registry import DatabaseRegistry
 
 from app.database_routing import get_database_bundle, session_database_mismatch_detail
 from app.dependencies import get_chat_service, get_database_registry
-from app.openapi_responses import AUTH_AND_DATABASE_RESPONSES
+from app.openapi_responses import CHAT_ENDPOINT_RESPONSES
 from app.schemas import ChatRequest, ChatResponse
 from app.security import require_api_key
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/chat", response_model=None, responses=AUTH_AND_DATABASE_RESPONSES)
+@router.post("/chat", response_model=ChatResponse, responses=CHAT_ENDPOINT_RESPONSES)
 async def chat(
     request: ChatRequest,
     _: None = Security(require_api_key),
@@ -64,13 +64,15 @@ async def chat(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    return ChatResponse(
-        session_id=result.session_id,
-        message=result.message,
-        sources=result.sources,
-        sql=result.sql,
-        results=result.results,
-        columns=result.columns,
-        chart=result.chart,
-        metadata=result.metadata,
+    return ChatResponse.model_validate(
+        {
+            "session_id": result.session_id,
+            "message": result.message,
+            "sources": result.sources,
+            "sql": result.sql,
+            "results": result.results,
+            "columns": result.columns,
+            "chart": result.chart,
+            "metadata": result.metadata,
+        }
     )

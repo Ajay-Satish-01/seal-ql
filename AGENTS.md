@@ -10,9 +10,10 @@
 - `packages/charts/`: Vega-Lite spec generators
 - `packages/semantic/`: Semantic metrics registries
 - `sdks/python/`, `sdks/typescript/`: SDK wrappers (`query`, `chat`, `chatStream`, `catalog`)
-- `config/`: `catalog.example.yaml`, `seal-tools.openai.json`
-- `scripts/`: `seed.sql`, `migrate_app.sql`, `sync_catalog.py`
-- `docs/`: Contributor docs (`how-seal-works.md`, `multi-database.md`, `guardrails.md`, `chat-enhancement.md`, `workspace-api.md`, `integrations/`)
+- `config/`: `catalog.example.yaml`, `seal-tools.openai.json`, `stream_meta_metadata_keys.json`
+- `scripts/`: `seed.sql`, `migrate_app.sql`, `sync_catalog.py`, `generate_openapi.py`
+- `docs/`: Contributor docs (`how-seal-works.md`, `multi-database.md`, `guardrails.md`, `chat-enhancement.md`, `chat-metadata.md`, `workspace-api.md`, `integrations/`)
+- `shared/`: Cross-app TypeScript (`stream-meta.ts`, `metadata-contract.ts`, `metadata-summary.ts`) for docs + dashboard
 
 ## Architecture
 
@@ -36,6 +37,7 @@
 ## SDKs
 
 - Python and TypeScript: `Seal` / `AsyncSeal` with `query`, `schema`, `catalog`, `chat`, `chat_stream` / `chatStream`.
+- **TypeScript types**: Pydantic v2 → FastAPI OpenAPI (`make openapi`) → `openapi-typescript` (`make openapi-ts`) → `sdks/typescript/src/generated/openapi.ts`. Do not edit `types.ts` field lists by hand; regenerate.
 - Pass `api_key` / `apiKey` when `SEAL_API_KEY` is set (`X-API-Key`).
 - LiteLLM for providers (OpenAI, Anthropic, Google, Ollama, etc.); Postgres and DuckDB for data.
 
@@ -50,7 +52,7 @@
 - `make up` / `make down` / `make seed`: Docker stack and seed data (`migrate_app.sql` for workspace).
 - `make sync-catalog`: Regenerate `config/catalog.yaml` from live schema.
 - `make sync-docs-assets`: OpenAPI + demo fixtures → `apps/docs`.
-- `make verify-openapi-sync`: CI check for committed OpenAPI copies.
+- `make verify-openapi-sync`: CI check for committed OpenAPI spec, docs copies, and `sdks/typescript/src/generated/openapi.ts`.
 - `make check-docs` / `make check-dashboard` / `make check-web`: Build docs and dashboard apps.
 - `uv sync --all-packages --all-extras` / `uv run pytest -v`
 - `pre-commit run --all-files`
@@ -63,6 +65,8 @@
 - **Workspace**: `seal_core/workspace/` + `apps/api/app/routes/workspace.py`; startup + hot-reload via `apply_workspace_on_startup` / `apply_runtime_overrides`.
 - **Agent queries**: All dynamic SQL through `packages/sql/` AST validation — never execute raw LLM SQL.
 - **Visualization**: Chart columns must match SQL result columns.
+- **Execution metadata**: `packages/core/seal_core/pipeline/validate_metadata.py` + `config/stream_meta_metadata_keys.json`; shared TS in `shared/`; contributor doc `docs/chat-metadata.md`.
+- **OpenAPI / SDK types**: Edit `apps/api/app/schemas.py` → `make openapi-ts` → commit spec + `sdks/typescript/src/generated/openapi.ts`; `scripts/generate_openapi.py` injects SSE-only models (e.g. `ChatStreamMeta`).
 
 ## Generation Rules
 
@@ -73,9 +77,10 @@
 ## Testing
 
 - API tests: `apps/api/tests/` (`test_chat.py`, `test_workspace.py`, mocks in `factory.py`).
-- Core: `packages/core/tests/` (catalog, enhancement, vector, guardrails, workspace).
-- SDK: `sdks/python/tests/test_chat_client.py`; `tests/test_seal_tools_manifest.py`.
-- Run: `uv run pytest -v` in the uv virtualenv.
+- Core: `packages/core/tests/` (catalog, enhancement, vector, guardrails, workspace, `test_validate_metadata.py`, `test_chat_flatten_contract.py`, stream-meta parity).
+- SDK: `sdks/python/tests/test_chat_client.py`; `sdks/typescript` Vitest; `tests/test_seal_tools_manifest.py`.
+- Metadata contract: `tests/fixtures/chat_flatten_golden.json`, `tests/fixtures/stream_meta_validation_matrix.json`; `make check` runs flatten + parity scripts.
+- Run: `uv run pytest -v` in the uv virtualenv; `make check` before merge.
 
 ## Release Process
 
