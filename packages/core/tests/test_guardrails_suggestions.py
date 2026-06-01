@@ -13,6 +13,12 @@ def test_suggest_queries_limits_source() -> None:
     assert "month" in suggest_queries(scope)[0].lower()
 
 
+def test_suggest_queries_off_topic_reason_fallback() -> None:
+    scope = ScopeResult(in_scope=False, reason="off-topic pattern", source="heuristic")
+    suggestions = suggest_queries(scope)
+    assert any("schema" in s.lower() for s in suggestions)
+
+
 def test_suggest_queries_abuse_category() -> None:
     scope = ScopeResult(
         in_scope=False,

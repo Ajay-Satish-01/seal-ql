@@ -326,8 +326,61 @@ export interface components {
              */
             readonly content: string;
         };
+        /**
+         * ChatMetadata
+         * @description Execution + enhancement metadata on /v1/chat JSON responses.
+         */
         readonly ChatMetadata: {
-            readonly [key: string]: unknown;
+            /**
+             * Database Id
+             * @default default
+             */
+            readonly database_id: string;
+            /**
+             * Row Count
+             * @default 0
+             */
+            readonly row_count: number;
+            /**
+             * Execution Time Ms
+             * @default 0
+             */
+            readonly execution_time_ms: number;
+            /**
+             * Truncated
+             * @default false
+             */
+            readonly truncated: boolean;
+            /** Warnings */
+            readonly warnings?: readonly string[];
+            /**
+             * Repair Attempts
+             * @default 0
+             */
+            readonly repair_attempts: number;
+            /**
+             * Used Sql
+             * @default false
+             */
+            readonly used_sql: boolean;
+            readonly enhancement?: components["schemas"]["EnhancementInfo"];
+            /** @description Guardrails scope decision when classified. */
+            readonly scope?: components["schemas"]["ScopeMetadata"] | null;
+            /**
+             * Refusal
+             * @description True when the turn was refused.
+             */
+            readonly refusal?: boolean | null;
+            /**
+             * Sql Error
+             * @description True when SQL execution failed.
+             */
+            readonly sql_error?: boolean | null;
+            /**
+             * Suggested Queries
+             * @description Example in-scope data questions on guardrails refusal.
+             */
+            readonly suggested_queries?: readonly string[] | null;
         };
         /** ChatRequest */
         readonly ChatRequest: {
@@ -918,8 +971,102 @@ export interface components {
              */
             readonly write_target: string;
         };
+        /**
+         * ChatStreamMeta
+         * @description Flat JSON on the ``data:`` line of the ``seal.meta`` SSE event (stream=true).
+         */
         readonly ChatStreamMeta: {
-            readonly [key: string]: unknown;
+            /**
+             * Database Id
+             * @default default
+             */
+            readonly database_id: string;
+            /**
+             * Row Count
+             * @default 0
+             */
+            readonly row_count: number;
+            /**
+             * Execution Time Ms
+             * @default 0
+             */
+            readonly execution_time_ms: number;
+            /**
+             * Truncated
+             * @default false
+             */
+            readonly truncated: boolean;
+            /** Warnings */
+            readonly warnings?: readonly string[];
+            /**
+             * Repair Attempts
+             * @default 0
+             */
+            readonly repair_attempts: number;
+            /**
+             * Used Sql
+             * @default false
+             */
+            readonly used_sql: boolean;
+            readonly enhancement?: components["schemas"]["EnhancementInfo"];
+            /**
+             * @description Guardrails scope decision when classified.
+             * @default null
+             */
+            readonly scope: components["schemas"]["ScopeMetadata"] | null;
+            /**
+             * Refusal
+             * @description True when the turn was refused.
+             * @default null
+             */
+            readonly refusal: boolean | null;
+            /**
+             * Sql Error
+             * @description True when SQL execution failed.
+             * @default null
+             */
+            readonly sql_error: boolean | null;
+            /**
+             * Suggested Queries
+             * @description Example in-scope data questions on guardrails refusal.
+             * @default null
+             */
+            readonly suggested_queries: readonly string[] | null;
+            /**
+             * Session Id
+             * @description Conversation session id.
+             */
+            readonly session_id: string;
+            /**
+             * Sources
+             * @description Tables used in context.
+             */
+            readonly sources?: readonly string[];
+            /**
+             * Sql
+             * @description Executed SQL when data was queried.
+             * @default null
+             */
+            readonly sql: string | null;
+            /**
+             * Results
+             * @description Truncated result preview.
+             * @default null
+             */
+            readonly results: readonly {
+                readonly [key: string]: unknown;
+            }[] | null;
+            /**
+             * Columns
+             * @description Column metadata.
+             * @default null
+             */
+            readonly columns: readonly components["schemas"]["ColumnMetadata"][] | null;
+            /**
+             * @description Chart when include_charts and SQL ran.
+             * @default null
+             */
+            readonly chart: components["schemas"]["ChartSpec"] | null;
         };
         /**
          * QueryOutOfScopeDetail

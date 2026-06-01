@@ -30,6 +30,21 @@ function formatOutOfScopeMessage(reason: string, suggestedQueries: string[]): st
 
 function detailToMessage(detail: unknown): string {
   if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          const obj = item as Record<string, unknown>;
+          if (typeof obj.msg === 'string') return obj.msg;
+          if (typeof obj.message === 'string') return obj.message;
+          if (typeof obj.detail === 'string') return obj.detail;
+        }
+        return String(item);
+      })
+      .filter((part) => part.length > 0)
+      .join('; ');
+  }
   if (detail && typeof detail === 'object' && !Array.isArray(detail)) {
     const obj = detail as Record<string, unknown>;
     if (typeof obj.message === 'string' && obj.message.trim()) return obj.message;

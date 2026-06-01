@@ -34,6 +34,16 @@ def test_raise_for_response_query_out_of_scope() -> None:
     assert exc_info.value.suggested_queries == ["Show order count by month"]
 
 
+def test_detail_to_message_fastapi_422_list() -> None:
+    msg = detail_to_message(
+        [
+            {"type": "missing", "loc": ["body", "query"], "msg": "Field required"},
+            {"type": "string_too_long", "loc": ["body", "query"], "msg": "Too long"},
+        ]
+    )
+    assert msg == "Field required; Too long"
+
+
 def test_raise_for_response_structured_chat_error_uses_message() -> None:
     with pytest.raises(QueryError, match="pinned to database_id"):
         raise_for_response(

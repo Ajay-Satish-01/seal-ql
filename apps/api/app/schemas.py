@@ -2,7 +2,7 @@
 
 from typing import Any, Self
 
-from pydantic import BaseModel, Field, model_serializer, model_validator
+from pydantic import BaseModel, Field, model_validator
 from seal_charts.models import ChartSpec
 from seal_core.guardrails.models import ScopeMetadata
 from seal_core.pipeline.models import EnhancementMetadata, ExecutionMetadata
@@ -69,17 +69,11 @@ class ChatMetadata(QueryMetadata):
     refusal: bool | None = Field(None, description="True when the turn was refused.")
     sql_error: bool | None = Field(None, description="True when SQL execution failed.")
     suggested_queries: list[str] | None = Field(
-        None,
+        default=None,
         max_length=3,
+        exclude_if=lambda value: value is None,
         description="Example in-scope data questions on guardrails refusal.",
     )
-
-    @model_serializer(mode="wrap")
-    def _omit_null_suggested_queries(self, handler: Any) -> dict[str, Any]:
-        data = handler(self)
-        if data.get("suggested_queries") is None:
-            data.pop("suggested_queries", None)
-        return data
 
 
 class QueryResponse(BaseModel):

@@ -50,7 +50,9 @@ def suggest_queries(scope: ScopeResult) -> list[str]:
         return list(_AMBIGUOUS[:_MAX_SUGGESTIONS])
 
     reason = (scope.reason or "").lower()
-    if any(token in reason for token in ("off-topic", "jailbreak", "injection", "abuse")):
+    if "off-topic" in reason:
+        return list(_OFF_TOPIC[:_MAX_SUGGESTIONS])
+    if any(token in reason for token in ("jailbreak", "injection", "abuse")):
         return list(_ABUSE[:_MAX_SUGGESTIONS])
     if "too long" in reason or "exceeds" in reason:
         return list(_LIMITS[:_MAX_SUGGESTIONS])

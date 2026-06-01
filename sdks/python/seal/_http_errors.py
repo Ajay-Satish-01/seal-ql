@@ -29,10 +29,25 @@ def _parse_suggested_queries(raw: Any) -> list[str]:
     return cleaned
 
 
+def _validation_item_message(item: Any) -> str:
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        for key in ("msg", "message", "detail"):
+            value = item.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    return str(item).strip()
+
+
 def detail_to_message(detail: Any) -> str:
     """Human-readable message from a FastAPI ``detail`` field (string or object)."""
     if isinstance(detail, str):
         return detail
+    if isinstance(detail, list):
+        parts = [_validation_item_message(item) for item in detail]
+        joined = "; ".join(part for part in parts if part)
+        return joined or str(detail)
     if isinstance(detail, dict):
         message = detail.get("message")
         if isinstance(message, str) and message.strip():
