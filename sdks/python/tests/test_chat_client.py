@@ -116,6 +116,22 @@ class TestChatClient:
         assert events[1]["type"] == "delta"
         assert events[2]["type"] == "done"
 
+    def test_parse_sse_meta_error_on_invalid_json(self) -> None:
+        lines = ["event: seal.meta", "data: {not-json", ""]
+        events = list(parse_sse_stream(iter(lines)))
+        assert events[0]["type"] == "meta_error"
+        assert "error" in events[0]
+
+    def test_parse_sse_meta_error_on_validation_failure(self) -> None:
+        lines = [
+            "event: seal.meta",
+            'data: {"session_id":"s1","sql":"SELECT 1","used_sql":true}',
+            "",
+        ]
+        events = list(parse_sse_stream(iter(lines)))
+        assert events[0]["type"] == "meta_error"
+        assert events[0]["partial"]["session_id"] == "s1"
+
 
 @pytest.mark.asyncio
 async def test_async_chat_stream() -> None:

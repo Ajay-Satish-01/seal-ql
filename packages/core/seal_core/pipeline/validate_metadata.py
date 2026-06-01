@@ -61,8 +61,12 @@ def validate_execution_fields(meta: dict[str, Any], *, require_when_sql: bool) -
     for key in ("row_count", "repair_attempts"):
         if key in meta and not isinstance(meta[key], (int, float)):
             errors.append(f"{key} must be numeric")
-    if "database_id" in meta and not isinstance(meta["database_id"], str):
-        errors.append("database_id must be a string")
+    if "database_id" in meta:
+        database_id = meta["database_id"]
+        if not isinstance(database_id, str):
+            errors.append("database_id must be a string")
+        elif require_when_sql and not database_id.strip():
+            errors.append("database_id must be a non-empty string")
     if "warnings" in meta and not isinstance(meta["warnings"], list):
         errors.append("warnings must be an array")
     return errors
@@ -247,12 +251,15 @@ def validate_stream_meta_event(event: dict[str, Any]) -> list[str]:
     if not isinstance(session_id, str) or not session_id.strip():
         errors.append("session_id must be a non-empty string")
     errors.extend(validate_execution_fields(event, require_when_sql=_sql_present(event)))
-    errors.extend(
-        validate_enhancement_block(
-            event.get("enhancement"),
-            required=_requires_enhancement_block(event),
+    if _requires_enhancement_block(event):
+        errors.extend(
+            validate_enhancement_block(
+                event.get("enhancement"),
+                required=True,
+            )
         )
-    )
+    elif event.get("enhancement") is not None:
+        errors.extend(validate_enhancement_block(event.get("enhancement"), required=False))
     columns = event.get("columns")
     if columns is not None and not isinstance(columns, list):
         errors.append("columns must be an array or null")
@@ -260,6 +267,6 @@ def validate_stream_meta_event(event: dict[str, Any]) -> list[str]:
         for i, col in enumerate(columns):
             if not isinstance(col, dict) or "name" not in col or "type" not in col:
                 errors.append(f"columns[{i}] must have name and type")
-    if "scope" in event:
+    if event.get("scope") is not None:
         errors.extend(validate_scope_block(event.get("scope")))
     return errors

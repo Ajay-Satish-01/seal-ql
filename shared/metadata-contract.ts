@@ -1,7 +1,7 @@
 /**
  * Shared execution metadata types and seal.meta flattening.
  * Used by apps/docs, apps/web, and scripts/verify_chat_flatten_contract.ts.
- * STREAM_META_METADATA_KEYS is sourced from tests/fixtures/stream_meta_metadata_keys.json.
+ * STREAM_META_METADATA_KEYS is sourced from config/stream_meta_metadata_keys.json.
  */
 
 import streamMetaMetadataKeys from '../config/stream_meta_metadata_keys.json';
@@ -25,7 +25,7 @@ export interface EnhancementMetadata {
 
 export interface ScopeMetadata {
   in_scope: boolean;
-  reason: string;
+  reason?: string | null;
   source: ScopeSource;
 }
 

@@ -28,7 +28,6 @@ Responses echo the backend used:
 - **Query:** `metadata.database_id`
 - **Chat (JSON):** `metadata.database_id` (including refusals)
 - **Chat (SSE):** top-level `database_id` on the flat `seal.meta` object (see [chat-metadata.md](chat-metadata.md))
-- **Chat (SSE):** `database_id` inside the first `event: seal.meta` payload
 
 ## Configuration
 

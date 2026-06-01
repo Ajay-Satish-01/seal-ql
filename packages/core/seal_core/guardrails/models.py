@@ -61,7 +61,7 @@ class ScopeMetadata(BaseModel):
     """Scope decision embedded in chat metadata and SSE ``seal.meta``."""
 
     in_scope: bool
-    reason: str = ""
+    reason: str | None = None
     source: ScopeSource
     category: ScopeCategory | None = None
     confidence: ScopeConfidence | None = None

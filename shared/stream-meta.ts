@@ -88,14 +88,31 @@ export function parseStreamMeta(data: unknown): StreamMetaPayload {
         throw new Error(`seal.meta missing ${key} when sql is present`);
       }
     }
+    const databaseId = record.database_id;
+    if (typeof databaseId !== 'string' || !databaseId.trim()) {
+      throw new Error('seal.meta database_id must be a non-empty string when sql is present');
+    }
+    const warnings = record.warnings;
+    if (warnings !== undefined && warnings !== null && !Array.isArray(warnings)) {
+      throw new Error('seal.meta warnings must be an array');
+    }
+    for (const key of ['row_count', 'repair_attempts'] as const) {
+      const value = record[key];
+      if (value !== undefined && value !== null && typeof value !== 'number') {
+        throw new Error(`seal.meta ${key} must be numeric`);
+      }
+    }
   }
 
   const needsEnhancement =
     record.used_sql === true || record.refusal === true || record.sql_error === true;
-  if (needsEnhancement && readEnhancement(record.enhancement) === undefined) {
+  if (record.enhancement != null && readEnhancement(record.enhancement) === undefined) {
     throw new Error('seal.meta invalid enhancement object');
   }
-  if ('scope' in record && readScope(record.scope) === undefined) {
+  if (needsEnhancement && record.enhancement == null) {
+    throw new Error('seal.meta missing enhancement object');
+  }
+  if (record.scope != null && readScope(record.scope) === undefined) {
     throw new Error('seal.meta invalid scope object');
   }
 
@@ -181,18 +198,24 @@ function readScope(raw: unknown): StreamMetaPayload['scope'] | undefined {
     return undefined;
   }
   const scope = raw as Record<string, unknown>;
-  if (
-    typeof scope.in_scope === 'boolean' &&
-    typeof scope.reason === 'string' &&
-    typeof scope.source === 'string' &&
-    isScopeSource(scope.source)
-  ) {
-    return {
-      in_scope: scope.in_scope,
-      reason: scope.reason,
-      source: scope.source,
-    };
+  if (typeof scope.in_scope !== 'boolean') {
+    return undefined;
   }
+  if (
+    scope.reason !== undefined &&
+    scope.reason !== null &&
+    typeof scope.reason !== 'string'
+  ) {
+    return undefined;
+  }
+  if (typeof scope.source !== 'string' || !isScopeSource(scope.source)) {
+    return undefined;
+  }
+  return {
+    in_scope: scope.in_scope,
+    ...(scope.reason !== undefined && scope.reason !== null ? { reason: scope.reason } : {}),
+    source: scope.source,
+  };
   return undefined;
 }
 

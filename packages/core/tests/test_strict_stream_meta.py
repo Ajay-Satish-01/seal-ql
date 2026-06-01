@@ -57,12 +57,21 @@ def test_strict_nested_chat_metadata_raises(monkeypatch: pytest.MonkeyPatch) -> 
         _load_settings.cache_clear()
 
 
-def test_strict_stream_meta_validation_off_by_default() -> None:
-    enforce_stream_meta_validation(
-        {
-            "session_id": "s1",
-            "sql": "SELECT 1",
-            "used_sql": True,
-            "enhancement": {"enabled": True, "applied": []},
-        }
-    )
+def test_strict_stream_meta_validation_off_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("STRICT_STREAM_META_VALIDATION", raising=False)
+    monkeypatch.delenv("STRICT_METADATA_VALIDATION", raising=False)
+    _load_settings.cache_clear()
+    try:
+        assert get_settings().strict_stream_meta_validation is False
+        enforce_stream_meta_validation(
+            {
+                "session_id": "s1",
+                "sql": "SELECT 1",
+                "used_sql": True,
+                "enhancement": {"enabled": True, "applied": []},
+            }
+        )
+    finally:
+        _load_settings.cache_clear()

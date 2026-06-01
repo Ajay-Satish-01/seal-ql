@@ -77,7 +77,7 @@ class ScopeMetadata(BaseModel):
     """Guardrails scope decision on chat metadata and SSE seal.meta."""
 
     in_scope: bool
-    reason: str = ""
+    reason: str | None = None
     source: ScopeSource
 
 

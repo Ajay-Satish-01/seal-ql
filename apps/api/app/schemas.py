@@ -1,6 +1,6 @@
 """API Request and Response Models."""
 
-from typing import Any, Literal, Self
+from typing import Any, Self
 
 from pydantic import BaseModel, Field, model_validator
 from seal_charts.models import ChartSpec
@@ -87,11 +87,8 @@ class DatabasesListResponse(BaseModel):
     )
 
 
-ChatMessageRole = Literal["user", "assistant"]
-
-
 class ChatMessageSchema(BaseModel):
-    role: ChatMessageRole = Field(..., description="Conversation role.")
+    role: str = Field(..., description="user or assistant (system not allowed).")
     content: str = Field(
         ...,
         max_length=_MAX_CHAT_MESSAGE_CHARS,
