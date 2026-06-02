@@ -13,7 +13,7 @@ Markdown in this directory describes **how Seal works** for contributors and int
 | Wiring multiple SQL backends | [multi-database.md](multi-database.md) → `/docs/multi-database` |
 | Changing metadata on responses or SSE | [chat-metadata.md](chat-metadata.md) → `/docs/execution-metadata` |
 | Deploying Docker / production | [../DEPLOYMENT.md](../DEPLOYMENT.md) → `/docs/self-hosting` |
-| Cutting a release | [../RELEASING.md](../RELEASING.md) | — |
+| Cutting a release | [../RELEASING.md](../RELEASING.md) (no docs site page — repo-only) |
 
 ## Core pipeline
 
