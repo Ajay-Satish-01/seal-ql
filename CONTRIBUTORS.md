@@ -82,7 +82,7 @@ We use short-lived feature branches cut from `main`. Follow this lifecycle:
    # OR
    git checkout -b ci_workflows
    ```
-2. **Work Locally**: Build your changes, keeping commits granular and descriptive.
+2. **Work Locally**: Build your changes, keeping commits granular and descriptive. Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, etc.) — enforced by the `commit-msg` pre-commit hook after `make setup`.
 3. **Run Validation**: Ensure all formats, lints, and tests pass before committing:
    ```bash
    pre-commit run --all-files

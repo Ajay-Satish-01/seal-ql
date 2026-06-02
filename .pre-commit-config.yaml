@@ -5,6 +5,10 @@
 # NOTE: The prettier/eslint hooks run locally via npx/pnpm.
 #       Tests (unit + E2E) run in GitHub Actions and via `make check` / `make check-e2e` — not on git push.
 
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
 repos:
   # ============================================================
   # Python — Ruff (formatting + linting)
@@ -62,3 +66,14 @@ repos:
         types_or: [javascript, jsx, ts, tsx]
         files: ^sdks/typescript/
         exclude: ^sdks/typescript/src/generated/
+
+  # ============================================================
+  # Commit messages — Conventional Commits (commit-msg stage)
+  # ============================================================
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        name: "commitlint (conventional commits)"
+        stages: [commit-msg]
+        args: [--verbose]
