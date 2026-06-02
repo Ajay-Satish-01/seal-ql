@@ -2,6 +2,8 @@
 
 The official Python SDK for interacting with the Seal API.
 
+**Docs:** [docs/README.md](../../docs/README.md) · embedding [docs/embedding.md](../../docs/embedding.md) · multi-database [docs/multi-database.md](../../docs/multi-database.md)
+
 ## Installation
 
 ```bash
@@ -101,6 +103,16 @@ async def main():
                 print(event["content"], end="")
 
 asyncio.run(main())
+```
+
+## Multiple databases
+
+When the API registers extra backends (`config/databases.yaml` or `SEAL_DATABASES`), pass `database_id` on query, chat, and schema:
+
+```python
+result = client.query("Total orders", database_id="default")
+schema = client.schema(database_id="analytics")
+reply = client.chat("What tables exist?", database_id="analytics")
 ```
 
 ## Working with DataFrames

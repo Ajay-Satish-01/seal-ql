@@ -1,5 +1,7 @@
 # Custom prompt enhancers
 
+**Doc index:** [../README.md](../README.md)
+
 Implement `PromptEnhancer` in `packages/core/seal_core/enhancement/` (or your own package on `PYTHONPATH`):
 
 ```python

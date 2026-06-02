@@ -3,7 +3,7 @@
 Seal classifies every natural-language request on `POST /v1/query` and `POST /v1/chat` **before** planners, SQL execution, vector RAG, or multi-step chat models run.
 
 **User-facing guide:** docs site `/docs/guardrails`  
-**Pipeline context:** [how-seal-works.md](how-seal-works.md)
+**Doc index:** [README.md](README.md) · **Pipeline context:** [how-seal-works.md](how-seal-works.md) · **Embedders:** [embedding.md](embedding.md) (scope boundary)
 
 ## Purpose
 

@@ -1,5 +1,7 @@
 # Chat and query execution metadata
 
+**Doc index:** [README.md](README.md)
+
 Seal exposes a shared execution contract on `POST /v1/query` and on chat turns that run SQL. The same shapes are documented on the docs site at `/docs/execution-metadata`, surfaced in the operational dashboard (`apps/web` on port **3001**), and typed in SDKs and `shared/metadata-contract.ts`.
 
 ## Query (`POST /v1/query`)
@@ -83,4 +85,4 @@ Client-side SSE checks: `shared/stream-meta.ts` (`parseStreamMeta` / `tryParseSt
 
 The dashboard validates `seal.meta` with `mapChatSseEvent` and shows an info toast if the payload is malformed, while still applying partial session fields and streaming answer tokens when possible.
 
-See also [chat-enhancement.md](chat-enhancement.md), [multi-database.md](multi-database.md), and the docs site [Operational dashboard](http://localhost:3000/docs/dashboard) page.
+See also [embedding.md](embedding.md), [chat-enhancement.md](chat-enhancement.md), [multi-database.md](multi-database.md), and the docs site [Operational dashboard](http://localhost:3000/docs/dashboard) page.

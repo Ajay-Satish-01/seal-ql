@@ -2,12 +2,15 @@
 
 Marketing, static documentation, and fixture-based interactive demo (`/demo`). Runs on port **3000**.
 
-For the live API console (Query, Chat, Catalog, Settings, Vector), use **`apps/web`** on port **3001**.
+For the live API console (Query, Chat, Schema, Catalog, Settings, Vector), use **`apps/web`** on port **3001**.
+
+**Repo guides (not Next.js routes):** [CONTRIBUTORS.md](../../CONTRIBUTORS.md) · [DEPLOYMENT.md](../../DEPLOYMENT.md) (API self-host) · [apps/docs/DEPLOYMENT.md](./DEPLOYMENT.md) (Vercel) · [docs/README.md](../../docs/README.md) (contributor markdown index)
 
 ## Doc routes
 
 | Path | Topic |
 | ---- | ----- |
+| `/docs/embedding` | OSS embedder guide — responsibilities, deployment, three boundaries |
 | `/docs/how-it-works` | Guardrails, LLM stages, query vs chat pipeline |
 | `/docs/configuration` | Environment reference with “what to expect” |
 | `/docs/architecture` | System diagram and deployment topology |
@@ -23,7 +26,7 @@ For the live API console (Query, Chat, Catalog, Settings, Vector), use **`apps/w
 | `/docs/testing` | CI and local test commands |
 | `/docs/agent-frameworks` | `seal-tools.openai.json` |
 
-Contributor markdown mirrors: `docs/how-seal-works.md`, `docs/chat-metadata.md`, `docs/guardrails.md`, `docs/chat-enhancement.md`, etc.
+Contributor markdown mirrors: `docs/embedding.md`, `docs/how-seal-works.md`, `docs/chat-metadata.md`, `docs/guardrails.md`, `docs/chat-enhancement.md`, etc.
 
 Public assets: `/openapi.json`, `/seal-tools.openai.json`, `/config/catalog.example.yaml` (synced via `make sync-docs-assets`).
 

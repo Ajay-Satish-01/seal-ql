@@ -504,9 +504,14 @@ const chat = await client.chat('Summarize daily_revenue', { databaseId: 'analyti
           <code>SEAL_DATABASES</code>).
         </p>
 
+        <p>
+          Deployment patterns (one Seal per DB, BFF, multi-tenant):{' '}
+          <Link href="/docs/embedding">Embedding Seal</Link>.
+        </p>
+
         <Callout variant="info" title="For contributors">
           Implementation paths and registry code: <code>docs/multi-database.md</code> in the
-          repository.
+          repository. Embedder overview: <code>docs/embedding.md</code>.
         </Callout>
       </DocsProse>
     </div>

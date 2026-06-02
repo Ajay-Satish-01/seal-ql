@@ -43,8 +43,10 @@ export default function HowItWorksPage() {
           decision and answer models run.
         </p>
         <p>
+          <Link href="/docs/embedding">Embedding Seal</Link> — responsibility split, BFF pattern, and
+          the three safety boundaries for integrators.{' '}
           <Link href="/docs/multi-database">Multi-database routing</Link> explains registry config,
-          shared catalog limits, and deployment patterns.
+          shared catalog limits, and <code>database_id</code> session pinning.
         </p>
 
         <h2>Guardrails (scope gate)</h2>

@@ -1,5 +1,7 @@
 # Vector stores
 
+**Doc index:** [../README.md](../README.md) · **Embedders (RAG boundary):** [../embedding.md](../embedding.md)
+
 `VECTOR_STORE` selects the implementation used by `VectorRagEnhancer` on `/v1/chat` (when in scope and `CHAT_ENHANCEMENT_ENABLED=true`).
 
 | Value | Behavior |

@@ -12,7 +12,7 @@ Effective value = .env defaults  ←  file overrides (if DB empty)  ←  Postgre
 
 Catalog **structure** still comes from auto-synced `config/catalog.yaml` (regenerated from live schema). **Description overrides** from the dashboard live in Postgres; after `POST /v1/catalog/sync`, YAML is rebuilt from the database and DB description overrides are re-applied to the in-memory catalog.
 
-**User-facing guide:** `/docs/workspace` · **Env reference:** `/docs/configuration` on the docs site.
+**User-facing guide:** `/docs/workspace` · **Env reference:** `/docs/configuration` on the docs site · **Doc index:** [README.md](README.md).
 
 ## Routes
 

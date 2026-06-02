@@ -1,6 +1,7 @@
 'use client';
 
 import { SealLogo } from '@/components/seal-logo';
+import { docsPageUrl } from '@/lib/docs-url';
 import { cn } from '@/lib/utils';
 import { Database, MessageSquare, Search, Settings, Sparkles, Table2 } from 'lucide-react';
 import Link from 'next/link';
@@ -44,7 +45,18 @@ export function DashboardSidebar() {
           );
         })}
       </nav>
-      <p className="text-muted-foreground px-4 py-3 text-xs">Live API · port 3001</p>
+      <p className="text-muted-foreground px-4 py-3 text-xs leading-relaxed">
+        Live API · port 3001
+        <br />
+        <a
+          href={docsPageUrl('/docs/embedding')}
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary hover:underline"
+        >
+          Embedding guide
+        </a>
+      </p>
     </aside>
   );
 }

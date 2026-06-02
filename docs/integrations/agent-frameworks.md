@@ -1,5 +1,7 @@
 # Agent framework integration
 
+**Embedder context:** [../embedding.md](../embedding.md) · docs site `/docs/embedding`.
+
 Seal exposes HTTP tools compatible with OpenAI function-calling manifests:
 
 - `config/seal-tools.openai.json` (copied to `apps/docs/public/` on `make sync-docs-assets`)

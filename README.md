@@ -271,7 +271,9 @@ pre-commit run --all-files
 | `GET /v1/workspace/export` | Export settings + catalog overrides |
 | `POST /v1/vector/reindex` | Rebuild vector index |
 
-User-facing guides: docs site at `http://localhost:3000` (`/docs/how-it-works`, `/docs/execution-metadata`, `/docs/configuration`, `/docs/guardrails`), dashboard at `http://localhost:3001`, plus [SETUP.md](SETUP.md), [docs/how-seal-works.md](docs/how-seal-works.md), [docs/chat-metadata.md](docs/chat-metadata.md), and [DEPLOYMENT.md](DEPLOYMENT.md).
+User-facing guides: docs site at `http://localhost:3000` (`/docs/embedding`, `/docs/integration-guide`, `/docs/how-it-works`, `/docs/execution-metadata`, `/docs/multi-database`, `/docs/guardrails`), dashboard at `http://localhost:3001`.
+
+Contributor & deployment: [docs/README.md](docs/README.md) (index) · [CONTRIBUTORS.md](CONTRIBUTORS.md) · [DEPLOYMENT.md](DEPLOYMENT.md) · [SETUP.md](SETUP.md).
 
 ## 📦 Publishing
 

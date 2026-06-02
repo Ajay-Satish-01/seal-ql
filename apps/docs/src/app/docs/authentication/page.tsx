@@ -37,7 +37,8 @@ export default function AuthenticationPage() {
         <p>
           <strong>Exposing Seal to end users:</strong> Do not give customers the shared API key. Put
           your own API or API gateway in front with per-user JWT, rate limits, and TLS. Seal stays an
-          internal capability layer.
+          internal capability layer. See <Link href="/docs/embedding">Embedding Seal</Link> for
+          responsibility split, deployment patterns, and the scope → SQL → RAG boundaries.
         </p>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">How it works</h2>

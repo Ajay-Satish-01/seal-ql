@@ -3,7 +3,7 @@
 Seal chains built-in `PromptEnhancer` implementations on `POST /v1/chat` when `CHAT_ENHANCEMENT_ENABLED=true` (default) and the scope gate marks the turn **in scope**.
 
 **User-facing guide:** `/docs/prompt-enhancement` on the docs site  
-**Full chat + LLM flow:** [how-seal-works.md](how-seal-works.md)  
+**Doc index:** [README.md](README.md) · **Full chat + LLM flow:** [how-seal-works.md](how-seal-works.md) · **RAG boundary for embedders:** [embedding.md](embedding.md)  
 **Execution metadata (query + chat JSON/SSE):** [chat-metadata.md](chat-metadata.md) — includes `metadata.enhancement.*`, flat SSE `seal.meta`, OpenAPI type generation, and CI contract checks.
 
 ## Where enhancement fits in a chat turn

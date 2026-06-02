@@ -1,6 +1,6 @@
 # How Seal works
 
-Contributor-oriented overview of request flow, LLM usage, and safety boundaries. User-facing copy lives on the docs site at `/docs/how-it-works`.
+Contributor-oriented overview of request flow, LLM usage, and safety boundaries. User-facing copy lives on the docs site at `/docs/how-it-works`. Doc index: [README.md](README.md).
 
 ## Stack
 
@@ -91,6 +91,7 @@ See [workspace-api.md](workspace-api.md). Full env tables: docs site `/docs/conf
 
 | Doc | Topic |
 |-----|--------|
+| [embedding.md](embedding.md) | OSS embedder guide — responsibility split, deployment patterns, three boundaries |
 | [multi-database.md](multi-database.md) | `database_id` routing and registry |
 | [guardrails.md](guardrails.md) | Scope gate env and behavior |
 | [chat-enhancement.md](chat-enhancement.md) | Enhancer hooks and env |

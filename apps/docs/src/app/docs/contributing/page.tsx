@@ -117,12 +117,26 @@ curl -s -X POST http://localhost:8000/v1/chat \\
           <Link href="/docs/configuration">Configuration reference</Link> — not in <code>next.config.ts</code>.
         </p>
 
+        <h2 className="text-foreground mt-10 text-2xl font-bold">Repository documentation</h2>
+        <p>
+          Maintainer guides in the clone (not rendered as site pages):{' '}
+          <code>CONTRIBUTORS.md</code>, <code>DEPLOYMENT.md</code>, <code>SETUP.md</code>, and the{' '}
+          <code>docs/</code> tree indexed by <code>docs/README.md</code> (embedding, multi-database,
+          guardrails, chat metadata, integrations). When you change API behavior, update the matching{' '}
+          <code>docs/*.md</code> file and the corresponding <code>/docs/*</code> page here.
+        </p>
+        <p>
+          Operational dashboard: <code>apps/web</code> on port <strong>3001</strong> — see{' '}
+          <Link href="/docs/dashboard">Dashboard</Link>.
+        </p>
+
         <h2 className="text-foreground mt-10 text-2xl font-bold">Regenerate docs assets</h2>
         <CodeBlock language="bash" code="make sync-docs-assets" />
 
         <p>
           Updates OpenAPI spec, demo fixtures, <code>seal-tools.openai.json</code>,{' '}
-          <code>catalog.example.yaml</code>, and seed SQL into the docs site.
+          <code>catalog.example.yaml</code>, and seed SQL into the docs site. After schema changes:{' '}
+          <code>make openapi-ts</code> then <code>make verify-openapi-sync</code>.
         </p>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Releases</h2>

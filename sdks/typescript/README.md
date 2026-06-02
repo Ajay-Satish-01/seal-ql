@@ -1,5 +1,7 @@
 # Seal TypeScript SDK
 
+**Docs:** [docs/README.md](../../docs/README.md) · embedding [docs/embedding.md](../../docs/embedding.md) · multi-database [docs/multi-database.md](../../docs/multi-database.md)
+
 ## Type generation (OpenAPI)
 
 API request/response types are **not** hand-maintained. They are generated from the FastAPI OpenAPI spec (Pydantic v2 models in `apps/api/app/schemas.py`):
@@ -45,3 +47,11 @@ for await (const event of client.chatStream('Summarize last quarter', { includeC
 ### Guardrails errors
 
 Out-of-scope **query** calls throw `QueryOutOfScopeError` with `reason` and `suggestedQueries` parsed from the API body (`detail.detail === 'query_out_of_scope'`). Out-of-scope **chat** returns HTTP 200; read `response.metadata.suggested_queries` or `event.data.suggested_queries` on the first `seal.meta` event when streaming.
+
+### Multiple databases
+
+```typescript
+const result = await client.query('Total orders', 'default');
+const schema = await client.schema({ databaseId: 'analytics' });
+await client.chat('What tables exist?', { databaseId: 'analytics' });
+```
