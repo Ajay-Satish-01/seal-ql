@@ -83,6 +83,14 @@ export default function FeaturesPage() {
           <li>Dialect-aware (<code>postgres</code> / <code>duckdb</code>) in <code>packages/sql</code></li>
         </ul>
 
+        <h2 id="embedding">Embedding as a capability layer</h2>
+        <p>
+          Self-host Seal behind your product API or agent runtime. You own identity and UX; Seal
+          provides guardrails, validated SQL, charts, and optional chat sessions. See{' '}
+          <Link href="/docs/embedding">Embedding Seal</Link> for the BFF pattern, deployment options,
+          and the scope → SQL → RAG boundaries.
+        </p>
+
         <h2 id="multi-database">Multi-database routing</h2>
         <p>
           Register named backends at startup; clients pass <code>database_id</code> on query, chat,

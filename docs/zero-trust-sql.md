@@ -2,6 +2,8 @@
 
 User-facing guide: docs site `/docs/zero-trust-sql`.
 
+**Embedders:** second safety layer after guardrails — see [embedding.md](embedding.md) (scope → **SQL** → RAG).
+
 ## Purpose
 
 Every LLM-generated statement is parsed with **SQLGlot** before execution. Guardrails scope the *question*; this boundary scopes the *SQL*.
@@ -39,3 +41,11 @@ Every LLM-generated statement is parsed with **SQLGlot** before execution. Guard
 ## Tests
 
 `uv run pytest packages/sql/tests/ packages/core/tests/test_pipeline_safety.py packages/core/tests/test_planner_models.py`
+
+## Related docs
+
+| Doc | Topic |
+| --- | ----- |
+| [embedding.md](embedding.md) | Three boundaries for integrators |
+| [how-seal-works.md](how-seal-works.md) | Full query/chat pipeline |
+| [guardrails.md](guardrails.md) | Scope gate (runs before SQL) |

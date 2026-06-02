@@ -2,6 +2,8 @@
 
 The documentation site (`apps/docs`) depends on the local TypeScript SDK at `sdks/typescript` (`link:../../sdks/typescript`). Vercel must see the full repository and compile `dist/` before `next build`.
 
+**API / self-hosting:** see repo root [DEPLOYMENT.md](../../DEPLOYMENT.md). **Contributor docs index:** [docs/README.md](../../docs/README.md).
+
 ## Vercel project settings
 
 1. **Import** the `seal` GitHub repository.

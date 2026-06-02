@@ -59,7 +59,8 @@ export default function DashboardPage() {
         </ul>
         <p>
           Full setup and limitations:{' '}
-          <Link href="/docs/multi-database">Multi-database routing</Link>.
+          <Link href="/docs/multi-database">Multi-database routing</Link>. Embedder architecture:{' '}
+          <Link href="/docs/embedding">Embedding Seal</Link>.
         </p>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Pages</h2>

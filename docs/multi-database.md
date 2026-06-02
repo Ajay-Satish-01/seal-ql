@@ -2,7 +2,7 @@
 
 **User-facing guide (start here):** docs site [`/docs/multi-database`](https://seal.dev/docs/multi-database) — step-by-step examples for integrators.
 
-Contributor reference below. For pipeline context see [how-seal-works.md](./how-seal-works.md).
+Contributor reference below. **Doc index:** [README.md](./README.md). For pipeline context see [how-seal-works.md](./how-seal-works.md). Embedder deployment patterns: [embedding.md](./embedding.md).
 
 ## Purpose
 
@@ -213,6 +213,8 @@ Agent tools: `config/seal-tools.openai.json` — each SQL-related tool accepts o
 
 | Doc | Topic |
 | --- | ----- |
+| [embedding.md](./embedding.md) | Embedder guide — BFF pattern, three boundaries, operational checklist |
+| Docs site `/docs/embedding` | User-facing embedding and boundary model |
 | Docs site `/docs/multi-database` | Integrator guide with scenarios |
 | Dashboard (`apps/web`, port 3001) | Database dropdown, Query/Chat/Schema with `database_id` |
 | `GET /v1/databases` | List registered ids (dashboard + clients) |

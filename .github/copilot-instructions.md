@@ -26,7 +26,10 @@ AI-powered SQL generation, validation, and visualization with **schema-grounded 
 | `packages/core/seal_core/catalog/` | YAML catalog sync + registry |
 | `packages/core/seal_core/enhancement/` | PromptEnhancer orchestrator |
 | `packages/core/seal_core/guardrails/` | Scope gate (heuristics + LLM) before SQL/RAG |
+| `docs/README.md` | Index of all contributor markdown |
+| `docs/embedding.md` | OSS embedder guide (boundaries, deployment, BFF) |
 | `docs/how-seal-works.md` | Contributor pipeline + LLM stage reference |
+| `DEPLOYMENT.md` / `CONTRIBUTORS.md` | Self-hosting and dev workflow |
 | `packages/sql/` | AST validation |
 | `packages/charts/` | Vega-Lite specs |
 | `config/` | `catalog.example.yaml`, `seal-tools.openai.json`, `stream_meta_metadata_keys.json` |

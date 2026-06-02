@@ -14,4 +14,4 @@ TypeScript modules consumed by `apps/docs` and `apps/web` via tsconfig path alia
 
 HTTP JSON/SSE **wire types** for the TypeScript SDK come from OpenAPI (`make openapi-ts` → `sdks/typescript/src/generated/openapi.ts`), not from this folder. The SDK **vendors** this directory on `prebuild` for runtime SSE validation only.
 
-Contributor docs: [docs/chat-metadata.md](../docs/chat-metadata.md). Regenerate OpenAPI after changing `apps/api/app/schemas.py`.
+Contributor docs: [docs/README.md](../docs/README.md) · [docs/chat-metadata.md](../docs/chat-metadata.md). Regenerate OpenAPI after changing `apps/api/app/schemas.py`.

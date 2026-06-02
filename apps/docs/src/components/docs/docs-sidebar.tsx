@@ -19,6 +19,7 @@ const sidebarGroups = [
     links: [
       { title: 'Quickstart', href: '/docs/quickstart' },
       { title: 'Integration guide', href: '/docs/integration-guide' },
+      { title: 'Embedding Seal', href: '/docs/embedding' },
       { title: 'Self-hosting (Docker)', href: '/docs/self-hosting' },
       { title: 'Authentication', href: '/docs/authentication' },
       { title: 'Dashboard (port 3001)', href: '/docs/dashboard' },

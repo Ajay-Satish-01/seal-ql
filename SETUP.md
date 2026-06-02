@@ -1,5 +1,7 @@
 # Seal — setup notes
 
+Quick reference for SDK install, auth, and local services. For full contributor workflow see **[CONTRIBUTORS.md](CONTRIBUTORS.md)**; for production Docker see **[DEPLOYMENT.md](DEPLOYMENT.md)**; for all `docs/` markdown see **[docs/README.md](docs/README.md)**.
+
 ## Packages
 
 | Artifact | Name |
@@ -74,12 +76,10 @@ curl -H "X-API-Key: $SEAL_API_KEY" http://localhost:8000/v1/schema
 - Comparison uses `secrets.compare_digest` (timing-safe).
 - Wrong keys return `401` with a generic message (no leak of expected value).
 - Do not embed production keys in frontend bundles; call Seal from your backend.
-- End users should authenticate to **your** app; your server calls Seal (BFF pattern).
+- End users should authenticate to **your** app; your server calls Seal (BFF pattern). See [docs/embedding.md](docs/embedding.md).
 - Use a reverse proxy for rate limits on public deployments.
 
-**Local dev:** copy `.env.example` → `.env` (includes a dev-only key). `docker-compose.yml` does not default a production key.
-
-Full guide on the docs site: **Authentication** (`/docs/authentication`).
+Full guides: docs site **Authentication** (`/docs/authentication`) · **Embedding Seal** (`/docs/embedding`).
 
 ## Data catalog & chat
 
@@ -97,6 +97,8 @@ On startup, Seal can auto-sync `config/catalog.yaml` from introspected schema (`
 **Local UIs**: docs `apps/docs` (port 3000), dashboard `apps/web` (port 3001). Run `make up` for API, then `cd apps/docs && pnpm dev` and `cd apps/web && pnpm dev` in separate terminals.
 
 Optional vector RAG: `VECTOR_STORE=chroma` with `seal-core[chroma]` installed. Default is `VECTOR_STORE=none`.
+
+**Multiple databases (optional):** copy `config/databases.example.yaml` → `config/databases.yaml`, restart API, pass `database_id` on query/chat/schema. [docs/multi-database.md](docs/multi-database.md).
 
 ```bash
 make sync-catalog   # CLI sync without restarting API
@@ -119,7 +121,7 @@ const client = new Seal({ baseUrl: "http://localhost:8000", apiKey: "your-secret
 await client.chat("Revenue last quarter?", { includeCharts: true });
 ```
 
-Contributor docs: `docs/how-seal-works.md` (pipeline + LLM stages), `docs/chat-metadata.md` (query/chat execution metadata), `docs/guardrails.md`, `docs/chat-enhancement.md`, `docs/workspace-api.md`, `docs/integrations/`. User-facing: docs site `http://localhost:3000` (`/docs/how-it-works`, `/docs/execution-metadata`, `/docs/configuration`, `/docs/guardrails`); dashboard `http://localhost:3001`.
+**Contributor docs:** index at [docs/README.md](docs/README.md). User-facing: docs site `http://localhost:3000` (`/docs/embedding`, `/docs/integration-guide`, `/docs/how-it-works`, `/docs/execution-metadata`, `/docs/multi-database`, `/docs/guardrails`); dashboard `http://localhost:3001` ([apps/web/README.md](apps/web/README.md)).
 
 **API schema changes:** edit `apps/api/app/schemas.py`, then from repo root run `make openapi-ts` and commit the OpenAPI spec, docs copies, and `sdks/typescript/src/generated/openapi.ts`. Verify with `make verify-openapi-sync` (also run in CI).
 

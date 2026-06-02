@@ -1,6 +1,38 @@
 # 👥 Contributors & Developer Guide
 
-Thank you for contributing to the **Seal**! This document outlines our repository architecture, coding guidelines, development workflow, and the processes we use to write, test, and merge code.
+Thank you for contributing to **Seal**! This document covers repository layout, local setup, coding standards, testing, and pull request expectations.
+
+| Guide | Purpose |
+| ----- | ------- |
+| **[docs/README.md](docs/README.md)** | Index of all contributor markdown under `docs/` |
+| **[DEPLOYMENT.md](DEPLOYMENT.md)** | Self-hosting Docker, production env, multi-database |
+| **[SETUP.md](SETUP.md)** | SDK install, auth, catalog/chat quick reference |
+| **[RELEASING.md](RELEASING.md)** | Version bumps and publish workflow |
+| **[AGENTS.md](AGENTS.md)** | Rules for AI coding assistants |
+
+User-facing documentation is built from **`apps/docs`** (port 3000). The operational dashboard is **`apps/web`** (port 3001).
+
+---
+
+## 📚 Documentation map
+
+Contributor prose lives in **`docs/`**; the docs site mirrors it under `/docs/*`. When you change behavior, update **both** the markdown file and the matching Next.js page when one exists.
+
+| Topic | Contributor | Docs site |
+| ----- | ----------- | --------- |
+| Embedding / BFF / boundaries | [docs/embedding.md](docs/embedding.md) | `/docs/embedding` |
+| Pipeline & LLM stages | [docs/how-seal-works.md](docs/how-seal-works.md) | `/docs/how-it-works` |
+| `database_id` routing | [docs/multi-database.md](docs/multi-database.md) | `/docs/multi-database` |
+| Execution metadata | [docs/chat-metadata.md](docs/chat-metadata.md) | `/docs/execution-metadata` |
+| Guardrails & `suggested_queries` | [docs/guardrails.md](docs/guardrails.md) | `/docs/guardrails` |
+| Zero-trust SQL (SQLGlot) | [docs/zero-trust-sql.md](docs/zero-trust-sql.md) | `/docs/zero-trust-sql` |
+| Chat enhancement / RAG | [docs/chat-enhancement.md](docs/chat-enhancement.md) | `/docs/prompt-enhancement`, `/docs/vector-rag` |
+| Workspace API | [docs/workspace-api.md](docs/workspace-api.md) | `/docs/workspace` |
+| Extensions (agents, RAG, enhancers) | [docs/integrations/](docs/integrations/) | `/docs/agent-frameworks`, etc. |
+| Self-hosting / production env | [DEPLOYMENT.md](DEPLOYMENT.md) | `/docs/self-hosting` |
+| Releases | [RELEASING.md](RELEASING.md) | — |
+
+Full index: **[docs/README.md](docs/README.md)**.
 
 ---
 
@@ -10,7 +42,7 @@ We use a monorepo architecture managed by modern tooling:
 
 * **Backend (Python)**: Configured as a unified `uv` workspace. The workspace root `pyproject.toml` references:
   * `apps/api` (FastAPI app container)
-  * `packages/core` (Planner, chat, catalog, enhancement, guardrails, workspace, vector RAG, introspection)
+  * `packages/core` (Planner, chat, catalog, enhancement, guardrails, workspace, vector RAG, introspection, **`database/`** registry, shared **`pipeline/`**)
   * `packages/sql` (AST-based SQL validators)
   * `packages/charts` (Vega-Lite visual generators)
   * `packages/semantic` (Metrics semantic compiler)
@@ -57,7 +89,7 @@ make sync-catalog
 # Docs site (port 3000) and dashboard (port 3001) — separate terminals
 make sync-docs-assets
 cd apps/docs && pnpm install && pnpm dev
-cd apps/web && pnpm dev   # when dashboard package.json exists
+cd apps/web && pnpm install && pnpm dev
 ```
 
 ### 3. Pre-commit & Push Hook Installation
@@ -65,6 +97,20 @@ cd apps/web && pnpm dev   # when dashboard package.json exists
 # Install local validation hooks
 make setup
 ```
+
+### 4. Workspace schema (first time / after pull)
+```bash
+make seed   # includes reminder to run migrate_app.sql
+docker compose exec -T postgres psql -U postgres -d seal < scripts/migrate_app.sql
+```
+
+### 5. Full validation (CI mirror)
+```bash
+make check          # lint, unit tests, metadata contract, OpenAPI sync, docs + dashboard builds
+make check-e2e      # live HTTP E2E — requires `make up` + `make seed`
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for production Docker and [RELEASING.md](RELEASING.md) before tagging releases.
 
 ---
 
@@ -107,12 +153,14 @@ We enforce strict formatting rules to maintain maximum readability and zero boil
 
 ### 🟦 TypeScript Coding Standards
 * **Formatter**: [Prettier](https://prettier.io/) for unified formatting styling.
-* **Linter**: [ESLint](https://eslint.org/) (Flat Config v9+) using the TypeScript ESLint extension rules.
-* **Directory Scope**: Scoped to the `sdks/typescript/` folder.
-* **Manual execution** (within `sdks/typescript/`):
+* **Linter**: [ESLint](https://eslint.org/) (Flat Config v9+). `make lint` / `make format` cover **Python (Ruff)** and **`sdks/typescript/`** only. When you change `apps/docs` or `apps/web`, run their scripts locally and rely on `make check-docs` / `make check-dashboard` (or full `make check`) for production builds.
+* **Manual execution**:
   ```bash
-  pnpm run lint     # Run eslint checks
-  pnpm run format   # Reformat code with prettier
+  make lint && make format              # Ruff + TypeScript SDK
+
+  cd apps/docs && pnpm run lint && pnpm run format    # docs site
+  cd apps/web && pnpm run lint && pnpm run format     # dashboard
+  make check-docs && make check-dashboard             # Next.js build gate
   ```
 
 ---
@@ -127,7 +175,7 @@ Seal features self-correcting query mechanisms and domain-aware schema reasoning
 - The **Semantic Metric Layer** (powered by `packages/semantic`) defines Pydantic models (`Metric`, `Dimension`) mapped via declarative YAML files.
 - **Workflow**:
   1. At startup, the FastAPI app initializes a `SemanticRegistry` which loads YAML definitions from the configured `SEMANTIC_DIRECTORY`.
-  2. The `QueryPlanner` automatically injects these business metrics and definitions into the system prompt context.
+  2. The `QueryPlanner` injects metrics into the prompt for **`database_id=default`** only (global semantic registry today).
   3. The LLM can then reason over logical business concepts ("Revenue", "Active Users") rather than raw columns, significantly improving generation accuracy.
 
 ### 🔄 Repair Loops
@@ -140,17 +188,18 @@ Seal features self-correcting query mechanisms and domain-aware schema reasoning
 
 ### 🧪 Evaluations (Evals)
 **Purpose**: To rigorously track and measure the accuracy, safety, and repair-ability of the Query Planner.
-- Located in `evals/`, the eval suite acts as an automated grading system for the LLM.
-- **`eval_set.jsonl`**: A dataset containing natural language questions, expected outcomes, and expected schema targets.
-- **`EvalRunner`**: Connects to the database (either DuckDB or Postgres) and evaluates the planner against the dataset. It tracks `execution_success`, `validation_success`, and how many queries successfully recovered via the `repair_loop`.
-- To run evals:
+- **`EvalRunner`** lives in `evals/seal_evals/runner.py` and grades planner output against a JSONL dataset.
+- **Dataset path (planned):** `evals/data/eval_set.jsonl` — **not committed yet** (Phase 5). The CLI default expects that file; create the directory and file before running, or pass a custom path from your own script importing `EvalRunner`.
+- Metrics include `execution_success`, `validation_success`, and repair-loop recovery counts.
+- Example (after you add `evals/data/eval_set.jsonl`):
   ```bash
-  # DuckDB in-memory evaluation
+  # DuckDB in-memory
   uv run python evals/seal_evals/runner.py :memory:
 
-  # TimescaleDB/Postgres evaluation (in docker)
+  # Postgres in docker
   docker compose exec api uv run python evals/seal_evals/runner.py postgresql+asyncpg://postgres:postgres@postgres:5432/seal
   ```
+- **`make eval`** is not on `main` yet (planned Phase 5). Until then, run `EvalRunner` manually as above. Release notes: [RELEASING.md](RELEASING.md#evals-planned).
 
 ---
 
@@ -187,6 +236,40 @@ When adding or renaming metadata fields, update the manifest, flatten golden (`t
 
 ---
 
+## 🌐 Multi-database & embedding
+
+| Area | Code | Docs |
+| ---- | ---- | ---- |
+| Registry & config | `packages/core/seal_core/database/registry.py`, `config.py` | [docs/multi-database.md](docs/multi-database.md) |
+| API wiring | `apps/api/app/main.py`, `dependencies.py`, `routes/query.py`, `chat.py`, `schema.py` | `/docs/multi-database` |
+| Chat session pin | `packages/core/seal_core/chat/service.py`, `errors.py` | `session_database_id_mismatch` |
+| Example config | `config/databases.example.yaml` | [DEPLOYMENT.md](DEPLOYMENT.md) |
+
+- Clients send **ids only** — never connection URLs in JSON bodies.
+- Unknown `database_id` → HTTP **404**; chat follow-up mismatch → HTTP **400**.
+- Catalog, semantic layer, and vector index remain on **`default`** until per-db resources ship (see **Future work** in [docs/embedding.md](docs/embedding.md)).
+
+**Embedders** — Responsibility split, deployment patterns, three boundaries: [docs/embedding.md](docs/embedding.md). Production: never expose `SEAL_API_KEY` to browsers; use a BFF ([DEPLOYMENT.md](DEPLOYMENT.md#embedding-in-your-product)).
+
+---
+
+## 🛡️ Guardrails
+
+Scope gate runs before SQL, RAG, and planner on `/v1/query` and `/v1/chat`:
+
+| Path | Out of scope |
+| ---- | ------------ |
+| Query | HTTP **400** — `detail.detail` = `query_out_of_scope`, `reason`, `suggested_queries` (heuristic, no extra LLM) |
+| Chat | HTTP **200** — `metadata.refusal`, `metadata.suggested_queries` (+ flat fields on SSE `seal.meta`) |
+
+| Code | Tests |
+| ---- | ----- |
+| `packages/core/seal_core/guardrails/` | `packages/core/tests/test_guardrails_scope.py`, `test_chat_guardrails.py` |
+| Query route 400 shape | `apps/api/tests/test_guardrails_api.py` |
+| Suggestions helper | `packages/core/seal_core/guardrails/suggestions.py` |
+
+---
+
 ## 🧪 Testing Guidelines
 
 No code should be pushed or merged without comprehensive test coverage.
@@ -194,18 +277,26 @@ No code should be pushed or merged without comprehensive test coverage.
 ### 🐍 Python Tests
 Python tests are written using `pytest` and `pytest-asyncio` for async database handlers.
 
-* **Locating tests**: Add test modules under `tests/` directories in respective packages (e.g. `packages/core/tests/test_schema.py`).
-* **Test Database**: Docker containers run a dedicated `postgres` database seeded with the standard schemas. Mocking is encouraged for LLM/Ollama providers, while actual database execution is run against test instances.
+* **Locating tests**: Add modules under each package’s `tests/` (e.g. `packages/core/tests/`, `apps/api/tests/`).
+* **Test database**: `make up` + `make seed` for Postgres; many API tests use mocks for LLM calls.
+* **Focused suites**:
+  ```bash
+  # Multi-database registry
+  uv run pytest packages/core/tests/test_database_registry.py apps/api/tests/test_database_routing.py -v
+
+  # Guardrails
+  uv run pytest packages/core/tests/test_guardrails_scope.py packages/core/tests/test_chat_guardrails.py apps/api/tests/test_guardrails_api.py -v
+
+  # Metadata contract (query + chat + SSE parity)
+  uv run pytest tests/test_response_validation.py packages/core/tests/test_chat_flatten_contract.py -v
+  ```
 * **Executing tests**:
   ```bash
-  # Run all tests locally in virtual env
-  uv run pytest -v
-
-  # Run all tests using docker container
-  make test
-
-  # Run tests with HTML coverage report
-  make test-cov
+  uv run pytest -v              # local venv
+  make test                     # inside API container
+  make test-cov                 # with coverage HTML
+  make check                    # full CI mirror (see Makefile)
+  make check-e2e                # live E2E (stack must be running)
   ```
 
 ---
@@ -219,4 +310,10 @@ Before submitting a Pull Request, ensure that:
 - [ ] Local tests pass successfully (`uv run pytest` or `make check` for the full CI mirror).
 - [ ] API schema changes: `make verify-openapi-sync` is clean and committed generated types are included.
 - [ ] Metadata contract changes: golden/parity fixtures updated; [docs/chat-metadata.md](docs/chat-metadata.md) and docs site `/docs/execution-metadata` reviewed if user-facing.
+- [ ] User-facing behavior: matching `apps/docs` page updated; [docs/README.md](docs/README.md) index checked if you added a new `docs/*.md` file.
+- [ ] `make check-docs` and `make check-dashboard` pass when you touched docs site or dashboard.
+- [ ] Multi-database or guardrails behavior: [docs/multi-database.md](docs/multi-database.md) / [docs/guardrails.md](docs/guardrails.md) and matching docs site pages updated.
+- [ ] Embedder-facing changes: [docs/embedding.md](docs/embedding.md) and `/docs/embedding` reviewed.
+- [ ] Production/deploy impact: [DEPLOYMENT.md](DEPLOYMENT.md) env or steps updated when operators need new config.
+- [ ] Release-visible changes: note in PR for maintainers ([RELEASING.md](RELEASING.md) checklist before tag).
 - [ ] You have documented your changes clearly in code comments and updated any relevant README guides.

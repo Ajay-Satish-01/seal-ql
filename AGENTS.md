@@ -12,7 +12,7 @@
 - `sdks/python/`, `sdks/typescript/`: SDK wrappers (`query`, `chat`, `chatStream`, `catalog`)
 - `config/`: `catalog.example.yaml`, `seal-tools.openai.json`, `stream_meta_metadata_keys.json`
 - `scripts/`: `seed.sql`, `migrate_app.sql`, `sync_catalog.py`, `generate_openapi.py`
-- `docs/`: Contributor docs (`how-seal-works.md`, `multi-database.md`, `guardrails.md`, `chat-enhancement.md`, `chat-metadata.md`, `workspace-api.md`, `integrations/`)
+- `docs/`: Contributor docs — **index:** [docs/README.md](docs/README.md) (`embedding.md`, `how-seal-works.md`, `multi-database.md`, `guardrails.md`, `chat-enhancement.md`, `chat-metadata.md`, `workspace-api.md`, `integrations/`)
 - `shared/`: Cross-app TypeScript (`stream-meta.ts`, `metadata-contract.ts`, `metadata-summary.ts`) for docs + dashboard
 
 ## Architecture

@@ -23,7 +23,8 @@ export default function IntegrationGuidePage() {
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
         <Callout variant="info" title="Recommended path">
           Docker image → SDK install → set <code>baseUrl</code>. You do not need to clone the
-          repository to integrate.
+          repository to integrate. For architecture and boundaries (your app vs Seal, BFF, multi-DB), see{' '}
+          <Link href="/docs/embedding">Embedding Seal</Link>.
         </Callout>
 
         <h2 id="docker" className="text-foreground mt-10 text-2xl font-bold">

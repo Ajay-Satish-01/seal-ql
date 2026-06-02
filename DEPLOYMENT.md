@@ -2,17 +2,19 @@
 
 Seal is Docker-first: run the `seal/api` image with Postgres (and optionally Ollama or a cloud LLM) for NL query, **chat Q&A**, and chart generation.
 
+**Related guides:** [docs/embedding.md](docs/embedding.md) (BFF pattern, boundaries) · [docs/multi-database.md](docs/multi-database.md) (`database_id`) · [CONTRIBUTORS.md](CONTRIBUTORS.md) (dev setup) · [docs/README.md](docs/README.md) (full doc index)
+
 ## Architecture
 
 | Service | Role |
 | ------- | ---- |
-| **API** | FastAPI — `/v1/query`, `/v1/chat`, `/v1/catalog`, `/v1/schema`, workspace, vector |
-| **Docs** | `apps/docs` (port 3000) — marketing, guides, fixture `/demo` |
-| **Dashboard** | `apps/web` (port 3001) — live API console (Query, Chat, Catalog, Settings, Vector) |
+| **API** | FastAPI — `/v1/query`, `/v1/chat`, `/v1/catalog`, `/v1/schema`, `/v1/databases`, workspace, vector |
+| **Docs** | `apps/docs` (port 3000) — guides, `/docs/embedding`, fixture `/demo` |
+| **Dashboard** | `apps/web` (port 3001) — live API console (Query, Chat, Schema, Catalog, Settings, Vector) |
 | **Postgres** | TimescaleDB analytics DB (bundled in compose) |
 | **Ollama** | Local LLM (optional; `OLLAMA_PROFILE=disabled` for cloud) |
 
-On startup the API can **auto-sync** `config/catalog.yaml` from introspected schema and build an optional **vector index** when `VECTOR_STORE=chroma`.
+On startup the API can **auto-sync** `config/catalog.yaml` from introspected schema (default database) and build an optional **vector index** when `VECTOR_STORE=chroma`.
 
 ## Prerequisites
 
@@ -34,11 +36,21 @@ With API key from `.env`:
 ```bash
 curl -H "X-API-Key: $SEAL_API_KEY" http://localhost:8000/v1/catalog
 
+# List registered database ids (when multi-DB is configured)
+curl -H "X-API-Key: $SEAL_API_KEY" http://localhost:8000/v1/databases
+
+curl -s -X POST http://localhost:8000/v1/query \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $SEAL_API_KEY" \
+  -d '{"query":"Count orders by month","database_id":"default"}'
+
 curl -s -X POST http://localhost:8000/v1/chat \
   -H "Content-Type: application/json" \
   -H "X-API-Key: $SEAL_API_KEY" \
-  -d '{"message":"What tables exist?"}'
+  -d '{"message":"What tables exist?","database_id":"default"}'
 ```
+
+Responses include **`metadata.database_id`**, execution stats when SQL runs (`row_count`, `execution_time_ms`, `repair_attempts`, `used_sql`), and on guardrails refusal **`metadata.suggested_queries`** (chat) or HTTP 400 with nested **`detail`** on query (fields at `detail.detail`, `detail.reason`, `detail.suggested_queries`). See [docs/chat-metadata.md](docs/chat-metadata.md) and [docs/guardrails.md](docs/guardrails.md).
 
 For **cloud LLM** (Gemini, OpenAI, Anthropic), set in `.env`:
 
@@ -58,7 +70,9 @@ Use the published compose example (also at `apps/docs/public/compose/docker-comp
 
 1. Download `docker-compose.example.yml` and `seed.sql`.
 2. Create `.env` with `SEAL_API_KEY`, `SEAL_AUTH_REQUIRED=true`, `SEAL_DEV_MODE=false`, `SEAL_DISABLE_DOCS=true`.
-3. Mount a host directory for the data catalog, e.g. `./config:/app/config`.
+3. Mount a host directory for config, e.g. `./config:/app/config` (catalog YAML, optional `databases.yaml`, workspace fallback).
+4. Apply workspace schema once: `psql … < scripts/migrate_app.sql` (creates `seal_app.workspace_kv` for settings and catalog description overrides).
+5. Optional: copy `config/databases.example.yaml` → `config/databases.yaml` for extra `database_id` backends.
 
 ### Environment Variables
 
@@ -66,7 +80,9 @@ Use the published compose example (also at `apps/docs/public/compose/docker-comp
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | Postgres/asyncpg connection string | `postgresql+asyncpg://…` |
+| `DATABASE_URL` | Primary DB; always registered as `database_id` **default** | `postgresql+asyncpg://…` |
+| `SEAL_DATABASES_PATH` | Optional YAML for additional ids (e.g. `config/databases.yaml`) | `config/databases.yaml` |
+| `SEAL_DATABASES` | Optional JSON env map of id → URL (Docker-friendly) | — |
 | `SEAL_API_KEY` | Shared secret for `X-API-Key` on `/v1/*` | — |
 | `SEAL_AUTH_REQUIRED` | Fail startup without a real key | `false` (dev), `true` (prod example) |
 | `SEAL_DEV_MODE` | Allow placeholder keys when auth not required | `true` (dev) |
@@ -113,7 +129,23 @@ Use the published compose example (also at `apps/docs/public/compose/docker-comp
 | `MAX_CHAT_MESSAGE_CHARS` | Single chat message limit | `8000` |
 | `MAX_CHAT_HISTORY_CHARS` | History override limit | `32000` |
 
-See [docs/guardrails.md](docs/guardrails.md). Hot-reload on save when `SEAL_DEV_MODE=true`; in production use `POST /v1/workspace/settings/apply` (dashboard **Apply to API**).
+See [docs/guardrails.md](docs/guardrails.md). Out-of-scope **query** → HTTP 400 with a nested JSON body:
+
+```json
+{
+  "detail": {
+    "detail": "query_out_of_scope",
+    "reason": "off-topic pattern",
+    "suggested_queries": ["Show order count by month", "What tables are available?"]
+  }
+}
+```
+
+Out-of-scope **chat** → HTTP 200 refusal with `metadata.suggested_queries`. Hot-reload on save when `SEAL_DEV_MODE=true`; in production use `POST /v1/workspace/settings/apply` (dashboard **Apply to API**).
+
+#### Multi-database (optional)
+
+Copy `config/databases.example.yaml` → `config/databases.yaml` and mount `./config:/app/config`. Clients pass `database_id` on `/v1/query`, `/v1/chat`, and `GET /v1/schema` — never raw connection strings. Catalog, semantic layer, and vector index remain on **default** only. Details: [docs/multi-database.md](docs/multi-database.md).
 
 #### Workspace
 
@@ -131,6 +163,16 @@ services:
 ```
 
 Edit `config/catalog.yaml` after sync to add `table_description` / `view_description` for better NL accuracy.
+
+Example `config/databases.yaml` (mount with `./config:/app/config`):
+
+```yaml
+databases:
+  analytics:
+    url: duckdb:///data/analytics.duckdb
+```
+
+Clients pass `"database_id": "analytics"` on `/v1/query`, `/v1/chat`, and `GET /v1/schema?database_id=analytics`. Unknown ids → HTTP **404** `unknown_database_id`.
 
 ### Optional: Chroma vector RAG
 
@@ -157,6 +199,17 @@ docker run -d -p 8000:8000 \
   seal/api:latest
 ```
 
+## Embedding in your product
+
+Seal is an **internal capability layer**, not a user-facing app.
+
+1. Set `SEAL_API_KEY` and call Seal from **your backend** only (`X-API-Key`).
+2. End users authenticate to your product (JWT, session, SSO); your server forwards NL requests to Seal.
+3. Put a reverse proxy or API gateway in front for rate limits on public deployments.
+4. Understand three boundaries: **guardrails** (scope) → **SQLGlot** (zero-trust SQL) → **enhancement/RAG** (chat only).
+
+Full guide: [docs/embedding.md](docs/embedding.md) · docs site `/docs/embedding` · auth: `/docs/authentication`.
+
 ## Agent frameworks
 
 Ship HTTP tools without embedding Seal in-process:
@@ -164,7 +217,21 @@ Ship HTTP tools without embedding Seal in-process:
 - Manifest: `config/seal-tools.openai.json` (`seal_get_schema`, `seal_get_catalog`, `seal_query`, `seal_chat`)
 - Docs: [docs/integrations/agent-frameworks.md](docs/integrations/agent-frameworks.md)
 
-When the external agent already has RAG, set `VECTOR_STORE=none` and pass `enhancement: false` on chat requests.
+When the external agent already has RAG, set `VECTOR_STORE=none` and pass `enhancement: false` on chat requests. Tools accept optional `database_id` when multiple backends are registered.
+
+## API surface (integrators)
+
+| Endpoint | Notes |
+| -------- | ----- |
+| `POST /v1/query` | Stateless NL → SQL + chart; optional `database_id`; OOS → **400** + `suggested_queries` |
+| `POST /v1/chat` | Sessions, streaming, optional charts; `database_id` on every turn; OOS → **200** + `metadata.suggested_queries` |
+| `GET /v1/schema` | `?database_id=` query param |
+| `GET /v1/databases` | List registered ids |
+| `GET /v1/catalog` | Global catalog (from **default** introspection) |
+| `GET` / `PATCH /v1/workspace/settings` | Guardrails, chat, vector settings |
+| `POST /v1/vector/reindex` | Rebuild index (default DB schema) |
+
+OpenAPI: `/openapi.json` when `SEAL_DISABLE_DOCS=false`. SDKs: PyPI/npm package `seal`.
 
 ## Health Checks
 
@@ -177,4 +244,17 @@ The production image health-checks `GET /health`. Use the same endpoint in your 
 | `apps/docs` | 3000 | Vercel — see [apps/docs/DEPLOYMENT.md](apps/docs/DEPLOYMENT.md) |
 | `apps/web` | 3001 | Same host or separate origin; requires `CORS_ORIGINS` |
 
-The docs `/demo` route uses static fixtures; the dashboard always calls a live API (`baseUrl` + `X-API-Key`).
+The docs `/demo` route uses static fixtures; the dashboard always calls a live API (`baseUrl` + `X-API-Key` + **Database** dropdown for `database_id`).
+
+## Documentation index
+
+| Audience | Location |
+| -------- | -------- |
+| Contributors | [CONTRIBUTORS.md](CONTRIBUTORS.md), [docs/README.md](docs/README.md) |
+| Releases | [RELEASING.md](RELEASING.md) |
+| Quick SDK/auth reference | [SETUP.md](SETUP.md) |
+| Integrators (embedding) | [docs/embedding.md](docs/embedding.md) → `/docs/embedding` |
+| Multi-database | [docs/multi-database.md](docs/multi-database.md) → `/docs/multi-database` |
+| Guardrails & metadata | [docs/guardrails.md](docs/guardrails.md), [docs/chat-metadata.md](docs/chat-metadata.md) |
+| End users (hosted docs) | `apps/docs` → `/docs/integration-guide`, `/docs/self-hosting`, `/docs/authentication` |
+| Vercel (docs site only) | [apps/docs/DEPLOYMENT.md](apps/docs/DEPLOYMENT.md) |

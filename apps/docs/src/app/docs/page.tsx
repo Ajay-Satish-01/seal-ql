@@ -17,6 +17,7 @@ import {
   LineChart,
   FileJson,
   SlidersHorizontal,
+  Puzzle,
 } from 'lucide-react';
 import { DocsProse } from '@/components/docs/docs-prose';
 import { PortsTable } from '@/components/docs/ports-table';
@@ -88,6 +89,12 @@ const CAPABILITY_CARDS = [
     title: 'API key auth',
     desc: 'X-API-Key on /v1/*; BFF pattern — your backend holds the secret, not browsers.',
     href: '/docs/authentication',
+  },
+  {
+    icon: Puzzle,
+    title: 'Embedding Seal',
+    desc: 'Run Seal behind your app or agent — responsibilities, deployment patterns, three boundaries.',
+    href: '/docs/embedding',
   },
   {
     icon: TestTube2,
@@ -168,7 +175,8 @@ export default function DocsPage() {
           </li>
           <li>
             <strong>SDK integration</strong> — <code>pip install seal</code> / <code>npm install seal</code>{' '}
-            from your app server (<Link href="/docs/integration-guide">Integration guide</Link>).
+            from your app server (<Link href="/docs/integration-guide">Integration guide</Link>,{' '}
+            <Link href="/docs/embedding">Embedding Seal</Link>).
           </li>
         </ul>
 
