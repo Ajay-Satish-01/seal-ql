@@ -146,3 +146,22 @@
     linear-gradient(oklch(0.78 0.14 75 / 0.08) 1px, transparent 1px),
     linear-gradient(90deg, oklch(0.78 0.14 75 / 0.08) 1px, transparent 1px);
 }
+
+.docs-sidebar-scroll {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.docs-sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.docs-sidebar-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: var(--border);
+}
+
+.docs-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
