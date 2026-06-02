@@ -69,10 +69,10 @@ export function DocsSidebar() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky top-24 flex flex-col gap-6" aria-label="Documentation">
+    <nav className="flex flex-col gap-6" aria-label="Documentation">
       {sidebarGroups.map((group) => (
-        <div key={group.title} className="flex flex-col gap-1">
-          <h3 className="text-muted-foreground mb-1 text-xs font-semibold tracking-wider uppercase">
+        <div key={group.title} className="flex flex-col gap-0.5">
+          <h3 className="text-muted-foreground mb-1.5 px-2.5 text-xs font-semibold tracking-wider uppercase">
             {group.title}
           </h3>
           {group.links.map((link) => {
@@ -85,10 +85,10 @@ export function DocsSidebar() {
                 href={link.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  '-mx-3 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                  'block rounded-r-md border-l-[3px] py-1.5 pr-3 pl-2.5 text-sm font-medium transition-colors',
                   active
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground',
+                    ? 'border-primary bg-muted text-foreground font-semibold shadow-sm dark:bg-primary/25 dark:text-primary dark:shadow-[inset_0_0_0_1px_oklch(0.78_0.14_75/0.35)]'
+                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground border-transparent',
                 )}
               >
                 {link.title}
