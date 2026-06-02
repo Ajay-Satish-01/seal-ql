@@ -209,6 +209,7 @@ Once registered:
   * Python files are reformatted and linted using `ruff` (extremely fast!).
   * TypeScript files are formatted with `prettier` and linted with `eslint`.
   * Standard file sanity checks are done (JSON, TOML, YAML parsing, merge conflict resolution).
+  * Commit messages are validated as [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat: add workspace API`, `fix(api): handle empty catalog`).
 * **Tests** run in CI on every PR (`Python — Tests` + `E2E Tests`). Locally: `make check` (unit, OpenAPI sync, metadata contract checks, docs/dashboard builds) and `make check-e2e` (live stack).
 * **API types** — After changing Pydantic models in `apps/api/app/schemas.py`, run `make openapi-ts` and commit `apps/api/openapi.{json,yaml}`, docs OpenAPI copies, and `sdks/typescript/src/generated/openapi.ts`. CI enforces via `make verify-openapi-sync`.
 

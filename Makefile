@@ -187,7 +187,7 @@ setup: ## First-time setup: install pre-commit hooks
 	pip install pre-commit
 	pre-commit install
 	@echo "\n✅ Pre-commit hooks installed!"
-	@echo "   - pre-commit: ruff lint + format, prettier, eslint"
+	@echo "   - pre-commit: ruff lint + format, prettier, eslint, conventional commit messages"
 	@echo "   - tests: GitHub Actions + make check (unit) / make check-e2e (live E2E)"
 
 seed: ## Re-run the database seed script
