@@ -93,7 +93,7 @@ console.log(chat.message, chat.sql);
 * **API Key Authentication**: Shared `X-API-Key` for `/v1/*` with production-safe env validation (`SEAL_AUTH_REQUIRED`, `SEAL_DEV_MODE`, `SEAL_DISABLE_DOCS`).
 * **LLM Guardrails**: Scope gate on `/v1/query` and `/v1/chat` — in-scope analytics/schema only; chat returns HTTP 200 with `metadata.suggested_queries` on refusal; query returns HTTP 400 with structured `detail` (`query_out_of_scope`, `reason`, up to three `suggested_queries`). SDKs raise `QueryOutOfScopeError` on query guardrails failures.
 * **Workspace API**: Hot-reload guardrails and chat settings in dev; catalog description overrides; vector reindex.
-* **Automated Evaluations**: Built-in eval runners to measure SQL syntax success, execution rates, and planner repair metrics against DuckDB and TimescaleDB test cases.
+* **Local planner evals**: Dataset `evals/data/eval_set.jsonl` and `make eval` / `make eval-planner` for manual planner grading on a seeded stack ([docs/local-evals.md](docs/local-evals.md) — not in PR CI).
 
 ---
 

@@ -93,9 +93,9 @@ make check-e2e      # optional but recommended before major releases (`make up` 
 
 Create the Docker Hub repository `seal/api` before the first push.
 
-### 7. Evals (planned)
+### 7. Evals
 
-`evals/seal_evals/runner.py` exists; the default dataset `evals/data/eval_set.jsonl` and `make eval` are **not shipped yet**. Do not document `make eval` in release notes until Phase 5 lands. Contributors can run the runner manually after creating a JSONL file — see **Evaluations** in [CONTRIBUTORS.md](CONTRIBUTORS.md).
+After `make up && make seed`, run `make eval` or `make eval-planner` locally. See [docs/local-evals.md](docs/local-evals.md) and **Local planner evals** in [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 ### 8. Production defaults (communicate in release notes)
 

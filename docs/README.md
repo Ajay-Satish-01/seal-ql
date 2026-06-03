@@ -13,7 +13,9 @@ Markdown in this directory describes **how Seal works** for contributors and int
 | Wiring multiple SQL backends | [multi-database.md](multi-database.md) → `/docs/multi-database` |
 | Changing metadata on responses or SSE | [chat-metadata.md](chat-metadata.md) → `/docs/execution-metadata` |
 | Deploying Docker / production | [../DEPLOYMENT.md](../DEPLOYMENT.md) → `/docs/self-hosting` |
+| Deploying on AWS (ECS / Lambda) | [../DEPLOYMENT.md#aws-deployment](../DEPLOYMENT.md#aws-deployment) |
 | Cutting a release | [../RELEASING.md](../RELEASING.md) (no docs site page — repo-only) |
+| Running local planner evals | [local-evals.md](local-evals.md) → `/docs/local-evals` |
 
 ## Core pipeline
 
@@ -70,4 +72,17 @@ Markdown in this directory describes **how Seal works** for contributors and int
 make check-docs       # Next.js docs build
 make check-dashboard  # Dashboard build
 make check            # Full CI mirror (includes above)
+```
+
+## Local planner evals (not in CI)
+
+| Path | Role |
+| ---- | ---- |
+| [local-evals.md](local-evals.md) | When to run, commands, metrics, why PR CI excludes LLM evals |
+| [evals/seal_evals/runner.py](../evals/seal_evals/runner.py) | CLI: plan → validate → (optional) execute |
+| [evals/data/eval_set.jsonl](../evals/data/eval_set.jsonl) | 20 NL questions on seed schema |
+
+```bash
+make up && make seed && make eval-planner   # local smoke test
+uv run pytest evals/tests/test_runner.py -v  # no LLM; runs in CI pytest
 ```

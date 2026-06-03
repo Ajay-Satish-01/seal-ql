@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { CodeBlock } from '@/components/code-block';
 import { Callout } from '@/components/docs/callout';
-import { SITE } from '@/lib/constants';
+import { PACKAGES_IN_PROGRESS_NOTE, SITE } from '@/lib/constants';
 import {
   tsCatalogSnippet,
+  typescriptSdkInstallSnippet,
   tsChatSnippet,
   tsChatStreamSnippet,
   tsQuerySnippet,
@@ -20,11 +21,12 @@ export default function TypeScriptSDKPage() {
 
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
         <h2 className="text-foreground mt-4 text-2xl font-bold">Installation</h2>
-        <CodeBlock
-          language="bash"
-          code={`npm install seal
-npm install react react-dom vega vega-lite vega-embed`}
-        />
+        {!SITE.packagesPublished ? (
+          <Callout variant="info" title="npm publish in progress">
+            {PACKAGES_IN_PROGRESS_NOTE}
+          </Callout>
+        ) : null}
+        <CodeBlock language="bash" code={typescriptSdkInstallSnippet()} />
 
         <Callout variant="info" title="Connect to your API">
           Run the <Link href="/docs/self-hosting">Docker image</Link>, then set <code>baseUrl</code>{' '}

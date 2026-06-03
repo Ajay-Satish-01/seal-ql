@@ -3,10 +3,16 @@ import { PageHeader } from '@/components/page-header';
 import { CodeBlock } from '@/components/code-block';
 import { Callout } from '@/components/docs/callout';
 import { ParamTable } from '@/components/docs/param-table';
-import { SITE } from '@/lib/constants';
+import { PACKAGES_IN_PROGRESS_NOTE, SITE } from '@/lib/constants';
+import { composeYamlNote, isPackagesPublished } from '@/lib/site-display';
 import { getComposeExample } from '@/lib/compose-example';
 import { LlmConfigSection } from '@/components/docs/llm-config';
-import { curlChat, productionCatalogEnvSnippet } from '@/lib/doc-snippets';
+import {
+  curlChat,
+  githubBlobUrl,
+  productionCatalogEnvSnippet,
+  selfHostingQuickStartSnippet,
+} from '@/lib/doc-snippets';
 
 export default function SelfHostingPage() {
   const composeYaml = getComposeExample();
@@ -15,47 +21,54 @@ export default function SelfHostingPage() {
     <div className="max-w-3xl">
       <PageHeader
         title="Self-Hosting with Docker"
-        description="Run Seal on your infrastructure using the published image — no git clone required."
+        description={
+          isPackagesPublished()
+            ? 'Run Seal on your infrastructure using the published image — no git clone required.'
+            : 'Run Seal with Docker from a git checkout until registry images are published.'
+        }
       />
 
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
-        <Callout variant="success" title="Image-first">
-          Pull <code>{SITE.dockerImage}</code> from Docker Hub. Copy the compose file below — it
-          uses <code>image:</code>, not <code>build:</code>.
-        </Callout>
+        {isPackagesPublished() ? (
+          <Callout variant="success" title="Image-first">
+            Pull <code>{SITE.dockerImage}</code> from Docker Hub. Copy the compose file below — it
+            uses <code>image:</code>, not <code>build:</code>.
+          </Callout>
+        ) : (
+          <Callout variant="info" title="Registry releases in progress">
+            {PACKAGES_IN_PROGRESS_NOTE} The examples below use the planned image tag{' '}
+            <code>{SITE.dockerImage}</code>; until Docker Hub publish, clone the repo and run{' '}
+            <code>make up</code> (compose <code>build:</code>) or <code>make docker-build</code>.
+          </Callout>
+        )}
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Quick start</h2>
-        <CodeBlock
-          language="bash"
-          code={`docker pull ${SITE.dockerImage}
+        <CodeBlock language="bash" code={selfHostingQuickStartSnippet()} />
 
-mkdir seal && cd seal
-# Download docker-compose.example.yml and seed.sql (links below)
-export SEAL_API_KEY=$(openssl rand -hex 32)
-printf '%s\\n' \\
-  "SEAL_API_KEY=$SEAL_API_KEY" \\
-  "SEAL_AUTH_REQUIRED=true" \\
-  "SEAL_DEV_MODE=false" \\
-  "SEAL_DISABLE_DOCS=true" \\
-  > .env
-
-docker compose -f docker-compose.example.yml up -d
-curl http://localhost:8000/health`}
-        />
-
-        <p>
-          Download assets from this site:{' '}
-          <a href="/compose/docker-compose.example.yml" className="text-primary">
-            docker-compose.example.yml
-          </a>
-          ,{' '}
-          <a href="/samples/seed.sql" className="text-primary">
-            seed.sql
-          </a>
-          . Place <code>seed.sql</code> next to the compose file (mounted on first Postgres start).
-        </p>
+        {isPackagesPublished() ? (
+          <p>
+            The quick-start downloads compose and <code>seed.sql</code> via <code>curl</code>. Postgres
+            loads <code>seed.sql</code> only on the <strong>first</strong> volume init. To reset demo
+            data on an existing volume, run{' '}
+            <code>docker compose -f docker-compose.example.yml down -v</code> then bring the stack
+            up again (see the comment in the snippet).
+          </p>
+        ) : (
+          <p>
+            Until Docker Hub publish, use the git workflow above. Optional downloads for later:{' '}
+            <a href="/compose/docker-compose.example.yml" className="text-primary">
+              docker-compose.example.yml
+            </a>
+            ,{' '}
+            <a href="/samples/seed.sql" className="text-primary">
+              seed.sql
+            </a>
+            .
+          </p>
+        )}
 
         <h3 className="text-foreground mt-8 text-lg font-semibold">Example compose</h3>
+        <p className="text-sm">{composeYamlNote()}</p>
         <CodeBlock language="yaml" code={composeYaml} />
 
         <LlmConfigSection />
@@ -189,6 +202,42 @@ curl http://localhost:8000/health`}
             <strong>TLS:</strong> Terminate HTTPS at your reverse proxy; keep the API on an internal
             network.
           </li>
+          <li>
+            <strong>AWS:</strong>{' '}
+            {isPackagesPublished() ? (
+              <>
+                Run the same <code>{SITE.dockerImage}</code> image on{' '}
+                <strong>ECS Fargate</strong> (recommended) or <strong>Lambda</strong>{' '}
+                (scale-to-zero). See the repository{' '}
+                <a
+                  href={`${githubBlobUrl('DEPLOYMENT.md')}#aws-deployment`}
+                  className="text-primary"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  DEPLOYMENT.md → AWS deployment
+                </a>{' '}
+                for RDS, ALB health checks, RDS Proxy, and Lambda Web Adapter notes.
+              </>
+            ) : (
+              <>
+                Build and tag the API image (<code>make docker-build</code>), push to your
+                registry (for example ECR), then deploy on <strong>ECS Fargate</strong> or{' '}
+                <strong>Lambda</strong>. Until <code>{SITE.dockerImage}</code> is published on
+                Docker Hub, treat AWS as optional — use a private image or defer ECS/Lambda until
+                registry publish. See{' '}
+                <a
+                  href={`${githubBlobUrl('DEPLOYMENT.md')}#aws-deployment`}
+                  className="text-primary"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  DEPLOYMENT.md → AWS deployment
+                </a>{' '}
+                for architecture notes (private image required today).
+              </>
+            )}
+          </li>
         </ul>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Verify</h2>
@@ -219,10 +268,16 @@ curl -s -X POST http://localhost:8000/v1/query \\
         </Callout>
 
         <p className="mt-8">
-          Next: <Link href="/docs/integration-guide">Integration Guide</Link> ·{' '}
-          <a href={SITE.dockerHub} target="_blank" rel="noreferrer" className="text-primary">
-            Docker Hub
-          </a>
+          Next: <Link href="/docs/integration-guide">Integration Guide</Link>
+          {isPackagesPublished() ? (
+            <>
+              {' '}
+              ·{' '}
+              <a href={SITE.dockerHub} target="_blank" rel="noreferrer" className="text-primary">
+                Docker Hub
+              </a>
+            </>
+          ) : null}
         </p>
       </div>
     </div>

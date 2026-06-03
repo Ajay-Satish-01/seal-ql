@@ -238,3 +238,121 @@ CHAT_ANSWER_PREVIEW_ROWS=20
 CHAT_MAX_CONTEXT_TABLES=8
 VECTOR_STORE=none`;
 }
+
+/** `seal` from `https://github.com/org/seal` */
+export function githubRepoName(): string {
+  return SITE.github.replace(/\/$/, '').split('/').pop() ?? 'seal';
+}
+
+function githubSlug(): string {
+  return SITE.github.replace('https://github.com/', '').replace(/\/$/, '');
+}
+
+export function githubRawUrl(repoPath: string): string {
+  return `https://raw.githubusercontent.com/${githubSlug()}/${SITE.githubDefaultBranch}/${repoPath}`;
+}
+
+export function githubBlobUrl(repoPath: string): string {
+  return `${SITE.github}/blob/${SITE.githubDefaultBranch}/${repoPath}`;
+}
+
+const PROD_ENV_BLOCK = `export SEAL_API_KEY=$(openssl rand -hex 32)
+printf '%s\\n' \\
+  "SEAL_API_KEY=$SEAL_API_KEY" \\
+  "SEAL_AUTH_REQUIRED=true" \\
+  "SEAL_DEV_MODE=false" \\
+  "SEAL_DISABLE_DOCS=true" \\
+  > .env`;
+
+/** Clone repo, dev .env, make up + seed (shared unpublished / contributor path). */
+export function cloneFromSourceStackSnippet(options?: { silentCurl?: boolean }): string {
+  const repo = githubRepoName();
+  const curlFlag = options?.silentCurl ? '-s ' : '';
+  return `git clone ${SITE.github}.git
+cd ${repo}
+cp .env.example .env
+# Dev-friendly .env (SEAL_DEV_MODE=true). For production keys, see Self-hosting after registry publish.
+make up
+make seed
+curl ${curlFlag}http://localhost:8000/health`;
+}
+
+function publishedDockerStackSnippet(workdir: string, options?: { silentCurl?: boolean }): string {
+  const curlFlag = options?.silentCurl ? '-s ' : '';
+  return `docker pull ${SITE.dockerImage}
+
+mkdir ${workdir} && cd ${workdir}
+curl -O ${githubRawUrl('apps/docs/public/compose/docker-compose.example.yml')}
+curl -O ${githubRawUrl('apps/docs/public/samples/seed.sql')}
+
+${PROD_ENV_BLOCK}
+
+mkdir config
+# seed.sql runs on first Postgres volume init only; to re-seed: docker compose -f docker-compose.example.yml down -v && docker compose -f docker-compose.example.yml up -d
+docker compose -f docker-compose.example.yml up -d
+curl ${curlFlag}http://localhost:8000/health`;
+}
+
+export function selfHostingQuickStartSnippet(published: boolean = SITE.packagesPublished): string {
+  if (published) {
+    return publishedDockerStackSnippet('seal');
+  }
+
+  return cloneFromSourceStackSnippet();
+}
+
+export function quickstartIntegratorDockerSnippet(published: boolean = SITE.packagesPublished): string {
+  if (published) {
+    return publishedDockerStackSnippet('seal-quickstart', { silentCurl: true });
+  }
+
+  return cloneFromSourceStackSnippet({ silentCurl: true });
+}
+
+export function sdkInstallSnippet(published: boolean = SITE.packagesPublished): string {
+  if (published) {
+    return `# Python
+pip install ${SITE.pypiPackage}
+
+# TypeScript / React
+npm install ${SITE.npmPackage}
+npm install react react-dom vega vega-lite vega-embed`;
+  }
+
+  return `# Planned: pip install ${SITE.pypiPackage}
+# Today: from repo root
+uv sync --all-packages --all-extras
+
+# Planned: npm install ${SITE.npmPackage}
+# Today:
+cd sdks/typescript && pnpm install && pnpm build
+npm install react react-dom vega vega-lite vega-embed`;
+}
+
+export function sdkInstallSnippetShort(published: boolean = SITE.packagesPublished): string {
+  if (published) {
+    return `pip install ${SITE.pypiPackage}
+# or: npm install ${SITE.npmPackage}`;
+  }
+
+  return `# Planned: pip install ${SITE.pypiPackage} / npm install ${SITE.npmPackage}
+# Today: uv sync from repo root, or build sdks/typescript`;
+}
+
+export function pythonSdkInstallSnippet(published: boolean = SITE.packagesPublished): string {
+  if (published) {
+    return `pip install ${SITE.pypiPackage}`;
+  }
+  return `# Planned: pip install ${SITE.pypiPackage}\n# Today: from repo root\nuv sync --all-packages --all-extras`;
+}
+
+export function typescriptSdkInstallSnippet(published: boolean = SITE.packagesPublished): string {
+  if (published) {
+    return `npm install ${SITE.npmPackage}
+npm install react react-dom vega vega-lite vega-embed`;
+  }
+  return `# Planned: npm install ${SITE.npmPackage}
+# Today:
+cd sdks/typescript && pnpm install && pnpm build
+npm install react react-dom vega vega-lite vega-embed`;
+}

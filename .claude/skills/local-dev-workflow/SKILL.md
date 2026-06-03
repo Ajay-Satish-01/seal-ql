@@ -26,6 +26,11 @@ description: Step-by-step workflow for spinning up the local environment, seedin
 6. **Run Test Suite**
    - `uv run pytest -v` (or `make check` for the full CI mirror including metadata contract scripts)
 
+6b. **Local planner evals (optional, not in CI; requires LLM)**
+   - See `docs/local-evals.md` — after `make up && make seed`
+   - `make eval-planner` — validation-only against `evals/data/eval_set.jsonl`
+   - `make eval` — full plan → validate → execute on seeded Postgres
+
 7. **Smoke-test chat (API running, key from `.env`)**
    ```bash
    curl -s -X POST http://localhost:8000/v1/chat \

@@ -24,6 +24,7 @@ For the live API console (Query, Chat, Schema, Catalog, Settings, Vector), use *
 | `/docs/vector-rag` | Chroma / custom vector stores |
 | `/docs/chat-streaming` | SSE (`seal.meta`, tokens) |
 | `/docs/testing` | CI and local test commands |
+| `/docs/local-evals` | Local planner evals (`make eval`, `make eval-planner`) — not in CI |
 | `/docs/agent-frameworks` | `seal-tools.openai.json` |
 
 Contributor markdown mirrors: `docs/embedding.md`, `docs/how-seal-works.md`, `docs/chat-metadata.md`, `docs/guardrails.md`, `docs/chat-enhancement.md`, etc.
@@ -35,6 +36,7 @@ Public assets: `/openapi.json`, `/seal-tools.openai.json`, `/config/catalog.exam
 ```bash
 pnpm run verify:chat-flatten    # tests/fixtures/chat_flatten_golden.json
 pnpm run verify:stream-meta     # stream_meta_validation_matrix.json parity
+pnpm run verify:doc-snippets    # packagesPublished install/quick-start snippets
 ```
 
 Demo and doc pages import `shared/stream-meta.ts`, `shared/chat-sse-events.ts`, and `shared/api-error.ts` for SSE parsing and API error messages (same behavior as the dashboard). Execution field enums, `ScopeMetadata`, and `suggested_queries` on refusals are documented on `/docs/execution-metadata` and in repo [docs/chat-metadata.md](../../docs/chat-metadata.md).

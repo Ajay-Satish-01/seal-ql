@@ -107,6 +107,12 @@ docker compose exec -T api uv run pytest -v \\
           without running expensive E2E files.
         </p>
 
+        <h2>Local planner evals</h2>
+        <p>
+          Full-dataset planner grading (<code>make eval</code>, <code>make eval-planner</code>) runs on
+          your machine after <code>make up</code> and <code>make seed</code>. See{' '}
+          <Link href="/docs/local-evals">Local planner evals</Link> for commands and how to read results.
+        </p>
         <h2>What each E2E suite covers</h2>
         <p>
           Use this table to decide which log to open when an E2E job fails. All HTTP suites target{' '}

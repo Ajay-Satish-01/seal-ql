@@ -127,6 +127,8 @@ await client.chat("Revenue last quarter?", { includeCharts: true });
 
 **Tests:** CI runs unit tests and live E2E on every PR. Locally: `make check` (unit, OpenAPI sync, metadata contract checks, docs/dashboard builds — mirrors most of CI) and `make check-e2e` (requires `make up`). Pre-commit hooks do not run pytest.
 
+**Local planner evals (not in CI):** After `make up && make seed`, run `make eval-planner` or `make eval`. See [docs/local-evals.md](docs/local-evals.md). Unit tests: `uv run pytest evals/tests/test_runner.py -v`.
+
 ## Docker database
 
 Default compose uses database name `seal`. If you change `POSTGRES_DB`, update `DATABASE_URL` to match.

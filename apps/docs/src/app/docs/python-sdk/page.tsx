@@ -2,12 +2,13 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { CodeBlock } from '@/components/code-block';
 import { Callout } from '@/components/docs/callout';
-import { SITE } from '@/lib/constants';
+import { PACKAGES_IN_PROGRESS_NOTE, SITE } from '@/lib/constants';
 import {
   pythonCatalogSnippet,
   pythonChatSnippet,
   pythonChatStreamSnippet,
   pythonQuerySnippet,
+  pythonSdkInstallSnippet,
 } from '@/lib/doc-snippets';
 
 export default function PythonSDKPage() {
@@ -20,7 +21,12 @@ export default function PythonSDKPage() {
 
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
         <h2 className="text-foreground mt-4 text-2xl font-bold">Installation</h2>
-        <CodeBlock language="bash" code="pip install seal" />
+        {!SITE.packagesPublished ? (
+          <Callout variant="info" title="PyPI publish in progress">
+            {PACKAGES_IN_PROGRESS_NOTE}
+          </Callout>
+        ) : null}
+        <CodeBlock language="bash" code={pythonSdkInstallSnippet()} />
         <p>
           Monorepo contributors: <code>uv sync --all-packages --all-extras</code> from the repo
           root.

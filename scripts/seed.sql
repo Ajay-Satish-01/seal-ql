@@ -220,3 +220,10 @@ ALTER TABLE events SET (
 );
 
 SELECT add_compression_policy('events', INTERVAL '30 days', if_not_exists => TRUE);
+
+-- ============================================================
+-- REFRESH CONTINUOUS AGGREGATES (after events load / re-seed)
+-- ============================================================
+
+CALL refresh_continuous_aggregate('events_hourly', NULL, NULL);
+CALL refresh_continuous_aggregate('events_daily', NULL, NULL);
