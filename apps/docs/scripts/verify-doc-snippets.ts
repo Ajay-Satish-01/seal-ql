@@ -44,6 +44,8 @@ const selfHostPublished = selfHostingQuickStartSnippet(true);
 const quickstartPublished = quickstartIntegratorDockerSnippet(true);
 
 assert.match(selfHostPublished, /docker pull/);
+assert.match(selfHostPublished, /curl -O.*docker-compose\.example\.yml/);
+assert.match(selfHostPublished, /curl -O.*seed\.sql/);
 assert.match(quickstartPublished, /docker-compose.example.yml/);
 assert.match(sdkInstallSnippet(true), /pip install seal/);
 

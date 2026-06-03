@@ -47,15 +47,11 @@ export default function SelfHostingPage() {
 
         {isPackagesPublished() ? (
           <p>
-            Download assets from this site:{' '}
-            <a href="/compose/docker-compose.example.yml" className="text-primary">
-              docker-compose.example.yml
-            </a>
-            ,{' '}
-            <a href="/samples/seed.sql" className="text-primary">
-              seed.sql
-            </a>
-            . Place <code>seed.sql</code> next to the compose file (mounted on first Postgres start).
+            The quick-start downloads compose and <code>seed.sql</code> via <code>curl</code>. Postgres
+            loads <code>seed.sql</code> only on the <strong>first</strong> volume init. To reset demo
+            data on an existing volume, run{' '}
+            <code>docker compose down -v</code> then bring the stack up again (see the comment in the
+            snippet).
           </p>
         ) : (
           <p>

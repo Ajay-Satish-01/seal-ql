@@ -208,9 +208,12 @@ eval: ## Local only: planner evals on seeded Postgres in Docker (`make up` + `ma
 eval-planner: ## Local only: validation-only planner eval (no execution); see docs/local-evals.md
 	$(EVAL_RUNNER) $${DATABASE_URL:-$(EVAL_DB_URL)} --planner-only $(EVAL_MIN_RATE_FLAG)
 
+# Host URL must stay in sync with DEFAULT_EVAL_DATABASE_URL in evals/seal_evals/runner.py
+EVAL_HOST_DB_URL ?= postgresql+asyncpg://postgres:postgres@localhost:5432/seal
+
 eval-local: ## Local only: run eval runner on host (ARGS=DB URL; EVAL_PLANNER=1 for validation-only)
 	uv run python evals/seal_evals/runner.py \
-		$${ARGS:-postgresql+asyncpg://postgres:postgres@localhost:5432/seal} \
+		$${ARGS:-$(EVAL_HOST_DB_URL)} \
 		$(if $(EVAL_PLANNER),--planner-only,) $(EVAL_MIN_RATE_FLAG)
 
 check-e2e: ## Run live E2E tests (requires `make up` + `make seed`)

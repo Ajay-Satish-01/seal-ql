@@ -1,5 +1,7 @@
 from seal_evals.runner import (
+    DEFAULT_EVAL_DATABASE_URL,
     DEFAULT_MIN_RATE,
+    EvalCase,
     EvalRunner,
     default_query_timeout,
     dialect_for_url,
@@ -10,7 +12,9 @@ from seal_evals.runner import (
 )
 
 __all__ = [
+    "DEFAULT_EVAL_DATABASE_URL",
     "DEFAULT_MIN_RATE",
+    "EvalCase",
     "EvalRunner",
     "default_query_timeout",
     "dialect_for_url",

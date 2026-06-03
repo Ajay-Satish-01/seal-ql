@@ -277,16 +277,25 @@ make seed
 curl ${curlFlag}http://localhost:8000/health`;
 }
 
-export function selfHostingQuickStartSnippet(published: boolean = SITE.packagesPublished): string {
-  if (published) {
-    return `docker pull ${SITE.dockerImage}
+function publishedDockerStackSnippet(workdir: string, options?: { silentCurl?: boolean }): string {
+  const curlFlag = options?.silentCurl ? '-s ' : '';
+  return `docker pull ${SITE.dockerImage}
 
-mkdir seal && cd seal
-# Download docker-compose.example.yml and seed.sql (links below)
+mkdir ${workdir} && cd ${workdir}
+curl -O ${githubRawUrl('apps/docs/public/compose/docker-compose.example.yml')}
+curl -O ${githubRawUrl('apps/docs/public/samples/seed.sql')}
+
 ${PROD_ENV_BLOCK}
 
+mkdir config
+# seed.sql runs on first Postgres volume init only; to re-seed: docker compose down -v && docker compose -f docker-compose.example.yml up -d
 docker compose -f docker-compose.example.yml up -d
-curl http://localhost:8000/health`;
+curl ${curlFlag}http://localhost:8000/health`;
+}
+
+export function selfHostingQuickStartSnippet(published: boolean = SITE.packagesPublished): string {
+  if (published) {
+    return publishedDockerStackSnippet('seal');
   }
 
   return cloneFromSourceStackSnippet();
@@ -294,16 +303,7 @@ curl http://localhost:8000/health`;
 
 export function quickstartIntegratorDockerSnippet(published: boolean = SITE.packagesPublished): string {
   if (published) {
-    return `docker pull ${SITE.dockerImage}
-mkdir seal-quickstart && cd seal-quickstart
-curl -O ${githubRawUrl('apps/docs/public/compose/docker-compose.example.yml')}
-curl -O ${githubRawUrl('apps/docs/public/samples/seed.sql')}
-
-${PROD_ENV_BLOCK}
-
-mkdir config
-docker compose -f docker-compose.example.yml up -d
-curl -s http://localhost:8000/health`;
+    return publishedDockerStackSnippet('seal-quickstart', { silentCurl: true });
   }
 
   return cloneFromSourceStackSnippet({ silentCurl: true });

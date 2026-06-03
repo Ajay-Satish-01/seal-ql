@@ -11,7 +11,9 @@ import pytest
 from seal_core.planner.models import QueryPlan
 from seal_core.schema.models import DatabaseSchema
 from seal_evals.runner import (
+    DEFAULT_EVAL_DATABASE_URL,
     EvalRunner,
+    build_arg_parser,
     clamp_min_rate,
     clamp_positive_timeout,
     default_query_timeout,
@@ -132,6 +134,35 @@ def test_iter_eval_cases_invalid_json(tmp_path: Path) -> None:
     path.write_text("not json\n", encoding="utf-8")
     with pytest.raises(ValueError, match="line 1"):
         list(iter_eval_cases(path))
+
+
+def test_iter_eval_cases_rejects_wrong_types(tmp_path: Path) -> None:
+    path = tmp_path / "types.jsonl"
+    path.write_text('{"question": 1, "should_fail": false}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="'question' must be a string"):
+        list(iter_eval_cases(path))
+
+
+def test_iter_eval_cases_rejects_missing_should_fail(tmp_path: Path) -> None:
+    path = tmp_path / "missing.jsonl"
+    path.write_text('{"question": "count rows"}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="missing required field 'should_fail'"):
+        list(iter_eval_cases(path))
+
+
+def test_iter_eval_cases_rejects_unknown_fields(tmp_path: Path) -> None:
+    path = tmp_path / "extra.jsonl"
+    path.write_text(
+        '{"question": "ok", "should_fail": false, "expected_fail": true}\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="unknown field"):
+        list(iter_eval_cases(path))
+
+
+def test_build_arg_parser_default_database_url() -> None:
+    args = build_arg_parser().parse_args([])
+    assert args.database_url == DEFAULT_EVAL_DATABASE_URL
 
 
 @pytest.mark.asyncio
@@ -319,11 +350,11 @@ async def test_run_evals_aborts_on_invalid_jsonl(tmp_path: Path) -> None:
 
     path = tmp_path / "partial.jsonl"
     path.write_text(
-        '{"question": "ok", "should_fail": false}\n{bad json\n',
+        '{bad json\n{"question": "ok", "should_fail": false}\n',
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match="Invalid JSON"):
+    with pytest.raises(ValueError, match="Invalid JSON on line 1"):
         await runner.run_evals(path)
 
     runner.executor.close.assert_called_once()

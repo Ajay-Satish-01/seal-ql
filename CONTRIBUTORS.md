@@ -201,11 +201,11 @@ Seal features self-correcting query mechanisms and domain-aware schema reasoning
   make eval              # full path: plan → validate → execute on Postgres
   make eval-planner      # fast path: plan → validate only (--planner-only)
   ```
-- **Host / custom URL:**
+- **Host / custom URL:** omit `database_url` for the same default as `make eval-local` (`DEFAULT_EVAL_DATABASE_URL` in `evals/seal_evals/runner.py`).
   ```bash
-  uv run python evals/seal_evals/runner.py postgresql+asyncpg://postgres:postgres@localhost:5432/seal
-  uv run python evals/seal_evals/runner.py --planner-only --min-execution-rate 0.6 postgresql+asyncpg://...
-  make eval-local ARGS="postgresql+asyncpg://postgres:postgres@localhost:5432/seal"
+  uv run python evals/seal_evals/runner.py --planner-only
+  make eval-local EVAL_PLANNER=1
+  make eval-local ARGS="postgresql+asyncpg://postgres:postgres@localhost:5432/seal"  # override
   ```
 
 ---

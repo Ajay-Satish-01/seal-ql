@@ -10,7 +10,7 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from seal_core.planner.planner import QueryPlanner
 from seal_core.schema.introspector import get_introspector
@@ -25,9 +25,18 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 DEFAULT_EVAL_PATH = Path(__file__).resolve().parent.parent / "data" / "eval_set.jsonl"
+DEFAULT_EVAL_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/seal"
 DEFAULT_MIN_RATE = 0.6
 MAX_ATTEMPTS = 3
 _LLM_BUFFER_SECONDS = 120.0
+
+_EVAL_CASE_KEYS = frozenset({"question", "should_fail"})
+
+
+class EvalCase(TypedDict):
+    question: str
+    should_fail: bool
+
 
 _METRIC_KEYS = (
     "total_queries",
@@ -130,8 +139,34 @@ def should_exit_nonzero(
     return float(summary.get(rate_key, 0.0)) < min_rate
 
 
-def iter_eval_cases(path: Path) -> Iterator[dict[str, Any]]:
-    """Yield parsed JSONL rows; skip blanks; wrap JSON errors with line numbers."""
+def _parse_eval_row(row: dict[str, Any], *, line_no: int, path: Path) -> EvalCase:
+    """Validate one JSONL object into a typed eval case."""
+    extra = set(row.keys()) - _EVAL_CASE_KEYS
+    if extra:
+        names = ", ".join(sorted(extra))
+        raise ValueError(f"Line {line_no} of {path}: unknown field(s): {names}")
+
+    if "question" not in row:
+        raise ValueError(f"Line {line_no} of {path}: missing required field 'question'")
+    question = row["question"]
+    if not isinstance(question, str):
+        kind = type(question).__name__
+        raise ValueError(f"Line {line_no} of {path}: 'question' must be a string, got {kind}")
+    if not question.strip():
+        raise ValueError(f"Line {line_no} of {path}: 'question' must be non-empty")
+
+    if "should_fail" not in row:
+        raise ValueError(f"Line {line_no} of {path}: missing required field 'should_fail'")
+    should_fail = row["should_fail"]
+    if not isinstance(should_fail, bool):
+        kind = type(should_fail).__name__
+        raise ValueError(f"Line {line_no} of {path}: 'should_fail' must be a boolean, got {kind}")
+
+    return EvalCase(question=question, should_fail=should_fail)
+
+
+def iter_eval_cases(path: Path) -> Iterator[EvalCase]:
+    """Yield validated JSONL rows; skip blanks; wrap JSON errors with line numbers."""
     with path.open(encoding="utf-8") as handle:
         for line_no, line in enumerate(handle, start=1):
             stripped = line.strip()
@@ -144,7 +179,7 @@ def iter_eval_cases(path: Path) -> Iterator[dict[str, Any]]:
             if not isinstance(row, dict):
                 kind = type(row).__name__
                 raise ValueError(f"Line {line_no} of {path}: expected JSON object, got {kind}")
-            yield row
+            yield _parse_eval_row(row, line_no=line_no, path=path)
 
 
 class EvalRunner:
@@ -205,13 +240,13 @@ class EvalRunner:
 
     async def _run_eval_case(
         self,
-        case: dict[str, Any],
+        case: EvalCase,
         schema: DatabaseSchema,
         metrics: dict[str, Any],
     ) -> None:
         """Run one case with timeout; cancel the task so asyncio can propagate cancellation."""
-        question = str(case.get("question", ""))
-        should_fail = bool(case.get("should_fail", False))
+        question = case["question"]
+        should_fail = case["should_fail"]
         task = asyncio.create_task(self._evaluate_query(case, schema, metrics))
         try:
             await asyncio.wait_for(task, timeout=self.query_timeout)
@@ -238,12 +273,12 @@ class EvalRunner:
 
     async def _evaluate_query(
         self,
-        data: dict[str, Any],
+        case: EvalCase,
         schema: DatabaseSchema,
         metrics: dict[str, Any],
     ) -> None:
-        question = str(data.get("question", ""))
-        should_fail = bool(data.get("should_fail", False))
+        question = case["question"]
+        should_fail = case["should_fail"]
 
         # Scored cases increment before work so timeouts count against the rate denominator.
         if not should_fail:
@@ -298,8 +333,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "database_url",
         nargs="?",
-        default=":memory:",
-        help="SQLAlchemy URL (default: DuckDB in-memory)",
+        default=DEFAULT_EVAL_DATABASE_URL,
+        help=f"SQLAlchemy URL (default: seeded local Postgres, {DEFAULT_EVAL_DATABASE_URL})",
     )
     parser.add_argument(
         "--jsonl",

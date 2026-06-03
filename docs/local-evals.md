@@ -34,6 +34,15 @@ EVAL_MIN_RATE=0.3 make eval-planner
 
 - **Path:** `evals/data/eval_set.jsonl` (20 NL questions on the seed schema, including `should_fail` safety cases).
 - **Runner:** `evals/seal_evals/runner.py`
+- Each line must be a JSON object with exactly `question` (string) and `should_fail` (boolean).
+
+## CLI default database URL
+
+If you omit the positional `database_url`, the runner defaults to seeded **host** Postgres (same URL as `make eval-local`):
+
+`postgresql+asyncpg://postgres:postgres@localhost:5432/seal`
+
+Run `make up` and `make seed` first, or pass an explicit URL (e.g. `:memory:` for unit-style runs). Inside Docker, `make eval` passes the in-network URL (`postgres` hostname) automatically.
 
 ## Exit codes and metrics
 

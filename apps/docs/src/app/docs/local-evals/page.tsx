@@ -40,12 +40,20 @@ make eval-planner
 # Full path: validate + execute on Postgres
 make eval
 
-# On host (optional)
-make eval-local EVAL_PLANNER=1 ARGS="postgresql+asyncpg://postgres:postgres@localhost:5432/seal"
+# On host (optional; ARGS overrides CLI default localhost URL)
+make eval-local EVAL_PLANNER=1
+
+# Bare CLI (same default DB URL after make up && make seed)
+uv run python evals/seal_evals/runner.py --planner-only
 
 # Unit tests (no LLM)
 uv run pytest evals/tests/test_runner.py -v`}
         />
+        <p>
+          JSONL rows must include only <code>question</code> (string) and <code>should_fail</code>{' '}
+          (boolean). Omitting <code>database_url</code> targets seeded Postgres on{' '}
+          <code>localhost:5432</code> — not an in-memory database.
+        </p>
 
         <h2>Interpreting results</h2>
         <p>
