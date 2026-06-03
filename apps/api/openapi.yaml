@@ -163,11 +163,16 @@ paths:
               example:
                 detail: Invalid or missing API key
         '404':
-          description: Unknown database_id
+          description: Unknown database_id or invalid/missing session_id
           content:
             application/json:
-              example:
-                detail: unknown_database_id
+              examples:
+                unknown_database:
+                  value:
+                    detail: unknown_database_id
+                session_not_found:
+                  value:
+                    detail: session_not_found
         '422':
           description: Validation Error
           content:
@@ -227,6 +232,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionListResponse'
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
         '422':
           description: Validation Error
           content:
@@ -254,6 +265,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionDetailResponse'
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
+        '404':
+          description: Session not found or invalid session_id
+          content:
+            application/json:
+              example:
+                detail: session_not_found
         '422':
           description: Validation Error
           content:
@@ -276,6 +299,18 @@ paths:
       responses:
         '204':
           description: Successful Response
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              example:
+                detail: Invalid or missing API key
+        '404':
+          description: Session not found or invalid session_id
+          content:
+            application/json:
+              example:
+                detail: session_not_found
         '422':
           description: Validation Error
           content:

@@ -198,7 +198,6 @@ class ChatService:
                     }
                     yield f"data: {json.dumps(payload)}\n\n"
 
-            yield "data: [DONE]\n\n"
             completed = True
         finally:
             if completed:
@@ -209,6 +208,8 @@ class ChatService:
                     assistant_message=assistant,
                     pin_database=True,
                 )
+
+        yield "data: [DONE]\n\n"
 
     async def handle_stream(
         self,
@@ -517,13 +518,13 @@ class ChatService:
             "choices": [{"index": 0, "delta": {"content": result.message}, "finish_reason": None}],
         }
         yield f"data: {json.dumps(payload)}\n\n"
-        yield "data: [DONE]\n\n"
         await self._persist_turn_messages(
             ctx,
             user_message=ctx.user_message,
             assistant_message=result.message,
             pin_database=False,
         )
+        yield "data: [DONE]\n\n"
 
     async def _chat_decision(self, ctx: TurnContext) -> ChatDecision:
         system = CHAT_DECISION_SYSTEM

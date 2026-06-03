@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from seal_core.chat.session.base import BaseSessionStore
 
 from app.dependencies import get_session_store
+from app.openapi_responses import SESSION_ROUTE_RESPONSES, UNAUTHORIZED_RESPONSE
 from app.schemas import (
     SessionDetailResponse,
     SessionListResponse,
@@ -28,7 +29,7 @@ def _iso_timestamp(ts: float) -> str:
     return datetime.fromtimestamp(ts, tz=UTC).isoformat()
 
 
-@router.get("/chat/sessions", response_model=SessionListResponse)
+@router.get("/chat/sessions", response_model=SessionListResponse, responses=UNAUTHORIZED_RESPONSE)
 async def list_chat_sessions(
     database_id: str | None = Query(None, description="Filter by pinned database_id."),
     limit: int | None = Query(
@@ -66,7 +67,11 @@ async def list_chat_sessions(
     )
 
 
-@router.get("/chat/sessions/{session_id}", response_model=SessionDetailResponse)
+@router.get(
+    "/chat/sessions/{session_id}",
+    response_model=SessionDetailResponse,
+    responses=SESSION_ROUTE_RESPONSES,
+)
 async def get_chat_session(
     session_id: str,
     _: None = Security(require_api_key),
@@ -102,7 +107,11 @@ async def get_chat_session(
     )
 
 
-@router.delete("/chat/sessions/{session_id}", status_code=204)
+@router.delete(
+    "/chat/sessions/{session_id}",
+    status_code=204,
+    responses=SESSION_ROUTE_RESPONSES,
+)
 async def delete_chat_session(
     session_id: str,
     _: None = Security(require_api_key),

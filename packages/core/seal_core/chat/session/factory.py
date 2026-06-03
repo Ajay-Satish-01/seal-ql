@@ -26,8 +26,10 @@ def _load_class(dotted: str) -> type:
 
 
 def _is_postgres_url(url: str) -> bool:
-    lower = url.lower()
-    return "postgres" in lower and "duckdb" not in lower
+    from urllib.parse import urlparse
+
+    scheme = urlparse(url).scheme.lower()
+    return scheme.startswith(("postgres", "postgresql"))
 
 
 def _session_database_url(settings: Settings) -> str:

@@ -1450,17 +1450,12 @@ export interface operations {
                     readonly "application/json": unknown;
                 };
             };
-            /** @description Unknown database_id */
+            /** @description Unknown database_id or invalid/missing session_id */
             readonly 404: {
                 headers: {
                     readonly [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "detail": "unknown_database_id"
-                     *     }
-                     */
                     readonly "application/json": unknown;
                 };
             };
@@ -1500,6 +1495,20 @@ export interface operations {
                     readonly "application/json": components["schemas"]["SessionListResponse"];
                 };
             };
+            /** @description Invalid or missing API key */
+            readonly 401: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "Invalid or missing API key"
+                     *     }
+                     */
+                    readonly "application/json": unknown;
+                };
+            };
             /** @description Validation Error */
             readonly 422: {
                 headers: {
@@ -1531,6 +1540,34 @@ export interface operations {
                     readonly "application/json": components["schemas"]["SessionDetailResponse"];
                 };
             };
+            /** @description Invalid or missing API key */
+            readonly 401: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "Invalid or missing API key"
+                     *     }
+                     */
+                    readonly "application/json": unknown;
+                };
+            };
+            /** @description Session not found or invalid session_id */
+            readonly 404: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "session_not_found"
+                     *     }
+                     */
+                    readonly "application/json": unknown;
+                };
+            };
             /** @description Validation Error */
             readonly 422: {
                 headers: {
@@ -1559,6 +1596,34 @@ export interface operations {
                     readonly [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Invalid or missing API key */
+            readonly 401: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "Invalid or missing API key"
+                     *     }
+                     */
+                    readonly "application/json": unknown;
+                };
+            };
+            /** @description Session not found or invalid session_id */
+            readonly 404: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "session_not_found"
+                     *     }
+                     */
+                    readonly "application/json": unknown;
+                };
             };
             /** @description Validation Error */
             readonly 422: {

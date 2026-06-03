@@ -84,5 +84,4 @@ class BaseSessionStore(ABC):
     def _trim_messages(state: SessionState, max_messages: int) -> None:
         if len(state.messages) > max_messages:
             state.messages = state.messages[-max_messages:]
-            if state.message_timestamps:
-                state.message_timestamps = state.message_timestamps[-max_messages:]
+            state.message_timestamps = state.message_timestamps[-max_messages:]

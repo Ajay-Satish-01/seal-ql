@@ -50,6 +50,7 @@ export function SessionSidebar() {
   }
 
   async function handleDelete(sessionId: string) {
+    if (!window.confirm('Delete this chat session? This cannot be undone.')) return;
     try {
       await deleteSession(apiUrl, sessionId, apiKey.trim() || undefined);
       setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));

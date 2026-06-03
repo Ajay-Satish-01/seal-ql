@@ -24,6 +24,17 @@ UNKNOWN_DATABASE_RESPONSE: dict[int, dict[str, object]] = {
     }
 }
 
+SESSION_NOT_FOUND_RESPONSE: dict[int, dict[str, object]] = {
+    404: {
+        "description": "Session not found or invalid session_id",
+        "content": {
+            "application/json": {
+                "example": {"detail": "session_not_found"},
+            }
+        },
+    }
+}
+
 AUTH_AND_DATABASE_RESPONSES: dict[int, dict[str, object]] = {
     **UNAUTHORIZED_RESPONSE,
     **UNKNOWN_DATABASE_RESPONSE,
@@ -77,5 +88,21 @@ CHAT_SUCCESS_RESPONSE: dict[int, dict[str, object]] = {
 
 CHAT_ENDPOINT_RESPONSES: dict[int, dict[str, object]] = {
     **CHAT_SUCCESS_RESPONSE,
-    **AUTH_AND_DATABASE_RESPONSES,
+    **UNAUTHORIZED_RESPONSE,
+    404: {
+        "description": "Unknown database_id or invalid/missing session_id",
+        "content": {
+            "application/json": {
+                "examples": {
+                    "unknown_database": {"value": {"detail": "unknown_database_id"}},
+                    "session_not_found": {"value": {"detail": "session_not_found"}},
+                },
+            }
+        },
+    },
+}
+
+SESSION_ROUTE_RESPONSES: dict[int, dict[str, object]] = {
+    **UNAUTHORIZED_RESPONSE,
+    **SESSION_NOT_FOUND_RESPONSE,
 }

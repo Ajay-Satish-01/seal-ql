@@ -2,20 +2,27 @@
 
 from __future__ import annotations
 
-import pytest
 from fastapi.testclient import TestClient
-from seal_core.chat.models import ChatMessage
 from seal_core.chat.session import InMemorySessionStore
 from tests.factory import build_client
 from tests.shared import AUTH_HEADERS
 
 
-@pytest.mark.asyncio
-async def test_list_get_delete_sessions(monkeypatch) -> None:
+def test_list_get_delete_sessions(monkeypatch) -> None:
+    """Fully synchronous: seed the store via its internal dict to avoid event-loop mismatches."""
+    import uuid
+
+    from seal_core.chat.models import ChatMessage
+    from seal_core.chat.session.models import SessionState
+
     store = InMemorySessionStore()
-    sid = await store.create_session()
-    await store.append(sid, ChatMessage(role="user", content="Test session title here"))
-    await store.set_database_id(sid, "default")
+    sid = str(uuid.uuid4())
+    state = SessionState()
+    state.messages.append(ChatMessage(role="user", content="Test session title here"))
+    state.message_timestamps.append(None)
+    state.title = "Test session title here"
+    state.database_id = "default"
+    store._sessions[sid] = state
 
     client: TestClient = build_client(monkeypatch)
     client.app.state.session_store = store
