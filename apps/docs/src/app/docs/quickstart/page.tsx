@@ -6,7 +6,14 @@ import { DocsProse } from '@/components/docs/docs-prose';
 import { PortsTable } from '@/components/docs/ports-table';
 import { SetupChecklist, SetupDoneBanner } from '@/components/docs/setup-checklist';
 import { SITE } from '@/lib/constants';
-import { pythonChatSnippet, tsQuerySnippet, fullLocalVerifySnippet } from '@/lib/doc-snippets';
+import {
+  fullLocalVerifySnippet,
+  githubRepoName,
+  pythonChatSnippet,
+  quickstartIntegratorDockerSnippet,
+  sdkInstallSnippetShort,
+  tsQuerySnippet,
+} from '@/lib/doc-snippets';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -20,9 +27,19 @@ export default function QuickstartPage() {
 
       <DocsProse>
         <Callout variant="success" title="Two paths">
-          <strong>Integrators</strong> — Docker image + SDK (sections 1–4). No git clone required.{' '}
-          <strong>Contributors</strong> — clone the repo, <code>make up</code>, and{' '}
-          <code>make seed</code> (section 5).
+          {SITE.packagesPublished ? (
+            <>
+              <strong>Integrators</strong> — Docker image + SDK (sections 1–4). No git clone required.{' '}
+              <strong>Contributors</strong> — clone the repo, <code>make up</code>, and{' '}
+              <code>make seed</code> (section 5).
+            </>
+          ) : (
+            <>
+              <strong>Integrators</strong> — clone the repo and run <code>make up</code> +{' '}
+              <code>make seed</code> (sections 1–4) until Docker Hub publish.{' '}
+              <strong>Contributors</strong> — same stack, plus workspace migration (section 5).
+            </>
+          )}
         </Callout>
 
         <h2>Local ports</h2>
@@ -51,29 +68,34 @@ export default function QuickstartPage() {
             body: (
               <>
                 <p>
-                  Pull <code>{SITE.dockerImage}</code> and use the production compose example from{' '}
+                  {SITE.packagesPublished ? (
+                    <>
+                      Pull <code>{SITE.dockerImage}</code> and use the production compose example
+                      from{' '}
+                    </>
+                  ) : (
+                    <>
+                      Clone the repo and run the stack with <code>make up</code> (or build{' '}
+                      <code>{SITE.dockerImage}</code> locally — Docker Hub publish is in progress).
+                      See{' '}
+                    </>
+                  )}
                   <Link href="/docs/self-hosting" className="text-primary hover:underline">
                     Self-hosting
                   </Link>
-                  . Generate a real <code>SEAL_API_KEY</code> — never use placeholders in production.
+                  .{' '}
+                  {SITE.packagesPublished ? (
+                    <>Generate a real <code>SEAL_API_KEY</code> — never use placeholders in production.</>
+                  ) : (
+                    <>
+                      Local tryout uses <code>.env.example</code> (dev mode). For production-like keys
+                      after registry publish, see <Link href="/docs/self-hosting">Self-hosting</Link>.
+                    </>
+                  )}
                 </p>
               </>
             ),
-            code: `docker pull ${SITE.dockerImage}
-mkdir seal-quickstart && cd seal-quickstart
-curl -O https://raw.githubusercontent.com/seal/seal/main/apps/docs/public/compose/docker-compose.example.yml
-curl -O https://raw.githubusercontent.com/seal/seal/main/apps/docs/public/samples/seed.sql
-
-printf '%s\\n' \\
-  "SEAL_API_KEY=$(openssl rand -hex 32)" \\
-  "SEAL_AUTH_REQUIRED=true" \\
-  "SEAL_DEV_MODE=false" \\
-  "SEAL_DISABLE_DOCS=true" \\
-  > .env
-
-mkdir config
-docker compose -f docker-compose.example.yml up -d
-curl -s http://localhost:8000/health`,
+            code: quickstartIntegratorDockerSnippet(),
           },
           {
             title: 'Configure the LLM (LiteLLM)',
@@ -115,7 +137,7 @@ curl -s http://localhost:8000/health`,
                 .
               </p>
             ),
-            code: 'pip install seal\n# or: npm install seal',
+            code: sdkInstallSnippetShort(),
           },
         ]}
       />
@@ -149,7 +171,7 @@ curl -s http://localhost:8000/health`,
               </p>
             ),
             code: `git clone ${SITE.github}.git
-cd seal
+cd ${githubRepoName()}
 cp .env.example .env
 make up`,
           },

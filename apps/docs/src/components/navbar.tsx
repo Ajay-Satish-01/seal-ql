@@ -4,6 +4,7 @@ import { SealLogo } from './seal-logo';
 import { SITE } from '@/lib/constants';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { isPackagesPublished } from '@/lib/site-display';
 
 export function Navbar() {
   return (
@@ -30,14 +31,23 @@ export function Navbar() {
             >
               Docs
             </Link>
-            <a
-              href={SITE.dockerHub}
-              target="_blank"
-              rel="noreferrer"
-              className="text-muted-foreground hover:text-primary text-sm font-medium transition-colors"
-            >
-              Docker
-            </a>
+            {isPackagesPublished() ? (
+              <a
+                href={SITE.dockerHub}
+                target="_blank"
+                rel="noreferrer"
+                className="text-muted-foreground hover:text-primary text-sm font-medium transition-colors"
+              >
+                Docker
+              </a>
+            ) : (
+              <Link
+                href="/docs/self-hosting"
+                className="text-muted-foreground hover:text-primary text-sm font-medium transition-colors"
+              >
+                Docker
+              </Link>
+            )}
             <a
               href={SITE.github}
               target="_blank"

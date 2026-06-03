@@ -1,5 +1,6 @@
 import { PageHeader } from '@/components/page-header';
 import { buttonVariants } from '@/components/ui/button';
+import { deploymentDockerSummary, deploymentSdkSummary } from '@/lib/site-display';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import {
@@ -166,16 +167,16 @@ export default function DocsPage() {
         <h2>Deployment modes</h2>
         <ul>
           <li>
-            <strong>Docker image</strong> — <code>seal/api:latest</code> on Hub; compose with Postgres
-            and optional Ollama (<Link href="/docs/self-hosting">Self-hosting</Link>).
+            <strong>Docker</strong> — {deploymentDockerSummary()} (
+            <Link href="/docs/self-hosting">Self-hosting</Link>).
           </li>
           <li>
             <strong>Source dev</strong> — <code>make up</code>, <code>make seed</code>, dashboard on
             3001, this docs site on 3000.
           </li>
           <li>
-            <strong>SDK integration</strong> — <code>pip install seal</code> / <code>npm install seal</code>{' '}
-            from your app server (<Link href="/docs/integration-guide">Integration guide</Link>,{' '}
+            <strong>SDK integration</strong> — {deploymentSdkSummary()} (
+            <Link href="/docs/integration-guide">Integration guide</Link>,{' '}
             <Link href="/docs/embedding">Embedding Seal</Link>).
           </li>
         </ul>

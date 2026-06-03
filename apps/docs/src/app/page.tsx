@@ -24,6 +24,7 @@ import {
 import { SealLogo } from '@/components/seal-logo';
 import { motion, Variants } from 'framer-motion';
 import { SITE } from '@/lib/constants';
+import { siteHeroBadgeLabel } from '@/lib/site-display';
 
 const ArchitectureFlow = dynamic(
   () => import('@/components/home/architecture-flow').then((m) => m.ArchitectureFlow),
@@ -138,7 +139,7 @@ export default function Home() {
               variant="outline"
               className="border-primary/50 text-primary rounded-sm px-3 py-1 font-mono text-xs tracking-widest uppercase"
             >
-              Seal · Open source · Image-first
+              {siteHeroBadgeLabel()}
             </Badge>
           </motion.div>
 

@@ -60,6 +60,7 @@ const sidebarGroups = [
     title: 'Quality & Contributing',
     links: [
       { title: 'Testing & CI', href: '/docs/testing' },
+      { title: 'Local planner evals', href: '/docs/local-evals' },
       { title: 'Contributing', href: '/docs/contributing' },
       { title: 'Interactive demo', href: '/demo' },
     ],

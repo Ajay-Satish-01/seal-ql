@@ -20,7 +20,8 @@
     "format": "prettier --write .",
     "fbl": "pnpm install --frozen-lockfile && pnpm format && pnpm lint && pnpm build",
     "verify:chat-flatten": "tsx ../../scripts/verify_chat_flatten_contract.ts",
-    "verify:stream-meta": "tsx ../../scripts/verify_stream_meta_validation_parity.ts"
+    "verify:stream-meta": "tsx ../../scripts/verify_stream_meta_validation_parity.ts",
+    "verify:doc-snippets": "tsx scripts/verify-doc-snippets.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

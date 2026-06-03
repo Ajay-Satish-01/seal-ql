@@ -130,6 +130,14 @@ curl -s -X POST http://localhost:8000/v1/chat \\
           <Link href="/docs/dashboard">Dashboard</Link>.
         </p>
 
+        <h2 className="text-foreground mt-10 text-2xl font-bold">Local planner evals</h2>
+        <p>
+          Grade the query planner on your machine after <code>make up</code> and{' '}
+          <code>make seed</code>. This is <strong>not</strong> part of PR CI — see{' '}
+          <Link href="/docs/local-evals">Local planner evals</Link> for commands, metrics, and why
+          rate limits are not skipped like E2E tests.
+        </p>
+
         <h2 className="text-foreground mt-10 text-2xl font-bold">Regenerate docs assets</h2>
         <CodeBlock language="bash" code="make sync-docs-assets" />
 

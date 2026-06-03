@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { CodeBlock } from '@/components/code-block';
 import { Callout } from '@/components/docs/callout';
-import { SITE } from '@/lib/constants';
+import { PACKAGES_IN_PROGRESS_NOTE, SITE } from '@/lib/constants';
 import {
   curlChat,
   localDevSetupSnippet,
   productionCatalogEnvSnippet,
   pythonChatSnippet,
   pythonQuerySnippet,
+  sdkInstallSnippet,
   tsChatSnippet,
 } from '@/lib/doc-snippets';
 
@@ -22,8 +23,15 @@ export default function IntegrationGuidePage() {
 
       <div className="prose prose-slate dark:prose-invert text-muted-foreground max-w-none leading-relaxed">
         <Callout variant="info" title="Recommended path">
-          Docker image → SDK install → set <code>baseUrl</code>. You do not need to clone the
-          repository to integrate. For architecture and boundaries (your app vs Seal, BFF, multi-DB), see{' '}
+          {SITE.packagesPublished ? (
+            <>
+              Docker image → SDK install → set <code>baseUrl</code>. You do not need to clone the
+              repository to integrate.
+            </>
+          ) : (
+            <>{PACKAGES_IN_PROGRESS_NOTE} Clone the repo and run the API with Docker before SDK install.</>
+          )}{' '}
+          For architecture and boundaries (your app vs Seal, BFF, multi-DB), see{' '}
           <Link href="/docs/embedding">Embedding Seal</Link>.
         </Callout>
 
@@ -31,8 +39,16 @@ export default function IntegrationGuidePage() {
           1. Run the API (Docker)
         </h2>
         <p>
-          Follow <Link href="/docs/self-hosting">Self-Hosting</Link> to pull{' '}
-          <code>{SITE.dockerImage}</code> and start the compose stack. Confirm health:
+          Follow <Link href="/docs/self-hosting">Self-Hosting</Link> to run the API with Docker
+          {SITE.packagesPublished ? (
+            <>
+              {' '}
+              (pull <code>{SITE.dockerImage}</code>)
+            </>
+          ) : (
+            <> from a git checkout until <code>{SITE.dockerImage}</code> is on Docker Hub</>
+          )}
+          . Confirm health:
         </p>
         <CodeBlock language="bash" code="curl http://localhost:8000/health" />
 
@@ -87,15 +103,12 @@ GEMINI_API_KEY=your-key-here`}
         <h2 id="sdk" className="text-foreground mt-10 text-2xl font-bold">
           2. Install the SDK
         </h2>
-        <CodeBlock
-          language="bash"
-          code={`# Python
-pip install seal
-
-# TypeScript / React
-npm install seal
-npm install react react-dom vega vega-lite vega-embed`}
-        />
+        {!SITE.packagesPublished ? (
+          <Callout variant="info" title="PyPI / npm publish in progress">
+            {PACKAGES_IN_PROGRESS_NOTE}
+          </Callout>
+        ) : null}
+        <CodeBlock language="bash" code={sdkInstallSnippet()} />
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">3. Connect</h2>
         <p>

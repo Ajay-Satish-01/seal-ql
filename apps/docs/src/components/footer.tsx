@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { SealLogo } from './seal-logo';
+import { RegistryNavItem } from '@/components/docs/registry-nav-item';
 import { SITE } from '@/lib/constants';
 import { getApiVersion } from '@/lib/openapi';
+import { siteTaglineSuffix } from '@/lib/site-display';
 
 export function Footer() {
   const version = getApiVersion();
@@ -15,7 +17,7 @@ export function Footer() {
             <span className="font-heading text-sm font-semibold">{SITE.name}</span>
           </Link>
           <span className="text-muted-foreground text-xs">
-            API v{version} · Open source · Image-first
+            API v{version} · Open source · {siteTaglineSuffix()}
           </span>
         </div>
         <nav className="text-muted-foreground flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
@@ -28,30 +30,9 @@ export function Footer() {
           <Link href="/docs/authentication" className="hover:text-primary transition-colors">
             Authentication
           </Link>
-          <a
-            href={SITE.pypi}
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-primary transition-colors"
-          >
-            PyPI
-          </a>
-          <a
-            href={SITE.npm}
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-primary transition-colors"
-          >
-            npm
-          </a>
-          <a
-            href={SITE.dockerHub}
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-primary transition-colors"
-          >
-            Docker Hub
-          </a>
+          <RegistryNavItem label="PyPI" href={SITE.pypi} />
+          <RegistryNavItem label="npm" href={SITE.npm} />
+          <RegistryNavItem label="Docker Hub" href={SITE.dockerHub} />
           <a
             href={SITE.github}
             target="_blank"

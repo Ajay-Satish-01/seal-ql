@@ -1,4 +1,4 @@
-.PHONY: up down build test test-cov logs shell lint format seed setup check ci help
+.PHONY: up down build test test-cov logs shell lint format seed setup check ci help eval eval-planner eval-local
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -120,7 +120,7 @@ validate-query: ## Validate live POST /v1/query (ARGS="base_url query")
 	uv run python scripts/validate_query_response.py $(ARGS)
 
 check-docs: ## Build the docs/marketing Next.js app (port 3000)
-	cd apps/docs && pnpm install --frozen-lockfile && pnpm build
+	cd apps/docs && pnpm install --frozen-lockfile && pnpm run verify:doc-snippets && pnpm build
 
 check-dashboard: ## Build the operational dashboard (port 3001)
 	cd apps/web && pnpm install --frozen-lockfile && pnpm build
@@ -190,9 +190,28 @@ setup: ## First-time setup: install pre-commit hooks
 	@echo "   - pre-commit: ruff lint + format, prettier, eslint, conventional commit messages"
 	@echo "   - tests: GitHub Actions + make check (unit) / make check-e2e (live E2E)"
 
-seed: ## Re-run the database seed script
+seed: ## Re-apply demo data (truncates orders/events, re-seeds; CAGG refresh runs at end of seed.sql)
+	docker compose exec -T postgres psql -U postgres -d seal < scripts/truncate_demo_data.sql
 	docker compose exec -T postgres psql -U postgres -d seal < scripts/seed.sql
+
+refresh-cagg: ## Refresh Timescale continuous aggregates (events_hourly, events_daily)
+	docker compose exec -T postgres psql -U postgres -d seal < scripts/refresh_continuous_aggregates.sql
 	@echo "ℹ️  Apply workspace schema: docker compose exec -T postgres psql -U postgres -d seal < scripts/migrate_app.sql"
+
+EVAL_DB_URL ?= postgresql+asyncpg://postgres:postgres@postgres:5432/seal
+EVAL_MIN_RATE_FLAG = --min-execution-rate $${EVAL_MIN_RATE:-0.6}
+EVAL_RUNNER = docker compose exec -T api uv run python evals/seal_evals/runner.py
+
+eval: ## Local only: planner evals on seeded Postgres in Docker (`make up` + `make seed`; not in PR CI)
+	$(EVAL_RUNNER) $${DATABASE_URL:-$(EVAL_DB_URL)} $(EVAL_MIN_RATE_FLAG)
+
+eval-planner: ## Local only: validation-only planner eval (no execution); see docs/local-evals.md
+	$(EVAL_RUNNER) $${DATABASE_URL:-$(EVAL_DB_URL)} --planner-only $(EVAL_MIN_RATE_FLAG)
+
+eval-local: ## Local only: run eval runner on host (ARGS=DB URL; EVAL_PLANNER=1 for validation-only)
+	uv run python evals/seal_evals/runner.py \
+		$${ARGS:-postgresql+asyncpg://postgres:postgres@localhost:5432/seal} \
+		$(if $(EVAL_PLANNER),--planner-only,) $(EVAL_MIN_RATE_FLAG)
 
 check-e2e: ## Run live E2E tests (requires `make up` + `make seed`)
 	@echo "E2E — waiting for API on :8000..."

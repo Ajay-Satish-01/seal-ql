@@ -186,20 +186,27 @@ Seal features self-correcting query mechanisms and domain-aware schema reasoning
   3. The API execution route catches these errors and triggers the `QueryPlanner.repair_plan` method.
   4. The LLM is provided with its original failed query and the exact database/validator error message, and is prompted to fix the mistake. This loop can retry up to a configurable number of attempts (e.g., 3).
 
-### 🧪 Evaluations (Evals)
-**Purpose**: To rigorously track and measure the accuracy, safety, and repair-ability of the Query Planner.
-- **`EvalRunner`** lives in `evals/seal_evals/runner.py` and grades planner output against a JSONL dataset.
-- **Dataset path (planned):** `evals/data/eval_set.jsonl` — **not committed yet** (Phase 5). The CLI default expects that file; create the directory and file before running, or pass a custom path from your own script importing `EvalRunner`.
-- Metrics include `execution_success`, `validation_success`, and repair-loop recovery counts.
-- Example (after you add `evals/data/eval_set.jsonl`):
-  ```bash
-  # DuckDB in-memory
-  uv run python evals/seal_evals/runner.py :memory:
+### 🧪 Local planner evals (not in CI)
+**Purpose**: Locally measure planner accuracy, SQL validation, and (optionally) execution against the seeded demo schema.
 
-  # Postgres in docker
-  docker compose exec api uv run python evals/seal_evals/runner.py postgresql+asyncpg://postgres:postgres@postgres:5432/seal
+**Not in GitHub Actions** — LLM rate limits (e.g. Gemini 429) and provider outages make full-dataset evals flaky on PR CI. CI still runs **`evals/tests/`** (no live LLM) inside the normal Python test job.
+
+**Guide:** [docs/local-evals.md](docs/local-evals.md) · docs site `/docs/local-evals`
+
+- **`EvalRunner`** — `evals/seal_evals/runner.py` + **`evals/data/eval_set.jsonl`** (20 questions, including `should_fail` cases).
+- Metrics: `validation_rate` / `execution_rate` over `scored_queries`, plus `timeouts`, `repair_successes`, `expected_failures_caught`. Default `--min-execution-rate` **0.6**; per-case `--query-timeout` = `query_timeout_seconds × 3 + 120`.
+- **Local (Docker stack):**
+  ```bash
+  make up && make seed   # truncate + seed.sql (refreshes events_hourly/events_daily at end)
+  make eval              # full path: plan → validate → execute on Postgres
+  make eval-planner      # fast path: plan → validate only (--planner-only)
   ```
-- **`make eval`** is not on `main` yet (planned Phase 5). Until then, run `EvalRunner` manually as above. Release notes: [RELEASING.md](RELEASING.md#evals-planned).
+- **Host / custom URL:**
+  ```bash
+  uv run python evals/seal_evals/runner.py postgresql+asyncpg://postgres:postgres@localhost:5432/seal
+  uv run python evals/seal_evals/runner.py --planner-only --min-execution-rate 0.6 postgresql+asyncpg://...
+  make eval-local ARGS="postgresql+asyncpg://postgres:postgres@localhost:5432/seal"
+  ```
 
 ---
 
@@ -316,4 +323,5 @@ Before submitting a Pull Request, ensure that:
 - [ ] Embedder-facing changes: [docs/embedding.md](docs/embedding.md) and `/docs/embedding` reviewed.
 - [ ] Production/deploy impact: [DEPLOYMENT.md](DEPLOYMENT.md) env or steps updated when operators need new config.
 - [ ] Release-visible changes: note in PR for maintainers ([RELEASING.md](RELEASING.md) checklist before tag).
+- [ ] Local planner eval changes: update `evals/data/eval_set.jsonl` / `docs/local-evals.md`; run `make eval-planner` locally when touching planner/SQL validation.
 - [ ] You have documented your changes clearly in code comments and updated any relevant README guides.

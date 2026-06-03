@@ -12,6 +12,7 @@
 - `sdks/python/`, `sdks/typescript/`: SDK wrappers (`query`, `chat`, `chatStream`, `catalog`)
 - `config/`: `catalog.example.yaml`, `seal-tools.openai.json`, `stream_meta_metadata_keys.json`
 - `scripts/`: `seed.sql`, `migrate_app.sql`, `sync_catalog.py`, `generate_openapi.py`
+- `evals/`: `seal_evals/runner.py`, `data/eval_set.jsonl` — planner eval harness
 - `docs/`: Contributor docs — **index:** [docs/README.md](docs/README.md) (`embedding.md`, `how-seal-works.md`, `multi-database.md`, `guardrails.md`, `chat-enhancement.md`, `chat-metadata.md`, `workspace-api.md`, `integrations/`)
 - `shared/`: Cross-app TypeScript (`stream-meta.ts`, `metadata-contract.ts`, `metadata-summary.ts`) for docs + dashboard
 
@@ -50,6 +51,7 @@
 ## Commands
 
 - `make up` / `make down` / `make seed`: Docker stack and seed data (`migrate_app.sql` for workspace).
+- `make eval` / `make eval-planner` / `make eval-local`: **Local only** planner evals — see `docs/local-evals.md` (not in PR CI; requires LLM + seeded Postgres for full execution).
 - `make sync-catalog`: Regenerate `config/catalog.yaml` from live schema.
 - `make sync-docs-assets`: OpenAPI + demo fixtures → `apps/docs`.
 - `make verify-openapi-sync`: CI check for committed OpenAPI spec, docs copies, and `sdks/typescript/src/generated/openapi.ts`.
