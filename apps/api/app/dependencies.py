@@ -3,6 +3,7 @@
 from fastapi import Request
 from seal_core.catalog.registry import DataCatalogRegistry
 from seal_core.chat.service import ChatService
+from seal_core.chat.session.base import BaseSessionStore
 from seal_core.database.registry import DatabaseRegistry
 from seal_core.planner.planner import QueryPlanner
 from seal_core.schema.introspector import SchemaIntrospector
@@ -43,6 +44,11 @@ def get_data_catalog(request: Request) -> DataCatalogRegistry:
 def get_chat_service(request: Request) -> ChatService:
     """Get the application's global chat service."""
     return request.app.state.chat_service
+
+
+def get_session_store(request: Request) -> BaseSessionStore:
+    """Get the application's chat session store."""
+    return request.app.state.session_store
 
 
 def get_workspace_store(request: Request) -> WorkspaceStore:

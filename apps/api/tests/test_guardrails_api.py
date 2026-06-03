@@ -68,7 +68,7 @@ def test_chat_poem_refusal_includes_suggested_queries(monkeypatch) -> None:
     from app.dependencies import get_chat_service
     from seal_core.chat.models import ChatAnswer
     from seal_core.chat.service import ChatService
-    from seal_core.chat.sessions import SessionStore
+    from seal_core.chat.session import InMemorySessionStore
     from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
     from seal_core.guardrails.models import ScopeResult
     from tests.mocks import MockIntrospector, MockPlanner
@@ -89,7 +89,7 @@ def test_chat_poem_refusal_includes_suggested_queries(monkeypatch) -> None:
     service = ChatService(
         planner=MockPlanner(),
         registry=registry,
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,

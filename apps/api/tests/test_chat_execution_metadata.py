@@ -9,7 +9,7 @@ from app.dependencies import get_chat_service
 from fastapi.testclient import TestClient
 from seal_core.chat.models import ChatAnswer, ChatDecision
 from seal_core.chat.service import ChatService
-from seal_core.chat.sessions import SessionStore
+from seal_core.chat.session import InMemorySessionStore
 from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
 from seal_core.guardrails.models import ScopeResult
 from seal_core.pipeline.execute import ExecuteQueryResult
@@ -36,7 +36,7 @@ def _chat_service_with_sql() -> ChatService:
     return ChatService(
         planner=MockPlanner(),
         registry=registry,
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,

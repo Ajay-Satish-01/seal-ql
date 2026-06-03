@@ -195,12 +195,52 @@ export const chatConfig: ConfigRow[] = [
       'Use in CI or staging to catch contract regressions early. Default off so production stays resilient to minor shape drift.',
   },
   {
+    name: 'CHAT_SESSION_STORE',
+    type: 'string',
+    default: 'memory',
+    description:
+      'Chat session backend: `memory` (in-process, TTL) or `postgres` (persistent `seal_app.chat_sessions`). Alias: `MEMORY_BACKEND` (`sql` → postgres).',
+    expect:
+      'Use `postgres` on Lambda and multi-task ECS. Run `scripts/migrate_app.sql`. Dashboard lists sessions via `GET /v1/chat/sessions`.',
+  },
+  {
+    name: 'CHAT_SESSION_STORE_CLASS',
+    type: 'string',
+    default: '(empty)',
+    description:
+      'Optional dotted import path for a custom `BaseSessionStore` implementation (advanced). When set, overrides `CHAT_SESSION_STORE`. Constructor may accept `database_url` or `settings`.',
+    expect: 'Leave unset unless you ship a custom store class on `PYTHONPATH`.',
+  },
+  {
+    name: 'CHAT_SESSION_DATABASE_URL',
+    type: 'string',
+    default: '(falls back to DATABASE_URL)',
+    description:
+      'Postgres connection URL for `CHAT_SESSION_STORE=postgres`. Allows DuckDB-primary deployments to point chat history at a separate Postgres instance.',
+    expect:
+      'Set when your `DATABASE_URL` is DuckDB but you want persistent chat sessions. The session store creates tables in the `seal_app` schema of this database.',
+  },
+  {
+    name: 'CHAT_SESSION_LIST_DEFAULT_LIMIT',
+    type: 'integer',
+    default: '50',
+    description: 'Default page size for `GET /v1/chat/sessions` when `limit` is omitted.',
+    expect: 'Dashboard sidebar uses the API default unless a `limit` query param is set.',
+  },
+  {
+    name: 'CHAT_SESSION_LIST_MAX_LIMIT',
+    type: 'integer',
+    default: '200',
+    description: 'Maximum allowed `limit` query param on session list.',
+    expect: 'Requests above this return HTTP 422.',
+  },
+  {
     name: 'CHAT_SESSION_TTL_SECONDS',
     type: 'integer',
     default: '3600',
-    description: 'In-memory session lifetime for `session_id` continuity on `/v1/chat`.',
+    description: 'In-memory session TTL only (`CHAT_SESSION_STORE=memory`). Ignored for postgres.',
     expect:
-      'After TTL, the same `session_id` starts a fresh conversation; SQL and chart context from the prior session are not carried over.',
+      'After TTL, the same `session_id` starts a fresh conversation when using the memory backend.',
   },
   {
     name: 'CHAT_MAX_HISTORY_MESSAGES',

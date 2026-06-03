@@ -21,7 +21,7 @@
 - **API Gateway**: FastAPI; scope gate on query/chat; routes NL requests to planner or chat.
 - **Guardrails**: Heuristics + LLM `ScopeDecision` before SQL/RAG; chat refusal vs query 400.
 - **Data catalog**: Auto-synced YAML (`DATA_CATALOG_PATH`); description overrides in workspace DB (re-applied after sync).
-- **Chat**: `ChatService` + `SessionStore` + `EnhancementOrchestrator` (schema → vector RAG → multi-turn).
+- **Chat**: `ChatService` + pluggable `BaseSessionStore` (`CHAT_SESSION_STORE=memory|postgres`) + `EnhancementOrchestrator` (schema → vector RAG → multi-turn). Session history: `GET/DELETE /v1/chat/sessions`. DuckDB-primary deployments can set `CHAT_SESSION_DATABASE_URL` to a separate Postgres instance for persistent sessions.
 - **Workspace**: Postgres `seal_app.workspace_kv` (primary); `config/workspace.json` read fallback; `.env` base. Hot-reload on save in dev; prod uses `POST /v1/workspace/settings/apply`.
 - **Query Planner**: LiteLLM + Instructor; shared `execute_natural_language_query` pipeline with chat SQL.
 - **SQL Validator**: SQLGlot AST — zero-trust boundary for all LLM-generated SQL.

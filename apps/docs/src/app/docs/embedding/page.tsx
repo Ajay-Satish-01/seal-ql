@@ -16,10 +16,10 @@ export default function EmbeddingPage() {
       <DocsProse>
         <p>
           Seal is open source so you can self-host natural-language analytics without rebuilding
-          guardrails, SQL validation, or chart generation. This page is for <strong>integrators</strong>{' '}
-          — not end users of a finished BI product. You run the Docker image (or source stack), call{' '}
-          <code>/v1/query</code> and <code>/v1/chat</code> from your backend, and own everything
-          around identity, tenancy, and UX.
+          guardrails, SQL validation, or chart generation. This page is for{' '}
+          <strong>integrators</strong> — not end users of a finished BI product. You run the Docker
+          image (or source stack), call <code>/v1/query</code> and <code>/v1/chat</code> from your
+          backend, and own everything around identity, tenancy, and UX.
         </p>
 
         <Callout variant="info" title="Start here if you are new">
@@ -45,20 +45,26 @@ export default function EmbeddingPage() {
                 </td>
               </tr>
               <tr>
-                <td className="border-border/50 border p-2">Product UI, saved questions, billing</td>
+                <td className="border-border/50 border p-2">
+                  Product UI, saved questions, billing
+                </td>
                 <td className="border-border/50 border p-2">
                   NL → validated SQL, rows, Vega-Lite charts, optional chat sessions
                 </td>
               </tr>
               <tr>
-                <td className="border-border/50 border p-2">Choosing which DB a tenant may query</td>
                 <td className="border-border/50 border p-2">
-                  <code>database_id</code> routing to pre-registered backends (ids only, never URLs in
-                  JSON)
+                  Choosing which DB a tenant may query
+                </td>
+                <td className="border-border/50 border p-2">
+                  <code>database_id</code> routing to pre-registered backends (ids only, never URLs
+                  in JSON)
                 </td>
               </tr>
               <tr>
-                <td className="border-border/50 border p-2">Rate limits and audit for your users</td>
+                <td className="border-border/50 border p-2">
+                  Rate limits and audit for your users
+                </td>
                 <td className="border-border/50 border p-2">
                   Scope guardrails, SQLGlot AST policy, read-only execution
                 </td>
@@ -79,21 +85,20 @@ export default function EmbeddingPage() {
             uses id <code>&quot;default&quot;</code>.
           </li>
           <li>
-            <strong>One Seal, multiple databases</strong> — Add{' '}
-            <code>config/databases.yaml</code> or <code>SEAL_DATABASES</code>; pass{' '}
-            <code>database_id</code> on query, chat, and schema. See{' '}
-            <Link href="/docs/multi-database">Multi-database routing</Link>.
+            <strong>One Seal, multiple databases</strong> — Add <code>config/databases.yaml</code>{' '}
+            or <code>SEAL_DATABASES</code>; pass <code>database_id</code> on query, chat, and
+            schema. See <Link href="/docs/multi-database">Multi-database routing</Link>.
           </li>
           <li>
-            <strong>One Seal per tenant database</strong> — Strongest isolation; separate compose stack
-            or namespace per customer.
+            <strong>One Seal per tenant database</strong> — Strongest isolation; separate compose
+            stack or namespace per customer.
           </li>
           <li>
-            <strong>BFF / API gateway</strong> — Clients use your JWT; your API forwards to Seal with{' '}
-            <code>X-API-Key</code> and the right <code>database_id</code> for that tenant.
+            <strong>BFF / API gateway</strong> — Clients use your JWT; your API forwards to Seal
+            with <code>X-API-Key</code> and the right <code>database_id</code> for that tenant.
           </li>
         </ul>
-        <pre className="not-prose overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-5 font-mono text-xs leading-relaxed text-foreground">
+        <pre className="not-prose border-border/50 bg-muted/30 text-foreground overflow-x-auto rounded-xl border p-5 font-mono text-xs leading-relaxed">
           {`[Browser / mobile]  ──your JWT──►  [Your API]  ──X-API-Key──►  [Seal]  ──SQL──►  [DB]`}
         </pre>
 
@@ -107,7 +112,8 @@ export default function EmbeddingPage() {
           <em>Should we spend tokens on SQL and RAG for this message?</em> Runs on every query and
           chat turn. In-scope: analytics and schema/catalog questions. Out-of-scope query → HTTP{' '}
           <strong>400</strong> with a nested <code>detail</code> object (fields inside{' '}
-          <code>detail.detail</code>, <code>detail.reason</code>, <code>detail.suggested_queries</code>
+          <code>detail.detail</code>, <code>detail.reason</code>,{' '}
+          <code>detail.suggested_queries</code>
           ). Out-of-scope chat → HTTP <strong>200</strong> refusal with the same suggestions in{' '}
           <code>metadata</code> (and on SSE <code>seal.meta</code>).
         </p>
@@ -125,8 +131,8 @@ export default function EmbeddingPage() {
 }`}
         />
         <p>
-          <Link href="/docs/guardrails">Guardrails</Link> · Handle{' '}
-          <code>QueryOutOfScopeError</code> in SDKs (parses the nested shape automatically)
+          <Link href="/docs/guardrails">Guardrails</Link> · Handle <code>QueryOutOfScopeError</code>{' '}
+          in SDKs (parses the nested shape automatically)
         </p>
 
         <h3>2. SQL (zero-trust)</h3>
@@ -142,16 +148,16 @@ export default function EmbeddingPage() {
         <h3>3. Enhancement and vector RAG</h3>
         <p>
           <em>What context is injected before the planner?</em> Chat runs an enhancement chain
-          (schema focus, optional vector search, multi-turn summaries).{' '}
-          <code>POST /v1/query</code> does <strong>not</strong> use this chain. Set{' '}
-          <code>VECTOR_STORE=none</code> to run without embeddings; chat still works.
+          (schema focus, optional vector search, multi-turn summaries). <code>POST /v1/query</code>{' '}
+          does <strong>not</strong> use this chain. Set <code>VECTOR_STORE=none</code> to run
+          without embeddings; chat still works.
         </p>
         <p>
           <Link href="/docs/prompt-enhancement">Prompt enhancement</Link> ·{' '}
           <Link href="/docs/vector-rag">Vector RAG</Link>
         </p>
 
-        <pre className="not-prose overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-4 font-mono text-xs leading-relaxed text-foreground">
+        <pre className="not-prose border-border/50 bg-muted/30 text-foreground overflow-x-auto rounded-xl border p-4 font-mono text-xs leading-relaxed">
           {`Request
   → guardrails (scope)
   → (chat only) enhancement + optional RAG
@@ -161,17 +167,17 @@ export default function EmbeddingPage() {
         <h2>database_id, catalog, and sessions</h2>
         <p>
           When you register more than one backend, clients pass <code>database_id</code> on{' '}
-          <code>/v1/query</code>, <code>/v1/chat</code>, and <code>GET /v1/schema</code>. Unknown ids
-          return HTTP <strong>404</strong>. Responses include{' '}
-          <code>metadata.database_id</code> (and execution stats when SQL runs) — see{' '}
+          <code>/v1/query</code>, <code>/v1/chat</code>, and <code>GET /v1/schema</code>. Unknown
+          ids return HTTP <strong>404</strong>. Responses include <code>metadata.database_id</code>{' '}
+          (and execution stats when SQL runs) — see{' '}
           <DocLink href="/docs/execution-metadata">Execution metadata</DocLink>.
         </p>
         <Callout variant="warning" title="Shared catalog and RAG">
-          The data catalog, semantic layer, and vector index are built from the{' '}
-          <code>default</code> database only today. Non-default ids still run SQL against their
-          backend but skip catalog/semantic injection and vector RAG. Chat sessions{' '}
-          <strong>pin</strong> <code>database_id</code> after a successful in-scope turn; repeat the
-          same id on follow-ups or start a new <code>session_id</code>.
+          The data catalog, semantic layer, and vector index are built from the <code>default</code>{' '}
+          database only today. Non-default ids still run SQL against their backend but skip
+          catalog/semantic injection and vector RAG. Chat sessions <strong>pin</strong>{' '}
+          <code>database_id</code> after a successful in-scope turn; repeat the same id on
+          follow-ups or start a new <code>session_id</code>.
         </Callout>
 
         <h2>Agents and HTTP tools</h2>
@@ -180,11 +186,11 @@ export default function EmbeddingPage() {
           <a href="/seal-tools.openai.json" className="text-primary hover:underline">
             seal-tools.openai.json
           </a>
-          . Tools: <code>seal_get_schema</code>, <code>seal_get_catalog</code>, <code>seal_query</code>,{' '}
-          <code>seal_chat</code>. <code>seal_get_catalog</code> reads the global catalog (default
-          DB). <code>seal_get_schema</code>, <code>seal_query</code>, and <code>seal_chat</code> accept
-          optional <code>database_id</code>. Parse structured 400s on out-of-scope queries (nested{' '}
-          <code>detail</code> as above).
+          . Tools: <code>seal_get_schema</code>, <code>seal_get_catalog</code>,{' '}
+          <code>seal_query</code>, <code>seal_chat</code>. <code>seal_get_catalog</code> reads the
+          global catalog (default DB). <code>seal_get_schema</code>, <code>seal_query</code>, and{' '}
+          <code>seal_chat</code> accept optional <code>database_id</code>. Parse structured 400s on
+          out-of-scope queries (nested <code>detail</code> as above).
         </p>
         <p>
           <Link href="/docs/agent-frameworks">Agent frameworks</Link>
@@ -199,15 +205,15 @@ export default function EmbeddingPage() {
             Docs site (this page): port <strong>3000</strong>
           </li>
           <li>
-            <Link href="/docs/dashboard">Operational dashboard</Link> on port <strong>3001</strong> —
-            database dropdown, Query/Chat/Schema against a live API
+            <Link href="/docs/dashboard">Operational dashboard</Link> on port <strong>3001</strong>{' '}
+            — database dropdown, Query/Chat/Schema against a live API
           </li>
           <li>
             <Link href="/demo">Interactive demo</Link> — fixture responses without the API
           </li>
         </ol>
 
-        <h2>Roadmap (not in Phase 0)</h2>
+        <h2>Roadmap for future work</h2>
         <ul>
           <li>Per-database catalog YAML</li>
           <li>Per-database vector indexes</li>

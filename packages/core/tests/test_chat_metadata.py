@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from seal_core.chat.models import ChatAnswer, ChatDecision
 from seal_core.chat.service import ChatService
-from seal_core.chat.sessions import SessionStore
+from seal_core.chat.session import InMemorySessionStore
 from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
 from seal_core.guardrails.models import ScopeResult
 from seal_core.pipeline.execute import ExecuteQueryResult
@@ -56,7 +56,7 @@ async def test_run_turn_sql_metadata_includes_execution_fields() -> None:
     service = ChatService(
         planner=MagicMock(),
         registry=_registry(),
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,
@@ -88,7 +88,7 @@ async def test_run_turn_sql_metadata_includes_execution_fields() -> None:
             new=AsyncMock(return_value=answer),
         ),
     ):
-        ctx = service._prepare_turn("How many orders?", None, None, None, "default")
+        ctx = await service._prepare_turn("How many orders?", None, None, None, "default")
         result = await service._run_turn(ctx, include_charts=False)
 
     meta = result.metadata
@@ -107,7 +107,7 @@ async def test_run_turn_sql_error_metadata() -> None:
     service = ChatService(
         planner=MagicMock(),
         registry=_registry(),
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,
@@ -137,7 +137,7 @@ async def test_run_turn_sql_error_metadata() -> None:
             new=AsyncMock(return_value=ChatAnswer(message="Could not query data.")),
         ),
     ):
-        ctx = service._prepare_turn("broken query", None, None, None, "default")
+        ctx = await service._prepare_turn("broken query", None, None, None, "default")
         result = await service._run_turn(ctx, include_charts=False)
 
     assert result.sql is None
@@ -151,7 +151,7 @@ async def test_run_turn_no_sql_when_decision_skips_data() -> None:
     service = ChatService(
         planner=MagicMock(),
         registry=_registry(),
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,
@@ -177,7 +177,7 @@ async def test_run_turn_no_sql_when_decision_skips_data() -> None:
             new=AsyncMock(return_value=ChatAnswer(message="General answer.")),
         ),
     ):
-        ctx = service._prepare_turn("hello", None, None, None, "default")
+        ctx = await service._prepare_turn("hello", None, None, None, "default")
         result = await service._run_turn(ctx, include_charts=False)
 
     execute_mock.assert_not_called()
@@ -192,13 +192,13 @@ async def test_format_meta_event_includes_execution_fields() -> None:
     service = ChatService(
         planner=MagicMock(),
         registry=_registry(),
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,
     )
     exec_result = _exec_result()
-    ctx = service._prepare_turn("count orders", None, None, None, "analytics")
+    ctx = await service._prepare_turn("count orders", None, None, None, "analytics")
     ctx.metadata["sources"] = ["orders"]
     ctx.metadata["scope"] = {"in_scope": True, "reason": "in_scope", "source": "heuristic"}
     turn = InScopeTurnData(exec_result=exec_result, chart=None, meta={}, system="SYS")
@@ -218,12 +218,12 @@ async def test_format_meta_event_sql_error_flag() -> None:
     service = ChatService(
         planner=MagicMock(),
         registry=_registry(),
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,
     )
-    ctx = service._prepare_turn("broken", None, None, None, "default")
+    ctx = await service._prepare_turn("broken", None, None, None, "default")
     turn = InScopeTurnData(exec_result=None, chart=None, meta={"sql_error": True}, system="SYS")
 
     event_line = service._format_meta_event(ctx, turn)
@@ -239,13 +239,13 @@ async def test_format_meta_event_vector_skipped_when_enhancement_enabled() -> No
     service = ChatService(
         planner=MagicMock(),
         registry=_registry(),
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,
     )
     exec_result = _exec_result()
-    ctx = service._prepare_turn("count orders", None, None, None, "analytics")
+    ctx = await service._prepare_turn("count orders", None, None, None, "analytics")
     ctx.enhancement_enabled = True
     turn = InScopeTurnData(exec_result=exec_result, chart=None, meta={}, system="SYS")
 
@@ -258,7 +258,7 @@ async def test_refusal_metadata_omits_vector_skipped_on_non_default() -> None:
     service = ChatService(
         planner=MagicMock(),
         registry=_registry(),
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,
@@ -270,7 +270,7 @@ async def test_refusal_metadata_omits_vector_skipped_on_non_default() -> None:
             return_value=ScopeResult(in_scope=False, reason="off-topic", source="heuristic")
         ),
     ):
-        ctx = service._prepare_turn("poem", None, None, False, "analytics")
+        ctx = await service._prepare_turn("poem", None, None, False, "analytics")
         result = await service._refusal_turn(
             ctx,
             scope=ScopeResult(in_scope=False, reason="too long", source="limits"),
@@ -290,7 +290,7 @@ async def test_refusal_metadata_omits_unavailable_when_orchestrator_present() ->
     service = ChatService(
         planner=MagicMock(),
         registry=_registry(),
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=orchestrator,
         catalog=None,
         semantic_registry=None,
@@ -302,7 +302,7 @@ async def test_refusal_metadata_omits_unavailable_when_orchestrator_present() ->
             return_value=ScopeResult(in_scope=False, reason="off-topic", source="heuristic")
         ),
     ):
-        ctx = service._prepare_turn(
+        ctx = await service._prepare_turn(
             "write me a poem",
             None,
             None,

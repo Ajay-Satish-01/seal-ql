@@ -1,17 +1,6 @@
--- Primary workspace storage for dashboard settings and catalog description overrides.
--- Keys: workspace_settings, catalog_overrides (JSONB). Applied on API startup.
--- config/workspace.json is a read fallback when rows are empty; .env is the base layer.
+-- Chat session history (CHAT_SESSION_STORE=postgres). Applied by PostgresSessionStore.ensure_schema.
 CREATE SCHEMA IF NOT EXISTS seal_app;
 
-CREATE TABLE IF NOT EXISTS seal_app.workspace_kv (
-    key TEXT PRIMARY KEY,
-    value JSONB NOT NULL DEFAULT '{}',
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Chat session history (CHAT_SESSION_STORE=postgres).
--- Keep in sync with migrate_chat_sessions.sql (which is also applied by
--- PostgresSessionStore.ensure_schema via asyncpg at API startup).
 CREATE TABLE IF NOT EXISTS seal_app.chat_sessions (
     session_id UUID PRIMARY KEY,
     title TEXT,

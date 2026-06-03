@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from seal_core.chat.errors import SessionDatabaseMismatchError
 from seal_core.chat.service import ChatService
-from seal_core.chat.sessions import SessionStore
+from seal_core.chat.session import InMemorySessionStore
 from seal_core.guardrails.models import ScopeResult
 
 
@@ -33,7 +33,7 @@ async def test_run_turn_out_of_scope_skips_execute_path() -> None:
     service = ChatService(
         planner=planner,
         registry=registry,
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,
@@ -62,7 +62,7 @@ async def test_run_turn_out_of_scope_skips_execute_path() -> None:
         patch.object(service, "_refusal_turn", new=AsyncMock(return_value=refusal)),
         patch.object(service, "_execute_data_path", new=AsyncMock()) as execute_mock,
     ):
-        ctx = service._prepare_turn(
+        ctx = await service._prepare_turn(
             "write me a poem",
             None,
             None,
@@ -77,7 +77,8 @@ async def test_run_turn_out_of_scope_skips_execute_path() -> None:
     assert result.metadata.get("refusal") is True
 
 
-def test_prepare_turn_rejects_mismatched_database_id() -> None:
+@pytest.mark.asyncio
+async def test_prepare_turn_rejects_mismatched_database_id() -> None:
     from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
 
     registry = DatabaseRegistry(
@@ -94,18 +95,19 @@ def test_prepare_turn_rejects_mismatched_database_id() -> None:
     service = ChatService(
         planner=MagicMock(),
         registry=registry,
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,
     )
-    ctx1 = service._prepare_turn("hello", None, None, None, "default")
-    service._complete_turn(ctx1)
+    ctx1 = await service._prepare_turn("hello", None, None, None, "default")
+    await service._complete_turn(ctx1)
     with pytest.raises(SessionDatabaseMismatchError, match="pinned"):
-        service._prepare_turn("follow up", ctx1.session_id, None, None, "analytics")
+        await service._prepare_turn("follow up", ctx1.session_id, None, None, "analytics")
 
 
-def test_session_not_pinned_until_explicit_pin() -> None:
+@pytest.mark.asyncio
+async def test_session_not_pinned_until_explicit_pin() -> None:
     from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
 
     registry = DatabaseRegistry(
@@ -126,7 +128,7 @@ def test_session_not_pinned_until_explicit_pin() -> None:
             ),
         }
     )
-    sessions = SessionStore()
+    sessions = InMemorySessionStore()
     service = ChatService(
         planner=MagicMock(),
         registry=registry,
@@ -135,10 +137,10 @@ def test_session_not_pinned_until_explicit_pin() -> None:
         catalog=None,
         semantic_registry=None,
     )
-    ctx = service._prepare_turn("hello", None, None, None, "analytics")
-    _, state = sessions.get_or_create(ctx.session_id)
+    ctx = await service._prepare_turn("hello", None, None, None, "analytics")
+    _, state = await sessions.get_or_create(ctx.session_id)
     assert state.database_id is None
-    service._prepare_turn("retry", ctx.session_id, None, None, "default")
+    await service._prepare_turn("retry", ctx.session_id, None, None, "default")
 
 
 @pytest.mark.asyncio
@@ -163,7 +165,7 @@ async def test_refusal_metadata_includes_database_id_and_does_not_pin() -> None:
             ),
         }
     )
-    sessions = SessionStore()
+    sessions = InMemorySessionStore()
     service = ChatService(
         planner=MagicMock(),
         registry=registry,
@@ -192,7 +194,7 @@ async def test_refusal_metadata_includes_database_id_and_does_not_pin() -> None:
             database_id="analytics",
         )
 
-    _, state = sessions.get_or_create(result.session_id)
+    _, state = await sessions.get_or_create(result.session_id)
     assert state.database_id is None
     assert result.metadata["database_id"] == "analytics"
     assert result.metadata["refusal"] is True
@@ -202,7 +204,8 @@ async def test_refusal_metadata_includes_database_id_and_does_not_pin() -> None:
     assert 0 < len(suggestions) <= 3
 
 
-def test_handle_stream_rejects_mismatched_database_id_synchronously() -> None:
+@pytest.mark.asyncio
+async def test_prepare_stream_turn_rejects_mismatched_database_id() -> None:
     from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
 
     registry = DatabaseRegistry(
@@ -219,20 +222,19 @@ def test_handle_stream_rejects_mismatched_database_id_synchronously() -> None:
     service = ChatService(
         planner=MagicMock(),
         registry=registry,
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,
     )
-    ctx = service._prepare_turn("hello", None, None, None, "default")
-    service._complete_turn(ctx)
+    ctx = await service._prepare_turn("hello", None, None, None, "default")
+    await service._complete_turn(ctx)
 
     with pytest.raises(SessionDatabaseMismatchError):
-        service.handle_stream(
+        await service.prepare_stream_turn(
             message="follow up",
             session_id=ctx.session_id,
             messages_override=None,
-            include_charts=False,
             enhancement_enabled=None,
             database_id="analytics",
         )

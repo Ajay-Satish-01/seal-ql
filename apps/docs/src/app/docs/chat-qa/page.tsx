@@ -6,6 +6,8 @@ import { PageHeader } from '@/components/page-header';
 import { SITE } from '@/lib/constants';
 import {
   curlChat,
+  curlDeleteSession,
+  curlListSessions,
   localDevSetupSnippet,
   pythonChatSnippet,
   tsChatSnippet,
@@ -90,6 +92,33 @@ ${curlChat(base, 'Show revenue for the largest table', { sessionId: 'YOUR_SESSIO
       <CodeBlock
         language="typescript"
         code={tsChatSnippet(base, 'Orders by region last week', { includeCharts: true })}
+      />
+
+      <h2 className="font-heading mt-8 text-xl font-semibold">Session history</h2>
+      <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
+        With <code>CHAT_SESSION_STORE=postgres</code> (and <code>scripts/migrate_app.sql</code>{' '}
+        applied), conversations persist in <code>seal_app.chat_sessions</code>. The operational
+        dashboard (<code>apps/web</code>, port 3001) lists past chats and resumes them. API
+        endpoints:
+      </p>
+      <ul className="text-muted-foreground mt-4 list-disc space-y-2 pl-6 text-sm">
+        <li>
+          <code>GET /v1/chat/sessions</code> — list sessions (optional{' '}
+          <code>database_id</code> filter)
+        </li>
+        <li>
+          <code>GET /v1/chat/sessions/&#123;session_id&#125;</code> — full message history
+        </li>
+        <li>
+          <code>DELETE /v1/chat/sessions/&#123;session_id&#125;</code> — remove a session
+        </li>
+      </ul>
+      <h3 className="text-foreground mt-6 text-lg font-medium">curl</h3>
+      <CodeBlock
+        language="bash"
+        code={`${curlListSessions(base)}
+
+${curlDeleteSession(base, 'YOUR_SESSION_ID')}`}
       />
 
       <h2 className="font-heading mt-8 text-xl font-semibold">Response fields</h2>

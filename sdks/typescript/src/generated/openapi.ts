@@ -104,6 +104,53 @@ export interface paths {
         readonly patch?: never;
         readonly trace?: never;
     };
+    readonly "/v1/chat/sessions": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * List Chat Sessions
+         * @description List chat sessions with messages (most recent first).
+         *
+         *     Sessions are global to the API key (single-tenant ops dashboard).
+         *     Limit is clamped by the store to ``CHAT_SESSION_LIST_MAX_LIMIT``.
+         */
+        readonly get: operations["list_chat_sessions_v1_chat_sessions_get"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/v1/chat/sessions/{session_id}": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * Get Chat Session
+         * @description Load full message history for a session.
+         */
+        readonly get: operations["get_chat_session_v1_chat_sessions__session_id__get"];
+        readonly put?: never;
+        readonly post?: never;
+        /**
+         * Delete Chat Session
+         * @description Delete a chat session and its messages.
+         */
+        readonly delete: operations["delete_chat_session_v1_chat_sessions__session_id__delete"];
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly "/v1/catalog": {
         readonly parameters: {
             readonly query?: never;
@@ -842,6 +889,76 @@ export interface components {
             /** Confidence */
             readonly confidence?: ("high" | "medium" | "low") | null;
         };
+        /** SessionDetailResponse */
+        readonly SessionDetailResponse: {
+            /** Session Id */
+            readonly session_id: string;
+            /** Title */
+            readonly title?: string | null;
+            /** Database Id */
+            readonly database_id?: string | null;
+            /** Messages */
+            readonly messages?: readonly components["schemas"]["SessionMessageSchema"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            readonly created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            readonly updated_at: string;
+        };
+        /** SessionListResponse */
+        readonly SessionListResponse: {
+            /** Sessions */
+            readonly sessions?: readonly components["schemas"]["SessionSummarySchema"][];
+            /**
+             * Has More
+             * @description True when more sessions exist beyond this page.
+             * @default false
+             */
+            readonly has_more: boolean;
+        };
+        /** SessionMessageSchema */
+        readonly SessionMessageSchema: {
+            /** Role */
+            readonly role: string;
+            /** Content */
+            readonly content: string;
+            /**
+             * Created At
+             * @description ISO-8601 when available (postgres).
+             */
+            readonly created_at?: string | null;
+        };
+        /** SessionSummarySchema */
+        readonly SessionSummarySchema: {
+            /** Session Id */
+            readonly session_id: string;
+            /** Title */
+            readonly title?: string | null;
+            /** Database Id */
+            readonly database_id?: string | null;
+            /**
+             * Message Count
+             * @default 0
+             */
+            readonly message_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             * @description ISO-8601 timestamp.
+             */
+            readonly created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description ISO-8601 timestamp.
+             */
+            readonly updated_at: string;
+        };
         /**
          * TableKind
          * @description The kind of relation in the database.
@@ -1341,7 +1458,111 @@ export interface operations {
                     readonly "application/json": unknown;
                 };
             };
-            /** @description Unknown database_id */
+            /** @description Unknown database_id or invalid/missing session_id */
+            readonly 404: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            readonly 422: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    readonly list_chat_sessions_v1_chat_sessions_get: {
+        readonly parameters: {
+            readonly query?: {
+                /** @description Filter by pinned database_id. */
+                readonly database_id?: string | null;
+                /** @description Page size (default from CHAT_SESSION_LIST_DEFAULT_LIMIT). */
+                readonly limit?: number | null;
+                /** @description Pagination offset. */
+                readonly offset?: number;
+            };
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["SessionListResponse"];
+                };
+            };
+            /** @description Invalid or missing API key */
+            readonly 401: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "Invalid or missing API key"
+                     *     }
+                     */
+                    readonly "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            readonly 422: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    readonly get_chat_session_v1_chat_sessions__session_id__get: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path: {
+                readonly session_id: string;
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["SessionDetailResponse"];
+                };
+            };
+            /** @description Invalid or missing API key */
+            readonly 401: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "Invalid or missing API key"
+                     *     }
+                     */
+                    readonly "application/json": unknown;
+                };
+            };
+            /** @description Session not found or invalid session_id */
             readonly 404: {
                 headers: {
                     readonly [name: string]: unknown;
@@ -1349,7 +1570,64 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "detail": "unknown_database_id"
+                     *       "detail": "session_not_found"
+                     *     }
+                     */
+                    readonly "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            readonly 422: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    readonly delete_chat_session_v1_chat_sessions__session_id__delete: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path: {
+                readonly session_id: string;
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 204: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid or missing API key */
+            readonly 401: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "Invalid or missing API key"
+                     *     }
+                     */
+                    readonly "application/json": unknown;
+                };
+            };
+            /** @description Session not found or invalid session_id */
+            readonly 404: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "session_not_found"
                      *     }
                      */
                     readonly "application/json": unknown;

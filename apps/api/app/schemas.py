@@ -1,5 +1,6 @@
 """API Request and Response Models."""
 
+from datetime import datetime
 from typing import Any, Self
 
 from pydantic import BaseModel, Field, model_validator
@@ -196,6 +197,38 @@ class ChatResponse(BaseModel):
         default_factory=ChatMetadata,
         description="Execution, enhancement, and guardrails metadata.",
     )
+
+
+class SessionSummarySchema(BaseModel):
+    session_id: str
+    title: str | None = None
+    database_id: str | None = None
+    message_count: int = 0
+    created_at: datetime = Field(..., description="ISO-8601 timestamp.")
+    updated_at: datetime = Field(..., description="ISO-8601 timestamp.")
+
+
+class SessionListResponse(BaseModel):
+    sessions: list[SessionSummarySchema] = Field(default_factory=list)
+    has_more: bool = Field(
+        False,
+        description="True when more sessions exist beyond this page.",
+    )
+
+
+class SessionMessageSchema(BaseModel):
+    role: str
+    content: str
+    created_at: datetime | None = Field(None, description="ISO-8601 when available (postgres).")
+
+
+class SessionDetailResponse(BaseModel):
+    session_id: str
+    title: str | None = None
+    database_id: str | None = None
+    messages: list[SessionMessageSchema] = Field(default_factory=list)
+    created_at: datetime
+    updated_at: datetime
 
 
 class CatalogSyncResponse(BaseModel):
