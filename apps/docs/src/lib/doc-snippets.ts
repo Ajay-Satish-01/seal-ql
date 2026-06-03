@@ -288,7 +288,7 @@ curl -O ${githubRawUrl('apps/docs/public/samples/seed.sql')}
 ${PROD_ENV_BLOCK}
 
 mkdir config
-# seed.sql runs on first Postgres volume init only; to re-seed: docker compose down -v && docker compose -f docker-compose.example.yml up -d
+# seed.sql runs on first Postgres volume init only; to re-seed: docker compose -f docker-compose.example.yml down -v && docker compose -f docker-compose.example.yml up -d
 docker compose -f docker-compose.example.yml up -d
 curl ${curlFlag}http://localhost:8000/health`;
 }

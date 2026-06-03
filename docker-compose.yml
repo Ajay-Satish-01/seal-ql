@@ -46,6 +46,7 @@ services:
       - "EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-3-small}"
     volumes:
       - ./.env.example:/app/.env.example:ro
+      - ./Makefile:/app/Makefile:ro
       - ./pyproject.toml:/app/pyproject.toml
       - ./uv.lock:/app/uv.lock
       - ./apps/api:/app/apps/api

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import re
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -163,6 +164,31 @@ def test_iter_eval_cases_rejects_unknown_fields(tmp_path: Path) -> None:
 def test_build_arg_parser_default_database_url() -> None:
     args = build_arg_parser().parse_args([])
     assert args.database_url == DEFAULT_EVAL_DATABASE_URL
+
+
+def _eval_local_makefile_block() -> str:
+    repo_root = Path(__file__).resolve().parents[2]
+    makefile = (repo_root / "Makefile").read_text(encoding="utf-8")
+    match = re.search(r"^eval-local:", makefile, re.MULTILINE)
+    assert match is not None, "Makefile missing eval-local target"
+    return makefile[match.start() : match.start() + 500]
+
+
+def test_eval_host_db_url_matches_runner_default() -> None:
+    """Makefile EVAL_HOST_DB_URL must stay in sync with DEFAULT_EVAL_DATABASE_URL."""
+    repo_root = Path(__file__).resolve().parents[2]
+    makefile = (repo_root / "Makefile").read_text(encoding="utf-8")
+    needle = f"EVAL_HOST_DB_URL ?= {DEFAULT_EVAL_DATABASE_URL}"
+    assert needle in makefile, f"Makefile missing: {needle}"
+
+
+def test_make_eval_local_uses_make_args_not_shell() -> None:
+    """eval-local must honor `make eval-local ARGS=...` (Make vars), not shell $ARGS."""
+    block = _eval_local_makefile_block()
+    assert "$(or $(ARGS),$(EVAL_HOST_DB_URL))" in block, (
+        "eval-local recipe should use $(or $(ARGS),$(EVAL_HOST_DB_URL))"
+    )
+    assert "$${ARGS:-" not in block, "eval-local must not use shell ${ARGS:-...} expansion"
 
 
 @pytest.mark.asyncio

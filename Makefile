@@ -158,6 +158,7 @@ check: ## Run all checks (lint + format check + tests) — same as CI
 	@echo "\n📋 3/9 — TS ESLint & Prettier..."
 	cd sdks/typescript && pnpm run lint && pnpm run format
 	@echo "\n📋 4/9 — Python Tests..."
+	docker compose run --rm -T api uv sync --frozen --all-packages
 	docker compose run --rm -T api uv run pytest -v --tb=short \
 		--ignore=sdks/python/tests/test_sdk_e2e.py \
 		--ignore=apps/api/tests/test_e2e.py \
@@ -202,18 +203,19 @@ EVAL_DB_URL ?= postgresql+asyncpg://postgres:postgres@postgres:5432/seal
 EVAL_MIN_RATE_FLAG = --min-execution-rate $${EVAL_MIN_RATE:-0.6}
 EVAL_RUNNER = docker compose exec -T api uv run python evals/seal_evals/runner.py
 
+# eval / eval-planner: shell DATABASE_URL (compose env). Host target uses Make variable ARGS (see below).
 eval: ## Local only: planner evals on seeded Postgres in Docker (`make up` + `make seed`; not in PR CI)
 	$(EVAL_RUNNER) $${DATABASE_URL:-$(EVAL_DB_URL)} $(EVAL_MIN_RATE_FLAG)
 
 eval-planner: ## Local only: validation-only planner eval (no execution); see docs/local-evals.md
 	$(EVAL_RUNNER) $${DATABASE_URL:-$(EVAL_DB_URL)} --planner-only $(EVAL_MIN_RATE_FLAG)
 
-# Host URL must stay in sync with DEFAULT_EVAL_DATABASE_URL in evals/seal_evals/runner.py
+# Must match DEFAULT_EVAL_DATABASE_URL in evals/seal_evals/runner.py (see evals/tests/test_runner.py)
 EVAL_HOST_DB_URL ?= postgresql+asyncpg://postgres:postgres@localhost:5432/seal
 
 eval-local: ## Local only: run eval runner on host (ARGS=DB URL; EVAL_PLANNER=1 for validation-only)
 	uv run python evals/seal_evals/runner.py \
-		$${ARGS:-$(EVAL_HOST_DB_URL)} \
+		$(or $(ARGS),$(EVAL_HOST_DB_URL)) \
 		$(if $(EVAL_PLANNER),--planner-only,) $(EVAL_MIN_RATE_FLAG)
 
 check-e2e: ## Run live E2E tests (requires `make up` + `make seed`)

@@ -50,8 +50,8 @@ export default function SelfHostingPage() {
             The quick-start downloads compose and <code>seed.sql</code> via <code>curl</code>. Postgres
             loads <code>seed.sql</code> only on the <strong>first</strong> volume init. To reset demo
             data on an existing volume, run{' '}
-            <code>docker compose down -v</code> then bring the stack up again (see the comment in the
-            snippet).
+            <code>docker compose -f docker-compose.example.yml down -v</code> then bring the stack
+            up again (see the comment in the snippet).
           </p>
         ) : (
           <p>
@@ -203,18 +203,40 @@ export default function SelfHostingPage() {
             network.
           </li>
           <li>
-            <strong>AWS:</strong> Run the same <code>{SITE.dockerImage}</code> image on{' '}
-            <strong>ECS Fargate</strong> (recommended) or <strong>Lambda</strong> (scale-to-zero).
-            See the repository{' '}
-            <a
-              href={`${githubBlobUrl('DEPLOYMENT.md')}#aws-deployment`}
-              className="text-primary"
-              target="_blank"
-              rel="noreferrer"
-            >
-              DEPLOYMENT.md → AWS deployment
-            </a>{' '}
-            for RDS, ALB health checks, RDS Proxy, and Lambda Web Adapter notes.
+            <strong>AWS:</strong>{' '}
+            {isPackagesPublished() ? (
+              <>
+                Run the same <code>{SITE.dockerImage}</code> image on{' '}
+                <strong>ECS Fargate</strong> (recommended) or <strong>Lambda</strong>{' '}
+                (scale-to-zero). See the repository{' '}
+                <a
+                  href={`${githubBlobUrl('DEPLOYMENT.md')}#aws-deployment`}
+                  className="text-primary"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  DEPLOYMENT.md → AWS deployment
+                </a>{' '}
+                for RDS, ALB health checks, RDS Proxy, and Lambda Web Adapter notes.
+              </>
+            ) : (
+              <>
+                Build and tag the API image (<code>make docker-build</code>), push to your
+                registry (for example ECR), then deploy on <strong>ECS Fargate</strong> or{' '}
+                <strong>Lambda</strong>. Until <code>{SITE.dockerImage}</code> is published on
+                Docker Hub, treat AWS as optional — use a private image or defer ECS/Lambda until
+                registry publish. See{' '}
+                <a
+                  href={`${githubBlobUrl('DEPLOYMENT.md')}#aws-deployment`}
+                  className="text-primary"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  DEPLOYMENT.md → AWS deployment
+                </a>{' '}
+                for architecture notes (private image required today).
+              </>
+            )}
           </li>
         </ul>
 
