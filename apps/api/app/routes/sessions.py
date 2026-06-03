@@ -25,8 +25,8 @@ from app.session_http import raise_session_not_found
 router = APIRouter()
 
 
-def _iso_timestamp(ts: float) -> str:
-    return datetime.fromtimestamp(ts, tz=UTC).isoformat()
+def _epoch_to_datetime(ts: float) -> datetime:
+    return datetime.fromtimestamp(ts, tz=UTC)
 
 
 @router.get("/chat/sessions", response_model=SessionListResponse, responses=UNAUTHORIZED_RESPONSE)
@@ -58,8 +58,8 @@ async def list_chat_sessions(
                 title=s.title,
                 database_id=s.database_id,
                 message_count=s.message_count,
-                created_at=_iso_timestamp(s.created_at),
-                updated_at=_iso_timestamp(s.updated_at),
+                created_at=_epoch_to_datetime(s.created_at),
+                updated_at=_epoch_to_datetime(s.updated_at),
             )
             for s in page.sessions
         ],
@@ -95,15 +95,15 @@ async def get_chat_session(
                 role=m.role,
                 content=m.content,
                 created_at=(
-                    _iso_timestamp(timestamps[i])
+                    _epoch_to_datetime(timestamps[i])
                     if i < len(timestamps) and timestamps[i] is not None
                     else None
                 ),
             )
             for i, m in enumerate(state.messages)
         ],
-        created_at=_iso_timestamp(state.created_at),
-        updated_at=_iso_timestamp(state.updated_at),
+        created_at=_epoch_to_datetime(state.created_at),
+        updated_at=_epoch_to_datetime(state.updated_at),
     )
 
 

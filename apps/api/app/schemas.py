@@ -1,5 +1,6 @@
 """API Request and Response Models."""
 
+from datetime import datetime
 from typing import Any, Self
 
 from pydantic import BaseModel, Field, model_validator
@@ -203,8 +204,8 @@ class SessionSummarySchema(BaseModel):
     title: str | None = None
     database_id: str | None = None
     message_count: int = 0
-    created_at: str = Field(..., description="ISO-8601 timestamp.")
-    updated_at: str = Field(..., description="ISO-8601 timestamp.")
+    created_at: datetime = Field(..., description="ISO-8601 timestamp.")
+    updated_at: datetime = Field(..., description="ISO-8601 timestamp.")
 
 
 class SessionListResponse(BaseModel):
@@ -218,7 +219,7 @@ class SessionListResponse(BaseModel):
 class SessionMessageSchema(BaseModel):
     role: str
     content: str
-    created_at: str | None = Field(None, description="ISO-8601 when available (postgres).")
+    created_at: datetime | None = Field(None, description="ISO-8601 when available (postgres).")
 
 
 class SessionDetailResponse(BaseModel):
@@ -226,8 +227,8 @@ class SessionDetailResponse(BaseModel):
     title: str | None = None
     database_id: str | None = None
     messages: list[SessionMessageSchema] = Field(default_factory=list)
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
 
 
 class CatalogSyncResponse(BaseModel):

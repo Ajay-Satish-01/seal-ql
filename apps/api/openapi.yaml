@@ -1257,9 +1257,11 @@ components:
           title: Messages
         created_at:
           type: string
+          format: date-time
           title: Created At
         updated_at:
           type: string
+          format: date-time
           title: Updated At
       type: object
       required:
@@ -1292,6 +1294,7 @@ components:
         created_at:
           anyOf:
           - type: string
+            format: date-time
           - type: 'null'
           title: Created At
           description: ISO-8601 when available (postgres).
@@ -1321,10 +1324,12 @@ components:
           default: 0
         created_at:
           type: string
+          format: date-time
           title: Created At
           description: ISO-8601 timestamp.
         updated_at:
           type: string
+          format: date-time
           title: Updated At
           description: ISO-8601 timestamp.
       type: object

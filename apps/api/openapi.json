@@ -1915,10 +1915,12 @@
           },
           "created_at": {
             "type": "string",
+            "format": "date-time",
             "title": "Created At"
           },
           "updated_at": {
             "type": "string",
+            "format": "date-time",
             "title": "Updated At"
           }
         },
@@ -1962,7 +1964,8 @@
           "created_at": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "date-time"
               },
               {
                 "type": "null"
@@ -2014,11 +2017,13 @@
           },
           "created_at": {
             "type": "string",
+            "format": "date-time",
             "title": "Created At",
             "description": "ISO-8601 timestamp."
           },
           "updated_at": {
             "type": "string",
+            "format": "date-time",
             "title": "Updated At",
             "description": "ISO-8601 timestamp."
           }

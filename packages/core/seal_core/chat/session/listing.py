@@ -13,7 +13,8 @@ def matches_database_filter(
     session_database_id: str | None,
     filter_database_id: str | None,
 ) -> bool:
-    """Include unpinned sessions when filtering by database_id."""
+    """When ``filter_database_id`` is set,
+    include sessions pinned to that id or still unpinned (``None``)."""
     if filter_database_id is None:
         return True
     return session_database_id in (None, filter_database_id)

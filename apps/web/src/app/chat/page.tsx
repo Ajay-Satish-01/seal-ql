@@ -28,7 +28,7 @@ function turnId(): string {
     : `turn-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function clearTurnState() {
+function initialTurnState() {
   return {
     answer: '',
     sql: null as string | null,
@@ -72,7 +72,7 @@ function ChatPage() {
 
   const resetConversation = useCallback(() => {
     loadedSessionUrlRef.current = undefined;
-    const cleared = clearTurnState();
+    const cleared = initialTurnState();
     setSessionId(undefined);
     setActiveDatabaseId(undefined);
     setHistory([]);
@@ -105,7 +105,7 @@ function ChatPage() {
           role: m.role as 'user' | 'assistant',
           content: m.content,
         }));
-        const cleared = clearTurnState();
+        const cleared = initialTurnState();
         setSessionId(detail.session_id);
         setActiveDatabaseId(detail.database_id ?? undefined);
         setHistory(turns);
@@ -177,7 +177,7 @@ function ChatPage() {
       return;
     }
 
-    const cleared = clearTurnState();
+    const cleared = initialTurnState();
     setAnswer(cleared.answer);
     setSql(cleared.sql);
     setResults(cleared.results);

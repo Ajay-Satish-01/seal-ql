@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
-type ChatSessionContextValue = {
+export type ChatSessionContextValue = {
   refreshKey: number;
   refreshSessions: () => void;
 };

@@ -27,9 +27,10 @@ async def test_postgres_session_roundtrip() -> None:
     except Exception as exc:
         pytest.skip(f"Postgres unavailable: {exc}")
 
-    sid = await store.create_session()
-    assert await store.get_session(sid) is None
+    sid: str | None = None
     try:
+        sid = await store.create_session()
+        assert await store.get_session(sid) is None
         await store.append(sid, ChatMessage(role="user", content="Orders by region"))
         await store.append(sid, ChatMessage(role="assistant", content="Here is the data."))
         await store.set_database_id(sid, "default")
@@ -46,5 +47,6 @@ async def test_postgres_session_roundtrip() -> None:
         assert await store.delete_session(sid) is True
         assert await store.get_session(sid) is None
     finally:
-        await store.delete_session(sid)
+        if sid is not None:
+            await store.delete_session(sid)
         await store.close()

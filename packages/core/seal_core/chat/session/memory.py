@@ -42,6 +42,7 @@ class InMemorySessionStore(BaseSessionStore):
             del self._sessions[sid]
 
     async def create_session(self) -> str:
+        """Generate a new session ID (not persisted until ``get_or_create`` or ``append``)."""
         return str(uuid.uuid4())
 
     async def get_or_create(self, session_id: str | None) -> tuple[str, SessionState]:

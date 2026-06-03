@@ -44,9 +44,8 @@ class BaseSessionStore(ABC):
     @abstractmethod
     async def delete_session(self, session_id: str) -> bool: ...
 
-    async def ensure_schema(self) -> None:
+    async def ensure_schema(self) -> None:  # noqa: B027
         """Create backing tables when needed (Postgres). No-op by default."""
-        return None
 
     async def close(self) -> None:
         """Release connections. No-op by default."""

@@ -899,9 +899,15 @@ export interface components {
             readonly database_id?: string | null;
             /** Messages */
             readonly messages?: readonly components["schemas"]["SessionMessageSchema"][];
-            /** Created At */
+            /**
+             * Created At
+             * Format: date-time
+             */
             readonly created_at: string;
-            /** Updated At */
+            /**
+             * Updated At
+             * Format: date-time
+             */
             readonly updated_at: string;
         };
         /** SessionListResponse */
@@ -942,11 +948,13 @@ export interface components {
             readonly message_count: number;
             /**
              * Created At
+             * Format: date-time
              * @description ISO-8601 timestamp.
              */
             readonly created_at: string;
             /**
              * Updated At
+             * Format: date-time
              * @description ISO-8601 timestamp.
              */
             readonly updated_at: string;
