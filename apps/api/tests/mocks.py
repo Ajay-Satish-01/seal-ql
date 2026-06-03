@@ -141,22 +141,41 @@ class MockChatService:
             ),
         )
 
-    async def handle_stream(
+    async def prepare_stream_turn(
         self,
         *,
         message: str,
         session_id: str | None,
         messages_override: list[ChatMessage] | None,
-        include_charts: bool,
         enhancement_enabled: bool | None,
         database_id: str = "default",
-    ) -> AsyncIterator[str]:
+    ) -> Any:
+        from seal_core.chat.service import TurnContext
+
         MockChatService.last_database_id = database_id
+        return TurnContext(
+            session_id=session_id or "test-session",
+            turn_id="mock-turn",
+            schema=None,
+            messages=[],
+            user_message=message,
+            metadata={},
+            enhancement_enabled=False,
+            database_id=database_id,
+        )
+
+    async def stream_turn(
+        self,
+        ctx: Any,
+        *,
+        message: str,
+        include_charts: bool,
+    ) -> AsyncIterator[str]:
         from seal_core.pipeline.models import build_stream_meta_event
 
         meta_payload = build_stream_meta_event(
-            session_id="test-session",
-            database_id=database_id,
+            session_id=ctx.session_id,
+            database_id=ctx.database_id,
             exec_result=None,
             used_sql=False,
             enhancement_enabled=False,
@@ -174,3 +193,23 @@ class MockChatService:
         yield meta
         yield 'data: {"choices":[{"delta":{"content":"Hi"}}]}\n\n'
         yield "data: [DONE]\n\n"
+
+    async def handle_stream(
+        self,
+        *,
+        message: str,
+        session_id: str | None,
+        messages_override: list[ChatMessage] | None,
+        include_charts: bool,
+        enhancement_enabled: bool | None,
+        database_id: str = "default",
+    ) -> AsyncIterator[str]:
+        ctx = await self.prepare_stream_turn(
+            message=message,
+            session_id=session_id,
+            messages_override=messages_override,
+            enhancement_enabled=enhancement_enabled,
+            database_id=database_id,
+        )
+        async for chunk in self.stream_turn(ctx, message=message, include_charts=include_charts):
+            yield chunk

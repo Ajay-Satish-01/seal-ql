@@ -104,7 +104,10 @@ Core modules:
 
 ## Chat sessions and `database_id`
 
-Chat keeps conversation history in an in-memory `SessionStore` (TTL from `CHAT_SESSION_TTL_SECONDS`).
+Chat keeps conversation history in a pluggable session store (`CHAT_SESSION_STORE`):
+
+- **`memory`** (default) — in-process only; TTL from `CHAT_SESSION_TTL_SECONDS`; list/resume via `GET /v1/chat/sessions` within the same API process.
+- **`postgres`** — persistent rows in `seal_app.chat_sessions` / `chat_messages` (same app DB as workspace); survives restarts, Lambda, and multi-task ECS.
 
 ### Pinning rules
 

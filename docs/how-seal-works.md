@@ -46,7 +46,7 @@ See [multi-database.md](multi-database.md) for registry config, DuckDB URL norma
 `seal_core/chat/service.py` (`ChatService`):
 
 1. API resolves `database_id` → registry (**404** if unknown)
-2. `SessionStore` — reject `database_id` change after pin (`SessionDatabaseMismatchError` → HTTP 400)
+2. `BaseSessionStore` — reject `database_id` change after pin (`SessionDatabaseMismatchError` → HTTP 400)
 3. `_scope_gate` → metadata `scope`
 4. `_chat_decision` → `ChatDecision.needs_data` (enhancement at `stage=decision` when enabled)
 5. If `needs_data`: `ContextRetriever.select_tables` + `execute_natural_language_query` using bundle executor (+ optional chart)

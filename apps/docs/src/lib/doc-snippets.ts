@@ -46,6 +46,15 @@ export function curlWithAuth(
   return lines.join(' \\\n');
 }
 
+export function curlListSessions(baseUrl: string, databaseId?: string): string {
+  const qs = databaseId ? `?database_id=${encodeURIComponent(databaseId)}` : '';
+  return curlWithAuth(baseUrl, 'GET', `/v1/chat/sessions${qs}`);
+}
+
+export function curlDeleteSession(baseUrl: string, sessionId: string): string {
+  return curlWithAuth(baseUrl, 'DELETE', `/v1/chat/sessions/${sessionId}`);
+}
+
 export function curlChat(
   baseUrl: string,
   message: string,

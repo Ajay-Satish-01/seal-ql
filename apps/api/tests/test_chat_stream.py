@@ -45,12 +45,16 @@ def test_chat_stream_sse(monkeypatch) -> None:
 
 def test_chat_stream_session_database_mismatch_returns_400(monkeypatch) -> None:
     class MismatchChatService:
-        def handle_stream(self, **kwargs):
+        async def prepare_stream_turn(self, **kwargs):
             raise SessionDatabaseMismatchError(
                 session_id="s1",
                 pinned_database_id="default",
                 requested_database_id="analytics",
             )
+
+        async def stream_turn(self, *args, **kwargs):
+            if False:
+                yield ""
 
     client: TestClient = build_client(monkeypatch)
     client.app.dependency_overrides[get_chat_service] = lambda: MismatchChatService()

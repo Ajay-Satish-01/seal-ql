@@ -198,6 +198,38 @@ class ChatResponse(BaseModel):
     )
 
 
+class SessionSummarySchema(BaseModel):
+    session_id: str
+    title: str | None = None
+    database_id: str | None = None
+    message_count: int = 0
+    created_at: str = Field(..., description="ISO-8601 timestamp.")
+    updated_at: str = Field(..., description="ISO-8601 timestamp.")
+
+
+class SessionListResponse(BaseModel):
+    sessions: list[SessionSummarySchema] = Field(default_factory=list)
+    has_more: bool = Field(
+        False,
+        description="True when more sessions exist beyond this page.",
+    )
+
+
+class SessionMessageSchema(BaseModel):
+    role: str
+    content: str
+    created_at: str | None = Field(None, description="ISO-8601 when available (postgres).")
+
+
+class SessionDetailResponse(BaseModel):
+    session_id: str
+    title: str | None = None
+    database_id: str | None = None
+    messages: list[SessionMessageSchema] = Field(default_factory=list)
+    created_at: str
+    updated_at: str
+
+
 class CatalogSyncResponse(BaseModel):
     added: int
     updated: int

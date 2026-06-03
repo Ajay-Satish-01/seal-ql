@@ -5,13 +5,16 @@ import { MetadataPanel } from '@/components/dashboard/metadata-panel';
 import { PageShell } from '@/components/dashboard/page-shell';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useChatSessionList } from '@/contexts/chat-session-context';
 import { useConnection } from '@/hooks/use-connection';
 import { streamChat, type ChatStreamMeta } from '@/lib/chat-api';
 import type { ChatMetadata } from '@/lib/execution-metadata';
 import { chatMetadataFromPartial, chatMetadataFromStreamMeta } from '@/lib/metadata-from-stream';
+import { getSession } from '@/lib/session-api';
 import { notifyErrorFrom, notifyInfo, notifySuccess } from '@/lib/toast';
 import type { ChartSpec } from 'seal';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useRef, useState, useTransition } from 'react';
 
 type ChatTurn = {
   id: string;
@@ -25,8 +28,32 @@ function turnId(): string {
     : `turn-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export default function ChatPage() {
+function clearTurnState() {
+  return {
+    answer: '',
+    sql: null as string | null,
+    results: [] as Record<string, unknown>[],
+    chart: null as ChartSpec | null,
+    metadata: null as ChatMetadata | null,
+    sources: [] as string[],
+  };
+}
+
+export default function ChatPageWrapper() {
+  return (
+    <Suspense>
+      <ChatPage />
+    </Suspense>
+  );
+}
+
+function ChatPage() {
   const { apiUrl, apiKey, databaseId } = useConnection();
+  const { refreshSessions } = useChatSessionList();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlSessionId = searchParams.get('session') ?? undefined;
+
   const [message, setMessage] = useState('What tables are in the database?');
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [activeDatabaseId, setActiveDatabaseId] = useState<string | undefined>();
@@ -38,8 +65,72 @@ export default function ChatPage() {
   const [metadata, setMetadata] = useState<ChatMetadata | null>(null);
   const [sources, setSources] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
+  const [loadingSession, setLoadingSession] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const prevDatabaseRef = useRef(databaseId);
+  const loadedSessionUrlRef = useRef<string | undefined>(undefined);
+
+  const resetConversation = useCallback(() => {
+    loadedSessionUrlRef.current = undefined;
+    const cleared = clearTurnState();
+    setSessionId(undefined);
+    setActiveDatabaseId(undefined);
+    setHistory([]);
+    setAnswer(cleared.answer);
+    setSql(cleared.sql);
+    setResults(cleared.results);
+    setChart(cleared.chart);
+    setMetadata(cleared.metadata);
+    setSources(cleared.sources);
+  }, []);
+
+  useEffect(() => {
+    if (!urlSessionId) {
+      loadedSessionUrlRef.current = undefined;
+      resetConversation();
+      return;
+    }
+    if (loadedSessionUrlRef.current === urlSessionId) {
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingSession(true);
+    void (async () => {
+      try {
+        const detail = await getSession(apiUrl, urlSessionId, apiKey.trim() || undefined);
+        if (cancelled) return;
+        const turns: ChatTurn[] = detail.messages.map((m) => ({
+          id: turnId(),
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        }));
+        const cleared = clearTurnState();
+        setSessionId(detail.session_id);
+        setActiveDatabaseId(detail.database_id ?? undefined);
+        setHistory(turns);
+        setAnswer(cleared.answer);
+        setSql(cleared.sql);
+        setResults(cleared.results);
+        setChart(cleared.chart);
+        setMetadata(cleared.metadata);
+        setSources(cleared.sources);
+        loadedSessionUrlRef.current = urlSessionId;
+      } catch (e) {
+        if (!cancelled) {
+          notifyErrorFrom(e, 'Failed to load chat session');
+          loadedSessionUrlRef.current = undefined;
+          router.push('/chat');
+        }
+      } finally {
+        if (!cancelled) setLoadingSession(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [urlSessionId, apiUrl, apiKey, router, resetConversation]);
 
   useEffect(() => {
     if (prevDatabaseRef.current === databaseId) {
@@ -51,17 +142,10 @@ export default function ChatPage() {
     if (!hadSession) {
       return;
     }
-    setSessionId(undefined);
-    setActiveDatabaseId(undefined);
-    setHistory([]);
-    setAnswer('');
-    setSql(null);
-    setResults([]);
-    setChart(null);
-    setMetadata(null);
-    setSources([]);
+    router.push('/chat');
+    resetConversation();
     notifyInfo(`Database changed to "${databaseId}" — chat session cleared`);
-  }, [databaseId, sessionId, history, activeDatabaseId]);
+  }, [databaseId, sessionId, history, activeDatabaseId, router, resetConversation]);
 
   function applyStreamMeta(data: ChatStreamMeta) {
     setSessionId(data.session_id);
@@ -71,6 +155,9 @@ export default function ChatPage() {
     if (data.chart) setChart(data.chart as unknown as ChartSpec);
     if (data.sources?.length) setSources(data.sources);
     setMetadata(chatMetadataFromStreamMeta(data));
+    if (!urlSessionId || urlSessionId !== data.session_id) {
+      router.replace(`/chat?session=${encodeURIComponent(data.session_id)}`);
+    }
   }
 
   function applyPartialStreamMeta(partial: Partial<ChatStreamMeta>) {
@@ -90,13 +177,15 @@ export default function ChatPage() {
       return;
     }
 
-    setAnswer('');
-    setSql(null);
-    setResults([]);
-    setChart(null);
-    setMetadata(null);
-    setSources([]);
+    const cleared = clearTurnState();
+    setAnswer(cleared.answer);
+    setSql(cleared.sql);
+    setResults(cleared.results);
+    setChart(cleared.chart);
+    setMetadata(cleared.metadata);
+    setSources(cleared.sources);
     setHistory((prev) => [...prev, { id: turnId(), role: 'user', content: userMessage }]);
+    setMessage('');
 
     startTransition(async () => {
       let streamed = '';
@@ -128,6 +217,7 @@ export default function ChatPage() {
         if (streamed) {
           setHistory((prev) => [...prev, { id: turnId(), role: 'assistant', content: streamed }]);
           notifySuccess('Chat response complete');
+          refreshSessions();
         }
       } catch (e) {
         if ((e as Error).name !== 'AbortError') {
@@ -138,15 +228,8 @@ export default function ChatPage() {
   }
 
   function newSession() {
-    setSessionId(undefined);
-    setActiveDatabaseId(undefined);
-    setHistory([]);
-    setAnswer('');
-    setSql(null);
-    setResults([]);
-    setChart(null);
-    setMetadata(null);
-    setSources([]);
+    router.push('/chat');
+    resetConversation();
     notifyInfo('Started a new chat session');
   }
 
@@ -155,6 +238,10 @@ export default function ChatPage() {
       title="Chat"
       description={`POST /v1/chat (SSE) on database "${databaseId}" — execution metadata arrives on seal.meta before token deltas.`}
     >
+      {loadingSession && (
+        <p className="text-muted-foreground text-sm">Loading conversation…</p>
+      )}
+
       {history.length > 0 && (
         <Card className="console-panel max-h-64 space-y-3 overflow-y-auto p-4">
           {history.map((turn) => (
@@ -179,9 +266,10 @@ export default function ChatPage() {
           onChange={(e) => setMessage(e.target.value)}
           rows={3}
           className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+          disabled={loadingSession}
         />
         <div className="flex flex-wrap gap-2">
-          <Button onClick={send} disabled={isPending || !message.trim()}>
+          <Button onClick={send} disabled={isPending || !message.trim() || loadingSession}>
             {isPending ? 'Streaming…' : 'Send'}
           </Button>
           <Button variant="outline" onClick={() => abortRef.current?.abort()} disabled={!isPending}>

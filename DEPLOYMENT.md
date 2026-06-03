@@ -280,7 +280,7 @@ flowchart LR
 
 ### ECS Fargate (recommended for production)
 
-**Best for:** Steady or high-throughput traffic, long-lived DB pools, multi-turn **chat sessions** (in-memory `SessionStore` per task), and **SSE** streaming without Lambda’s 15-minute cap.
+**Best for:** Steady or high-throughput traffic, long-lived DB pools, multi-turn **chat sessions** (`CHAT_SESSION_STORE=postgres` for shared history), and **SSE** streaming without Lambda’s 15-minute cap.
 
 | Component | Suggestion |
 | --------- | ---------- |
@@ -293,7 +293,9 @@ flowchart LR
 | **Auth** | `SEAL_AUTH_REQUIRED=true`, `SEAL_DEV_MODE=false`, `SEAL_DISABLE_DOCS=true`. |
 | **Scaling** | Target tracking on CPU/latency; new tasks often take **1–3 minutes** (image pull + boot). |
 
-**Multi-task chat:** Chat history is **in-process** unless you change storage. For more than one API task, use **sticky sessions** on the ALB or treat chat as best-effort per instance until you add external session storage.
+**Multi-task chat:** Set `CHAT_SESSION_STORE=postgres` and run `scripts/migrate_app.sql` (or `migrate_chat_sessions.sql`) so all tasks share `seal_app.chat_sessions`. If your primary `DATABASE_URL` is DuckDB, set `CHAT_SESSION_DATABASE_URL` to a Postgres connection string for session storage. With `memory`, use ALB sticky sessions or treat history as per-instance only.
+
+**Session API security:** `GET/DELETE /v1/chat/sessions` are scoped only by `X-API-Key` — any key holder can list, read, and delete all chat history. Use a dedicated ops key; do not expose the same key to untrusted clients.
 
 **Example task env (illustrative):**
 
@@ -323,7 +325,7 @@ Push the image to ECR with `docker tag seal/api:latest <account>.dkr.ecr.<region
 | **Idle cost** | Scales to zero between invocations. |
 | **Cold start** | Often faster than ECS task launch (Firecracker + block lazy-load of image layers). |
 | **Max duration** | **15 minutes** per invocation — enough for most queries; watch repair loops × LLM latency. |
-| **Chat sessions** | In-memory sessions do **not** survive cold starts or concurrent executions; prefer **stateless** `/v1/query` or accept session loss unless you add shared session storage. |
+| **Chat sessions** | Set `CHAT_SESSION_STORE=postgres`, run `scripts/migrate_app.sql` on RDS (`seal_app.chat_sessions`). If `DATABASE_URL` is DuckDB, also set `CHAT_SESSION_DATABASE_URL` to Postgres. In-memory (`memory`) does not survive cold starts or multi-task without sticky sessions. |
 | **DB connections** | One concurrent invocation ≈ one pool; use **RDS Proxy** (or PgBouncer) to avoid exhausting Postgres `max_connections`. |
 | **Streaming** | Prefer **Lambda Function URLs** (up to 15 min, response streaming) over API Gateway REST (29 s integration timeout). |
 | **RAG / Chroma** | Default `VECTOR_STORE=none` on Lambda; if using Chroma, cache under `/tmp` (up to 10 GB ephemeral) or use an external vector service. |

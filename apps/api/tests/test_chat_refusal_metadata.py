@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 from app.dependencies import get_chat_service, get_database_registry
 from fastapi.testclient import TestClient
 from seal_core.chat.service import ChatService
-from seal_core.chat.sessions import SessionStore
+from seal_core.chat.session import InMemorySessionStore
 from seal_core.guardrails.models import ScopeResult
 from seal_core.pipeline.models import ENHANCEMENT_UNAVAILABLE_ORCHESTRATOR
 from tests.factory import build_client
@@ -34,7 +34,7 @@ def test_chat_refusal_reports_unavailable_when_enhancement_requested_without_orc
     service = ChatService(
         planner=MockPlanner(),
         registry=registry,
-        sessions=SessionStore(),
+        sessions=InMemorySessionStore(),
         orchestrator=None,
         catalog=None,
         semantic_registry=None,

@@ -166,6 +166,16 @@ class Settings(BaseSettings):
             return "none"
         return str(value).strip().lower()
 
+    @field_validator("chat_session_store", mode="before")
+    @classmethod
+    def _normalize_chat_session_store(cls, value: object) -> str:
+        if value is None or str(value).strip() == "":
+            return "memory"
+        normalized = str(value).strip().lower()
+        if normalized == "sql":
+            return "postgres"
+        return normalized
+
     def use_cloud_llm(self) -> bool:
         """True when OLLAMA_PROFILE is disabled (cloud provider, not Ollama)."""
         return self.ollama_profile == OLLAMA_PROFILE_DISABLED
@@ -521,8 +531,38 @@ class Settings(BaseSettings):
             "instead of only logging a warning."
         ),
     )
-    chat_session_ttl_seconds: int = Field(default=3600, description="Session TTL in seconds.")
+    chat_session_ttl_seconds: int = Field(
+        default=3600,
+        description="In-memory session TTL (seconds). Ignored when CHAT_SESSION_STORE=postgres.",
+    )
+    chat_session_store: str = Field(
+        default="memory",
+        validation_alias=AliasChoices("CHAT_SESSION_STORE", "MEMORY_BACKEND"),
+        description="Chat session backend: memory (default) or postgres.",
+    )
+    chat_session_store_class: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CHAT_SESSION_STORE_CLASS", "MEMORY_BACKEND_CLASS"),
+        description="Dotted path to custom BaseSessionStore implementation.",
+    )
+    chat_session_database_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CHAT_SESSION_DATABASE_URL"),
+        description=(
+            "Postgres connection URL for CHAT_SESSION_STORE=postgres. "
+            "Falls back to DATABASE_URL when not set. Allows DuckDB users "
+            "to point chat history at a separate Postgres instance."
+        ),
+    )
     chat_max_history_messages: int = Field(default=20, description="Max messages per session.")
+    chat_session_list_default_limit: int = Field(
+        default=50,
+        description="Default page size for GET /v1/chat/sessions.",
+    )
+    chat_session_list_max_limit: int = Field(
+        default=200,
+        description="Maximum allowed limit query param for session list.",
+    )
     chat_summarize_after_messages: int = Field(
         default=12,
         description="Summarize conversation when history exceeds this count.",
@@ -627,6 +667,16 @@ def validate_vector_store_configuration() -> None:
     if errors:
         raise RuntimeError("; ".join(errors))
     settings.log_vector_store_configuration()
+
+
+def validate_chat_session_store_configuration() -> None:
+    """Raise if CHAT_SESSION_STORE cannot be satisfied."""
+    from seal_core.chat.session.factory import collect_chat_session_store_configuration_errors
+
+    settings = get_settings()
+    errors = collect_chat_session_store_configuration_errors(settings)
+    if errors:
+        raise RuntimeError("; ".join(errors))
 
 
 def settings_env_names() -> list[str]:

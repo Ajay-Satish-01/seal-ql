@@ -282,6 +282,173 @@
         ]
       }
     },
+    "/v1/chat/sessions": {
+      "get": {
+        "summary": "List Chat Sessions",
+        "description": "List chat sessions with messages (most recent first).\n\nSessions are global to the API key (single-tenant ops dashboard).\nLimit is clamped by the store to ``CHAT_SESSION_LIST_MAX_LIMIT``.",
+        "operationId": "list_chat_sessions_v1_chat_sessions_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "database_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by pinned database_id.",
+              "title": "Database Id"
+            },
+            "description": "Filter by pinned database_id."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Page size (default from CHAT_SESSION_LIST_DEFAULT_LIMIT).",
+              "title": "Limit"
+            },
+            "description": "Page size (default from CHAT_SESSION_LIST_DEFAULT_LIMIT)."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pagination offset.",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Pagination offset."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/chat/sessions/{session_id}": {
+      "get": {
+        "summary": "Get Chat Session",
+        "description": "Load full message history for a session.",
+        "operationId": "get_chat_session_v1_chat_sessions__session_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Chat Session",
+        "description": "Delete a chat session and its messages.",
+        "operationId": "delete_chat_session_v1_chat_sessions__session_id__delete",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/catalog": {
       "get": {
         "summary": "Get Catalog",
@@ -1651,6 +1818,159 @@
         ],
         "title": "ScopeMetadata",
         "description": "Scope decision embedded in chat metadata and SSE ``seal.meta``."
+      },
+      "SessionDetailResponse": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "database_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Database Id"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/SessionMessageSchema"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SessionDetailResponse"
+      },
+      "SessionListResponse": {
+        "properties": {
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/SessionSummarySchema"
+            },
+            "type": "array",
+            "title": "Sessions"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "description": "True when more sessions exist beyond this page.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "SessionListResponse"
+      },
+      "SessionMessageSchema": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "ISO-8601 when available (postgres)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "SessionMessageSchema"
+      },
+      "SessionSummarySchema": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "database_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Database Id"
+          },
+          "message_count": {
+            "type": "integer",
+            "title": "Message Count",
+            "default": 0
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At",
+            "description": "ISO-8601 timestamp."
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At",
+            "description": "ISO-8601 timestamp."
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SessionSummarySchema"
       },
       "TableKind": {
         "type": "string",

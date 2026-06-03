@@ -10,20 +10,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from seal_core.catalog.registry import DataCatalogRegistry
 from seal_core.catalog.sync import sync_catalog
 from seal_core.chat.service import ChatService
-from seal_core.chat.sessions import SessionStore
+from seal_core.chat.session import create_session_store
 from seal_core.database.config import DatabaseConfigError
 from seal_core.database.registry import build_database_registry
 from seal_core.enhancement.orchestrator import build_default_orchestrator
 from seal_core.llm.client import validate_llm_env
 from seal_core.planner.planner import QueryPlanner
-from seal_core.settings import get_settings, validate_vector_store_configuration
+from seal_core.settings import (
+    get_settings,
+    validate_chat_session_store_configuration,
+    validate_vector_store_configuration,
+)
 from seal_core.vector.factory import get_vector_store
 from seal_core.vector.indexer import VectorIndexBuilder
 from seal_core.workspace.bootstrap import apply_workspace_on_startup
 from seal_core.workspace.store import create_workspace_store
 from seal_semantic.registry import SemanticRegistry
 
-from app.routes import catalog, chat, databases, health, query, schema, vector, workspace
+from app.routes import catalog, chat, databases, health, query, schema, sessions, vector, workspace
 
 load_dotenv()
 
@@ -49,6 +53,7 @@ async def lifespan(app: FastAPI):
         raise RuntimeError("; ".join(auth_errors))
     settings.log_auth_configuration_warnings()
     validate_vector_store_configuration()
+    validate_chat_session_store_configuration()
 
     try:
         database_registry = build_database_registry(settings)
@@ -96,10 +101,13 @@ async def lifespan(app: FastAPI):
             vector_store=vector_store,
         )
 
+    session_store = create_session_store(settings)
+    await session_store.ensure_schema()
+
     chat_service = ChatService(
         planner=planner,
         registry=database_registry,
-        sessions=SessionStore(),
+        sessions=session_store,
         orchestrator=orchestrator,
         catalog=data_catalog,
         semantic_registry=semantic_registry,
@@ -110,6 +118,7 @@ async def lifespan(app: FastAPI):
     app.state.semantic_registry = semantic_registry
     app.state.data_catalog = data_catalog
     app.state.chat_service = chat_service
+    app.state.session_store = session_store
     app.state.vector_store = vector_store
     workspace_store = create_workspace_store()
     app.state.workspace_store = workspace_store
@@ -120,6 +129,7 @@ async def lifespan(app: FastAPI):
     yield
 
     logger.info("Closing database connections...")
+    await session_store.close()
     await workspace_store.close()
     await database_registry.close()
 
@@ -152,7 +162,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=cors_origins,
         allow_credentials=allow_credentials,
-        allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-API-Key"],
     )
 
@@ -161,6 +171,7 @@ def create_app() -> FastAPI:
     app.include_router(schema.router, prefix="/v1")
     app.include_router(query.router, prefix="/v1")
     app.include_router(chat.router, prefix="/v1")
+    app.include_router(sessions.router, prefix="/v1")
     app.include_router(catalog.router, prefix="/v1")
     app.include_router(workspace.router, prefix="/v1")
     app.include_router(vector.router, prefix="/v1")

@@ -5,6 +5,7 @@ from fastapi.responses import StreamingResponse
 from seal_core.chat.errors import SessionDatabaseMismatchError
 from seal_core.chat.models import ChatMessage
 from seal_core.chat.service import ChatService
+from seal_core.chat.session.ids import InvalidSessionIdError
 from seal_core.database.registry import DatabaseRegistry
 
 from app.database_routing import get_database_bundle, session_database_mismatch_detail
@@ -12,6 +13,7 @@ from app.dependencies import get_chat_service, get_database_registry
 from app.openapi_responses import CHAT_ENDPOINT_RESPONSES
 from app.schemas import ChatRequest, ChatResponse
 from app.security import require_api_key
+from app.session_http import raise_session_not_found
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -42,13 +44,17 @@ async def chat(
 
     try:
         if request.stream:
-            stream = chat_service.handle_stream(
+            ctx = await chat_service.prepare_stream_turn(
                 message=request.message,
                 session_id=request.session_id,
                 messages_override=override,
-                include_charts=request.include_charts,
                 enhancement_enabled=request.enhancement,
                 database_id=request.database_id,
+            )
+            stream = chat_service.stream_turn(
+                ctx,
+                message=request.message,
+                include_charts=request.include_charts,
             )
             return StreamingResponse(stream, media_type="text/event-stream")
 
@@ -60,6 +66,8 @@ async def chat(
             enhancement_enabled=request.enhancement,
             database_id=request.database_id,
         )
+    except InvalidSessionIdError as exc:
+        raise_session_not_found(exc)
     except SessionDatabaseMismatchError as exc:
         raise HTTPException(
             status_code=400,

@@ -34,7 +34,7 @@ from seal_core.settings import get_settings
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-    from seal_core.chat.sessions import SessionStore
+    from seal_core.chat.session.base import BaseSessionStore
     from seal_core.database.registry import DatabaseRegistry
     from seal_core.enhancement.orchestrator import EnhancementOrchestrator
     from seal_core.planner.planner import QueryPlanner
@@ -93,7 +93,7 @@ class ChatService:
         *,
         planner: QueryPlanner,
         registry: DatabaseRegistry,
-        sessions: SessionStore,
+        sessions: BaseSessionStore,
         orchestrator: EnhancementOrchestrator | None,
         catalog: Any | None,
         semantic_registry: Any | None,
@@ -120,7 +120,7 @@ class ChatService:
         enhancement_enabled: bool | None,
         database_id: str = DEFAULT_DATABASE_ID,
     ) -> ChatResult:
-        ctx = self._prepare_turn(
+        ctx = await self._prepare_turn(
             message,
             session_id,
             messages_override,
@@ -128,13 +128,89 @@ class ChatService:
             database_id,
         )
         result = await self._run_turn(ctx, include_charts=include_charts)
-        if not result.metadata.get("refusal"):
-            self._complete_turn(ctx)
-        self._sessions.append(ctx.session_id, ChatMessage(role="user", content=message))
-        self._sessions.append(ctx.session_id, ChatMessage(role="assistant", content=result.message))
+        await self._persist_turn_messages(
+            ctx,
+            user_message=message,
+            assistant_message=result.message,
+            pin_database=not result.metadata.get("refusal"),
+        )
         return result
 
-    def handle_stream(
+    async def prepare_stream_turn(
+        self,
+        *,
+        message: str,
+        session_id: str | None,
+        messages_override: list[ChatMessage] | None,
+        enhancement_enabled: bool | None,
+        database_id: str = DEFAULT_DATABASE_ID,
+    ) -> TurnContext:
+        """Validate session/database before opening an SSE stream."""
+        return await self._prepare_turn(
+            message,
+            session_id,
+            messages_override,
+            enhancement_enabled,
+            database_id,
+        )
+
+    async def stream_turn(
+        self,
+        ctx: TurnContext,
+        *,
+        message: str,
+        include_charts: bool,
+    ) -> AsyncIterator[str]:
+        scope = await self._scope_gate(ctx)
+        if not scope.in_scope:
+            async for chunk in self._refusal_stream(ctx, scope):
+                yield chunk
+            return
+
+        turn = await self._in_scope_turn_pipeline(ctx, include_charts=include_charts)
+        yield self._format_meta_event(ctx, turn)
+
+        llm_messages = self._build_answer_messages(ctx, turn.exec_result, turn.system)
+
+        full_text: list[str] = []
+        completed = False
+        try:
+            response = await litellm.acompletion(
+                model=self._model,
+                messages=llm_messages,
+                stream=True,
+                api_base=self._api_base,
+                api_key=self._api_key,
+            )
+            async for chunk in response:
+                delta = chunk.choices[0].delta.content or ""
+                if delta:
+                    full_text.append(delta)
+                    payload = {
+                        "object": "chat.completion.chunk",
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {"content": delta},
+                                "finish_reason": None,
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(payload)}\n\n"
+
+            yield "data: [DONE]\n\n"
+            completed = True
+        finally:
+            if completed:
+                assistant = "".join(full_text)
+                await self._persist_turn_messages(
+                    ctx,
+                    user_message=message,
+                    assistant_message=assistant,
+                    pin_database=True,
+                )
+
+    async def handle_stream(
         self,
         *,
         message: str,
@@ -144,68 +220,17 @@ class ChatService:
         enhancement_enabled: bool | None,
         database_id: str = DEFAULT_DATABASE_ID,
     ) -> AsyncIterator[str]:
-        ctx = self._prepare_turn(
-            message,
-            session_id,
-            messages_override,
-            enhancement_enabled,
-            database_id,
+        ctx = await self.prepare_stream_turn(
+            message=message,
+            session_id=session_id,
+            messages_override=messages_override,
+            enhancement_enabled=enhancement_enabled,
+            database_id=database_id,
         )
+        async for chunk in self.stream_turn(ctx, message=message, include_charts=include_charts):
+            yield chunk
 
-        async def stream_turn() -> AsyncIterator[str]:
-            scope = await self._scope_gate(ctx)
-            if not scope.in_scope:
-                async for chunk in self._refusal_stream(ctx, scope):
-                    yield chunk
-                return
-
-            turn = await self._in_scope_turn_pipeline(ctx, include_charts=include_charts)
-            yield self._format_meta_event(ctx, turn)
-
-            llm_messages = self._build_answer_messages(ctx, turn.exec_result, turn.system)
-
-            full_text: list[str] = []
-            completed = False
-            try:
-                response = await litellm.acompletion(
-                    model=self._model,
-                    messages=llm_messages,
-                    stream=True,
-                    api_base=self._api_base,
-                    api_key=self._api_key,
-                )
-                async for chunk in response:
-                    delta = chunk.choices[0].delta.content or ""
-                    if delta:
-                        full_text.append(delta)
-                        payload = {
-                            "object": "chat.completion.chunk",
-                            "choices": [
-                                {
-                                    "index": 0,
-                                    "delta": {"content": delta},
-                                    "finish_reason": None,
-                                }
-                            ],
-                        }
-                        yield f"data: {json.dumps(payload)}\n\n"
-
-                yield "data: [DONE]\n\n"
-                completed = True
-            finally:
-                if completed:
-                    self._complete_turn(ctx)
-                assistant = "".join(full_text)
-                self._sessions.append(ctx.session_id, ChatMessage(role="user", content=message))
-                if assistant.strip():
-                    self._sessions.append(
-                        ctx.session_id,
-                        ChatMessage(role="assistant", content=assistant),
-                    )
-
-        return stream_turn()
-
-    def _prepare_turn(
+    async def _prepare_turn(
         self,
         message: str,
         session_id: str | None,
@@ -214,7 +239,7 @@ class ChatService:
         database_id: str,
     ) -> TurnContext:
         settings = get_settings()
-        sid, state = self._sessions.get_or_create(session_id)
+        sid, state = await self._sessions.get_or_create(session_id)
         if state.database_id is not None and state.database_id != database_id:
             raise SessionDatabaseMismatchError(
                 session_id=sid,
@@ -257,11 +282,27 @@ class ChatService:
             "orchestrator_available": self._orchestrator is not None,
         }
 
-    def _complete_turn(self, ctx: TurnContext) -> None:
+    async def _persist_turn_messages(
+        self,
+        ctx: TurnContext,
+        *,
+        user_message: str,
+        assistant_message: str,
+        pin_database: bool,
+    ) -> None:
+        """Append turn messages to the session store; pin database after in-scope success."""
+        await self._sessions.append(ctx.session_id, ChatMessage(role="user", content=user_message))
+        if assistant_message.strip():
+            await self._sessions.append(
+                ctx.session_id,
+                ChatMessage(role="assistant", content=assistant_message),
+            )
+        if pin_database:
+            await self._complete_turn(ctx)
+
+    async def _complete_turn(self, ctx: TurnContext) -> None:
         """Pin database_id after a successful turn."""
-        _, state = self._sessions.get_or_create(ctx.session_id)
-        if state.database_id is None:
-            state.database_id = ctx.database_id
+        await self._sessions.set_database_id(ctx.session_id, ctx.database_id)
 
     async def _ensure_schema(self, ctx: TurnContext) -> None:
         if ctx.schema is not None:
@@ -477,10 +518,11 @@ class ChatService:
         }
         yield f"data: {json.dumps(payload)}\n\n"
         yield "data: [DONE]\n\n"
-        self._sessions.append(ctx.session_id, ChatMessage(role="user", content=ctx.user_message))
-        self._sessions.append(
-            ctx.session_id,
-            ChatMessage(role="assistant", content=result.message),
+        await self._persist_turn_messages(
+            ctx,
+            user_message=ctx.user_message,
+            assistant_message=result.message,
+            pin_database=False,
         )
 
     async def _chat_decision(self, ctx: TurnContext) -> ChatDecision:
