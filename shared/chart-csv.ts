@@ -1,4 +1,4 @@
-const CSV_FORMULA_PREFIX = /^[=+\-@\t|]/;
+const CSV_FORMULA_PREFIX = /^\s*[=+\-@\t|]/;
 
 /** Format a query cell for CSV export. */
 export function formatCsvCellValue(value: unknown): string {
@@ -59,7 +59,7 @@ export function buildResultsCsv(results: ReadonlyArray<Record<string, unknown>>)
   }
   const columns = collectCsvColumns(results);
   const lines = [
-    columns.join(','),
+    columns.map((col) => escapeCsvValue(col)).join(','),
     ...results.map((row) => columns.map((col) => escapeCsvValue(row[col])).join(',')),
   ];
   return lines.join('\n');

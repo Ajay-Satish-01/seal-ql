@@ -70,4 +70,16 @@ describe('resolveMetricSnapshot', () => {
   it('returns null for empty results', () => {
     expect(resolveMetricSnapshot([])).toBeNull();
   });
+
+  it('formats underscore field names in the label', () => {
+    expect(resolveMetricSnapshot([{ total_count: 100 }], 'total_count')).toEqual({
+      field: 'total_count',
+      label: 'total count',
+      displayValue: '100',
+    });
+  });
+
+  it('returns null when the first row has no fields', () => {
+    expect(resolveMetricSnapshot([{}])).toBeNull();
+  });
 });

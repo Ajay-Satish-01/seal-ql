@@ -24,7 +24,7 @@ export function isRenderableVegaChart(
   if (!chart) {
     return false;
   }
-  return !isNonVegaChartType(chart.chart_type) && hasVegaLiteSpec(chart.vega_lite_spec ?? undefined);
+  return !isNonVegaChartType(chart.chart_type) && hasVegaLiteSpec(chart.vega_lite_spec);
 }
 
 export function getChartMetadata(chart: ChartSpecLike): Record<string, unknown> {

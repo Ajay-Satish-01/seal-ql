@@ -48,6 +48,10 @@ describe('escapeCsvValue', () => {
   it('quotes formula-prefixed values that also contain commas', () => {
     expect(escapeCsvValue('=cmd|"/c calc"!A0')).toBe('"\'=cmd|""/c calc""!A0"');
   });
+
+  it('prefixes formula characters after leading whitespace', () => {
+    expect(escapeCsvValue('   =1+1')).toBe("'   =1+1");
+  });
 });
 
 describe('collectCsvColumns', () => {
@@ -72,6 +76,16 @@ describe('buildResultsCsv', () => {
 
   it('returns empty string for empty results', () => {
     expect(buildResultsCsv([])).toBe('');
+  });
+
+  it('escapes header column names', () => {
+    const csv = buildResultsCsv([{ 'col,quote"': 1, note: 'ok' }]);
+    expect(csv).toBe('"col,quote""",note\n1,ok');
+  });
+
+  it('escapes values with leading whitespace before formula characters', () => {
+    const csv = buildResultsCsv([{ amount: '   =1+1' }]);
+    expect(csv).toBe("amount\n'   =1+1");
   });
 });
 
