@@ -55,6 +55,9 @@ export const VegaChart: React.FC<VegaChartProps> = ({
         viewRef.current.finalize();
         viewRef.current = null;
       }
+      if (onRender) {
+        onRender(null);
+      }
       return;
     }
 
@@ -100,6 +103,9 @@ export const VegaChart: React.FC<VegaChartProps> = ({
       if (viewRef.current) {
         viewRef.current.finalize();
         viewRef.current = null;
+      }
+      if (onRender) {
+        onRender(null);
       }
     };
   }, [spec, actions, width, height, theme, onRender, onError]);

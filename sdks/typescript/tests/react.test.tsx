@@ -5,11 +5,12 @@ import { VegaChart } from '../src/react.js';
 import type { ChartSpec } from '../src/types.js';
 
 // Mock vega-embed so it doesn't actually try to render in jsdom
+const mockFinalize = vi.fn();
+const mockView = { finalize: mockFinalize };
+
 vi.mock('vega-embed', () => ({
   default: vi.fn().mockResolvedValue({
-    view: {
-      finalize: vi.fn(),
-    },
+    view: mockView,
   }),
 }));
 
@@ -47,5 +48,46 @@ describe('VegaChart', () => {
     const div = container.firstChild as HTMLDivElement;
     expect(div).not.toBeNull();
     expect(div.className).toContain('seal-vega-chart');
+  });
+
+  it('calls onRender with null when the chart unmounts', async () => {
+    const onRender = vi.fn();
+    const spec: ChartSpec = {
+      chart_type: 'bar',
+      vega_lite_spec: {
+        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+        mark: 'bar',
+      },
+      metadata: {},
+    };
+    const { unmount } = render(<VegaChart spec={spec} onRender={onRender} />);
+    await vi.waitFor(() => {
+      expect(onRender).toHaveBeenCalledWith(mockView);
+    });
+    unmount();
+    expect(onRender).toHaveBeenLastCalledWith(null);
+  });
+
+  it('calls onRender with null when vega_lite_spec is empty', async () => {
+    const onRender = vi.fn();
+    const spec: ChartSpec = {
+      chart_type: 'bar',
+      vega_lite_spec: {
+        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+        mark: 'bar',
+      },
+      metadata: {},
+    };
+    const { rerender } = render(<VegaChart spec={spec} onRender={onRender} />);
+    await vi.waitFor(() => {
+      expect(onRender).toHaveBeenCalledWith(mockView);
+    });
+    rerender(
+      <VegaChart
+        spec={{ chart_type: 'bar', vega_lite_spec: {}, metadata: {} }}
+        onRender={onRender}
+      />,
+    );
+    expect(onRender).toHaveBeenLastCalledWith(null);
   });
 });

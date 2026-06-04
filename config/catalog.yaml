@@ -1,6 +1,6 @@
 version: 1
-generated_at: '2026-06-04T05:42:08.007478+00:00'
-schema_hash: be4de187b563ba08
+generated_at: '2026-06-04T17:54:26.327242+00:00'
+schema_hash: 1ea92748afbf7bef
 tables:
 - schema: public
   name: customer_summary
