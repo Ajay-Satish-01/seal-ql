@@ -17,6 +17,7 @@ def live_api_headers() -> dict[str, str]:
 
     Do not read ``SEAL_API_KEY`` here — conftest autouse overwrites it with
     ``TEST_API_KEY`` for in-process tests, which mismatches the running stack.
-    Set ``SEAL_LIVE_API_KEY`` when your ``.env`` uses a custom secret.
+    Set ``SEAL_LIVE_API_KEY`` only when your ``.env`` uses a custom secret
+    (empty or unset values fall back to ``LIVE_API_KEY``).
     """
-    return {"X-API-Key": os.environ.get("SEAL_LIVE_API_KEY", LIVE_API_KEY)}
+    return {"X-API-Key": os.environ.get("SEAL_LIVE_API_KEY") or LIVE_API_KEY}
