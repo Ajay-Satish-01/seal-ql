@@ -28,7 +28,6 @@ def test_public_docs_disabled_when_configured(monkeypatch: pytest.MonkeyPatch) -
 
 def test_public_docs_enabled_by_default_in_dev(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SEAL_API_KEY", TEST_API_KEY)
-    monkeypatch.setenv("SEAL_AUTH_REQUIRED", "false")
     monkeypatch.setenv("SEAL_DISABLE_DOCS", "false")
     clear_settings_cache()
 

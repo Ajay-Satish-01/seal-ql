@@ -19,7 +19,6 @@ def _configure_test_env(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None
     # Do not load the developer's .env during tests (would leak SEAL_API_KEY, LLM keys, etc.)
     monkeypatch.setitem(Settings.model_config, "env_file", None)
     monkeypatch.setenv("SEAL_API_KEY", TEST_API_KEY)
-    monkeypatch.setenv("SEAL_AUTH_REQUIRED", "false")
     monkeypatch.setenv("SEAL_DEV_MODE", "true")
     monkeypatch.setenv("SEAL_DISABLE_DOCS", "false")
     monkeypatch.setenv("VECTOR_STORE", "none")

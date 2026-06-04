@@ -92,8 +92,9 @@ LLM_BASE_URL=http://ollama:11434
 
 # Cloud (Gemini) — same file, different values
 OLLAMA_PROFILE=disabled
-LLM_MODEL=gemini/gemini-1.5-flash
-GEMINI_API_KEY=your-key-here`}
+LLM_MODEL=gemini/gemini-2.0-flash
+LLM_API_KEY=your-key-here
+# Or: GEMINI_API_KEY=your-key-here`}
         />
         <p>
           Model ids, keys, and compose profiles:{' '}
@@ -138,9 +139,9 @@ console.log(result.sql, result.results, result.chart);`}
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">3b. API authentication</h2>
         <p>
-          Set <code>SEAL_API_KEY</code> on the server. In production use{' '}
-          <code>SEAL_AUTH_REQUIRED=true</code>, <code>SEAL_DEV_MODE=false</code>, and{' '}
-          <code>SEAL_DISABLE_DOCS=true</code>. Clients send <code>X-API-Key</code>; the TypeScript
+          Set <code>SEAL_API_KEY</code> on the server (required at startup). In production also use{' '}
+          <code>SEAL_DEV_MODE=false</code> and <code>SEAL_DISABLE_DOCS=true</code>. Clients send{' '}
+          <code>X-API-Key</code>; the TypeScript
           SDK&apos;s <code>apiKey</code> option overrides any <code>X-API-Key</code> in custom{' '}
           <code>headers</code>. <code>/health</code> stays public. See{' '}
           <Link href="/docs/authentication">Authentication</Link>.
@@ -254,6 +255,11 @@ console.log(result.sql, result.results, result.chart);`}
             <strong>Model / profile mismatch</strong> — cloud models (
             <code>gemini/</code>, <code>openai/</code>, …) require{' '}
             <code>OLLAMA_PROFILE=disabled</code>; check API startup warnings in the logs.
+          </li>
+          <li>
+            <strong>502 / 503 on query or chat</strong> — LiteLLM provider errors (missing{' '}
+            <code>LLM_API_KEY</code> or provider key, invalid model, rate limit). The response{' '}
+            <code>detail</code> is safe for clients; server logs contain the provider message.
           </li>
           <li>
             <strong>Version skew</strong> — align Docker image tag with SDK version.

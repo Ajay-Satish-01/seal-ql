@@ -35,7 +35,6 @@ services:
       - 'CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000","http://localhost:3001","http://localhost:5173"]}'
       # Set SEAL_API_KEY in .env (see .env.example). No insecure default in compose.
       - "SEAL_API_KEY=${SEAL_API_KEY:-}"
-      - "SEAL_AUTH_REQUIRED=${SEAL_AUTH_REQUIRED:-false}"
       - "SEAL_DEV_MODE=${SEAL_DEV_MODE:-true}"
       - "SEAL_DISABLE_DOCS=${SEAL_DISABLE_DOCS:-false}"
       - "DATA_CATALOG_PATH=${DATA_CATALOG_PATH:-/app/config/catalog.yaml}"

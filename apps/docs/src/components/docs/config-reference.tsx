@@ -5,6 +5,7 @@ export interface ConfigRow {
   type: string;
   /** Typical or documented default — shown for quick scanning. */
   default?: string;
+  required?: boolean;
   /** What the setting controls and when you would change it. */
   description: string;
   /** Observable behavior after startup, a request, or a settings apply. */
@@ -43,7 +44,10 @@ export function ConfigReference({ rows, className }: ConfigReferenceProps) {
         <tbody className="text-muted-foreground divide-border/40 divide-y">
           {rows.map((row) => (
             <tr key={row.name}>
-              <td className="text-foreground px-4 py-3 align-top font-mono text-xs">{row.name}</td>
+              <td className="text-foreground px-4 py-3 align-top font-mono text-xs">
+                {row.name}
+                {row.required ? <span className="text-destructive ml-1">*</span> : null}
+              </td>
               <td className="px-4 py-3 align-top font-mono text-xs">{row.type}</td>
               <td className="hidden px-4 py-3 align-top font-mono text-xs sm:table-cell">
                 {row.default ?? '—'}

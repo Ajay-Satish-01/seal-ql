@@ -12,18 +12,20 @@ from seal_core.vector.cache import EmbeddingCache
 _cache = EmbeddingCache()
 
 
-def _embedding_model() -> str:
-    model = get_settings().embedding_model
-    if "/" not in model:
-        return f"openai/{model}"
-    return model
+def _embedding_kwargs() -> dict[str, str]:
+    settings = get_settings()
+    kwargs: dict[str, str] = {"model": settings.resolved_embedding_model()}
+    api_key = settings.resolved_embedding_api_key()
+    if api_key:
+        kwargs["api_key"] = api_key
+    return kwargs
 
 
 async def embed_text(text: str) -> list[float]:
     cached = _cache.get(text)
     if cached is not None:
         return cached
-    response = await aembedding(model=_embedding_model(), input=[text])
+    response = await aembedding(input=[text], **_embedding_kwargs())
     vector = response.data[0]["embedding"]
     _cache.set(text, vector)
     return vector

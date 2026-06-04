@@ -3,7 +3,7 @@
 set -euo pipefail
 
 BASE_URL="${1:-http://localhost:8000}"
-API_KEY="${SEAL_API_KEY:-dev-local-change-me}"
+API_KEY="${SEAL_API_KEY:?Set SEAL_API_KEY in .env (openssl rand -hex 32)}"
 
 echo "→ GET $BASE_URL/health"
 health=$(curl -sf "$BASE_URL/health")

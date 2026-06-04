@@ -90,7 +90,7 @@ console.log(chat.message, chat.sql);
 * **Local-First & Production-Ready**: Orchestrated using Docker Compose with local LLM integration via **Ollama** by default.
 * **Modern Tooling & Environments**: Package structures utilizing `uv` workspaces for Python packages/applications, and modern typescript modules using `pnpm`.
 * **Zero-Trust SQL Safety**: SQLGlot-based AST safety checker to block destructive statements and enforce pagination limits.
-* **API Key Authentication**: Shared `X-API-Key` for `/v1/*` with production-safe env validation (`SEAL_AUTH_REQUIRED`, `SEAL_DEV_MODE`, `SEAL_DISABLE_DOCS`).
+* **API Key Authentication**: `SEAL_API_KEY` required at startup; shared `X-API-Key` on all `/v1/*` routes (`SEAL_DEV_MODE`, `SEAL_DISABLE_DOCS`).
 * **LLM Guardrails**: Scope gate on `/v1/query` and `/v1/chat` — in-scope analytics/schema only; chat returns HTTP 200 with `metadata.suggested_queries` on refusal; query returns HTTP 400 with structured `detail` (`query_out_of_scope`, `reason`, up to three `suggested_queries`). SDKs raise `QueryOutOfScopeError` on query guardrails failures.
 * **Workspace API**: Hot-reload guardrails and chat settings in dev; catalog description overrides; vector reindex.
 * **Local planner evals**: Dataset `evals/data/eval_set.jsonl` and `make eval` / `make eval-planner` for manual planner grading on a seeded stack ([docs/local-evals.md](docs/local-evals.md) — not in PR CI).
@@ -114,14 +114,15 @@ Ensure you have the following installed on your machine:
 Use the automated Makefile controls to orchestrate your local environment:
 
 ```bash
-# First time: copy env template (sets SEAL_DEV_MODE=true and a placeholder API key for local dev)
+# First time: copy env template, generate SEAL_API_KEY, paste same key in dashboard Connect
 cp .env.example .env
+# openssl rand -hex 32  → set SEAL_API_KEY in .env
 
 # Start all services (API, Postgres with TimescaleDB, Ollama)
 make up
 ```
 
-For production-style auth (`SEAL_AUTH_REQUIRED`, generated `SEAL_API_KEY`), see [SETUP.md](./SETUP.md) and the docs site **Authentication** page.
+See [SETUP.md](./SETUP.md) and the docs site **Authentication** page for API key setup.
 
 Once running, the stack exposes:
 * **API Server**: `http://localhost:8000` (Swagger at `/docs`)

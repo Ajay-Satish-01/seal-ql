@@ -68,10 +68,7 @@ export function saveConnection(apiUrl: string, apiKey: string): void {
 export function saveDatabaseId(databaseId: string): void {
   migrateLegacyStorage();
   const trimmed = databaseId.trim();
-  localStorage.setItem(
-    STORAGE_DATABASE,
-    trimmed.length > 0 ? trimmed : DEFAULT_DATABASE_ID,
-  );
+  localStorage.setItem(STORAGE_DATABASE, trimmed.length > 0 ? trimmed : DEFAULT_DATABASE_ID);
 }
 
 export function authHeaders(apiKey: string): Record<string, string> {

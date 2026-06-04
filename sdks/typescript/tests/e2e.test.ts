@@ -17,7 +17,7 @@ import {
 
 const API_URL = 'http://localhost:8000';
 /** Matches `.env.example` / Python `test_sdk_e2e.py` for local and CI compose stacks. */
-const API_KEY = process.env.SEAL_API_KEY ?? 'dev-local-change-me';
+const API_KEY = process.env.SEAL_API_KEY ?? 'seal-ci-test-api-key-0123456789abcdef0123456789abcdef';
 
 async function isApiReachable(): Promise<boolean> {
   // Verify the live service is actually our API (not just something on the port).

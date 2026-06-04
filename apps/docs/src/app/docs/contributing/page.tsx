@@ -26,8 +26,7 @@ export default function ContributingPage() {
           code={`git clone ${SITE.github}.git
 cd seal
 cp .env.example .env
-# .env.example sets SEAL_DEV_MODE=true and a placeholder SEAL_API_KEY for local dev.
-# For anything shared or production-like, run: openssl rand -hex 32
+# Set SEAL_API_KEY in .env: openssl rand -hex 32 (same value in dashboard X-API-Key)
 make up    # fails fast if SEAL_API_KEY is missing in .env
 make seed
 make sync-catalog
@@ -42,7 +41,7 @@ curl -s -X POST http://localhost:8000/v1/chat \\
         <p>
           See <code>.env.example</code> (auth + LLM vars) and{' '}
           <Link href="/docs/authentication">Authentication</Link> for{' '}
-          <code>SEAL_AUTH_REQUIRED</code> / <code>SEAL_DEV_MODE</code>. LLM:{' '}
+          <code>SEAL_API_KEY</code> (always required) and <code>SEAL_DEV_MODE</code>. LLM:{' '}
           <Link href="/docs/self-hosting#llm-configuration">LLM configuration</Link> for LiteLLM{' '}
           <code>LLM_MODEL</code> ids and <code>OLLAMA_PROFILE</code> (Ollama vs cloud).
         </p>

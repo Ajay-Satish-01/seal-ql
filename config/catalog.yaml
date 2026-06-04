@@ -1,6 +1,6 @@
 version: 1
-generated_at: '2026-06-03T08:16:40.716110+00:00'
-schema_hash: 67c3678f70690a04
+generated_at: '2026-06-04T05:42:08.007478+00:00'
+schema_hash: be4de187b563ba08
 tables:
 - schema: public
   name: customer_summary
@@ -277,24 +277,5 @@ tables:
   - name: cost
     data_type: numeric
     normalized_type: numeric
-    nullable: false
-    is_primary_key: false
-- schema: seal_app
-  name: workspace_kv
-  kind: table
-  columns:
-  - name: key
-    data_type: text
-    normalized_type: string
-    nullable: false
-    is_primary_key: true
-  - name: value
-    data_type: jsonb
-    normalized_type: json
-    nullable: false
-    is_primary_key: false
-  - name: updated_at
-    data_type: timestamp with time zone
-    normalized_type: timestamp
     nullable: false
     is_primary_key: false

@@ -44,6 +44,10 @@ export function ConnectionBar() {
       notifyError('API URL is required');
       return;
     }
+    if (!key) {
+      notifyError('X-API-Key is required (must match SEAL_API_KEY in your API .env)');
+      return;
+    }
 
     startTransition(async () => {
       const result = await probeApiConnection(url, key);
@@ -57,7 +61,9 @@ export function ConnectionBar() {
       const host = normalizeBaseUrl(url);
       const dbCount = result.databases.length;
       const dbNote =
-        dbCount > 1 ? ` · ${dbCount} database(s): ${result.databases.map((d) => d.database_id).join(', ')}` : '';
+        dbCount > 1
+          ? ` · ${dbCount} database(s): ${result.databases.map((d) => d.database_id).join(', ')}`
+          : '';
       notifySuccess(
         result.tableCount > 0
           ? `Connected to ${host} (${result.tableCount} catalog table(s))${dbNote}`
@@ -98,7 +104,7 @@ export function ConnectionBar() {
           value={draftKey}
           onChange={(e) => setDraftKey(e.target.value)}
           className="border-input bg-background focus:ring-primary/40 w-full rounded-md border px-3 py-2 font-mono text-sm focus:ring-2 focus:outline-none"
-          placeholder="Optional if auth disabled"
+          placeholder="Same as SEAL_API_KEY in API .env"
           autoComplete="off"
           disabled={isPending}
         />

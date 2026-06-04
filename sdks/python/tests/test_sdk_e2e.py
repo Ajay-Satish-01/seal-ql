@@ -24,7 +24,10 @@ from tests.e2e_llm_helpers import (
 )
 
 _API_URL = "http://localhost:8000"
-_API_KEY = os.environ.get("SEAL_API_KEY", "dev-local-change-me")
+_API_KEY = os.environ.get(
+    "SEAL_API_KEY",
+    "seal-ci-test-api-key-0123456789abcdef0123456789abcdef",
+)
 
 
 def _run_chat_e2e(client: Seal) -> None:

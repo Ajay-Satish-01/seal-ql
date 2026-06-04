@@ -4,7 +4,7 @@
 # LLM modes (set in .env beside this file):
 #   A) Ollama (default): LLM_MODEL=ollama/llama3.2:1b, LLM_BASE_URL=http://ollama:11434
 #   B) Cloud (Gemini/Claude/OpenAI): OLLAMA_PROFILE=disabled, LLM_MODEL=gemini/…,
-#      plus LLM_API_KEY or GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY
+#      plus LLM_API_KEY or GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY / GROQ_API_KEY
 
 services:
   api:
@@ -27,7 +27,6 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000","http://localhost:5173"]}
       # Required in .env — openssl rand -hex 32 (placeholders rejected at startup)
       SEAL_API_KEY: ${SEAL_API_KEY:?Set SEAL_API_KEY in .env}
-      SEAL_AUTH_REQUIRED: ${SEAL_AUTH_REQUIRED:-true}
       SEAL_DEV_MODE: ${SEAL_DEV_MODE:-false}
       SEAL_DISABLE_DOCS: ${SEAL_DISABLE_DOCS:-true}
       DATA_CATALOG_PATH: ${DATA_CATALOG_PATH:-/app/config/catalog.yaml}

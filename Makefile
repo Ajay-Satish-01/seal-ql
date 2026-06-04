@@ -229,7 +229,7 @@ check-e2e: ## Run live E2E tests (requires `make up` + `make seed`)
 		sdks/python/tests/test_sdk_e2e.py \
 		apps/api/tests/test_e2e.py \
 		apps/api/tests/test_catalog_workspace_integration.py
-	cd sdks/typescript && SEAL_API_KEY=$${SEAL_API_KEY:-dev-local-change-me} pnpm test
+	cd sdks/typescript && SEAL_API_KEY=$${SEAL_API_KEY:-seal-ci-test-api-key-0123456789abcdef0123456789abcdef} pnpm test
 	@echo "✅ E2E tests passed"
 
 ci: check ## Lint, unit tests, builds (same as CI unit jobs; run `make check-e2e` for live HTTP E2E)

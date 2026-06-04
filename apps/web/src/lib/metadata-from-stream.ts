@@ -3,16 +3,14 @@ import { hasMetadataContent, STREAM_META_METADATA_KEYS } from '@seal/metadata-co
 
 /** Chat JSON `metadata` fields from a flat `seal.meta` SSE payload. */
 export function chatMetadataFromStreamMeta(meta: ChatStreamMeta): ChatMetadata {
-  const {
-    session_id: _sessionId,
-    sources: _sources,
-    sql: _sql,
-    results: _results,
-    columns: _columns,
-    chart: _chart,
-    ...nested
-  } = meta;
-  return nested;
+  const nested: Record<string, unknown> = { ...meta };
+  delete nested.session_id;
+  delete nested.sources;
+  delete nested.sql;
+  delete nested.results;
+  delete nested.columns;
+  delete nested.chart;
+  return nested as ChatMetadata;
 }
 
 /** Build chat metadata from a partial seal.meta (e.g. after client validation soft-fail). */

@@ -1,11 +1,6 @@
 import { formatApiError } from '@/lib/api-error';
 import { flushSseRemainder, splitSseBuffer, type SseParseResult } from '@/lib/sse-parse';
-import type {
-  ChatMetadata,
-  ChatStreamMeta,
-  ColumnDescriptor,
-  ExecutionMetadata,
-} from '@seal/metadata-contract';
+import type { ChatMetadata, ColumnDescriptor, ExecutionMetadata } from '@seal/metadata-contract';
 import { mapChatSseEvent, type ChatStreamEvent } from '@seal/chat-sse-events';
 
 export type {

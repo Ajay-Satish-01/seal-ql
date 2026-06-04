@@ -16,4 +16,5 @@ CLOUD_MODEL_PREFIXES = (
     "mistral/",
     "deepseek/",
     "xai/",
+    "groq/",
 )

@@ -129,6 +129,12 @@ export default function ApiReferencePage() {
                 <strong>422</strong> — request body over Pydantic <code>max_length</code> (before
                 guardrails limits)
               </li>
+              <li>
+                <strong>502</strong> — LiteLLM provider failure (auth, model not found, bad request)
+              </li>
+              <li>
+                <strong>503</strong> — LiteLLM rate limit exceeded
+              </li>
             </ul>
           </EndpointBlock>
         ) : null}
@@ -213,6 +219,12 @@ export default function ApiReferencePage() {
                 <strong>400</strong> — <code>system</code> role in <code>messages</code>, session{' '}
                 <code>database_id</code> mismatch, or history over limit
               </li>
+              <li>
+                <strong>502</strong> — LiteLLM provider failure (auth, model not found, bad request)
+              </li>
+              <li>
+                <strong>503</strong> — LiteLLM rate limit exceeded
+              </li>
             </ul>
             <p className="mt-2">
               Examples: <Link href="/docs/chat-qa">Chat & Q&A</Link>,{' '}
@@ -223,8 +235,8 @@ export default function ApiReferencePage() {
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Workspace &amp; vector</h2>
         <p>
-          Full guide: <Link href="/docs/workspace">Workspace settings</Link>. Requires{' '}
-          <code>X-API-Key</code> when configured.
+          Full guide: <Link href="/docs/workspace">Workspace settings</Link>. Include the{' '}
+          <code>X-API-Key</code> header on all <code>/v1/*</code> routes.
         </p>
         <EndpointBlock
           method="GET"
@@ -260,6 +272,19 @@ export default function ApiReferencePage() {
         <h2 className="text-foreground mt-10 text-2xl font-bold">Errors</h2>
         <p>HTTP errors return FastAPI-style JSON:</p>
         <CodeBlock language="json" code={'{\n  "detail": "Query failed: ..."\n}'} />
+        <ul className="text-muted-foreground mt-4 list-disc space-y-2 pl-5 text-sm">
+          <li>
+            <strong>401</strong> — missing or invalid <code>X-API-Key</code> on <code>/v1/*</code>
+          </li>
+          <li>
+            <strong>502</strong> — LiteLLM failures on <code>/v1/query</code>,{' '}
+            <code>/v1/chat</code>, or <code>/v1/vector/reindex</code> (auth, model, provider error)
+          </li>
+          <li>
+            <strong>503</strong> — LiteLLM rate limit; rare <code>503</code> if auth is misconfigured
+            at runtime
+          </li>
+        </ul>
 
         <p className="mt-8">
           Source repository:{' '}

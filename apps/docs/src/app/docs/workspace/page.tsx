@@ -83,7 +83,7 @@ export default function WorkspacePage() {
         <h2>HTTP API</h2>
         <p>
           All workspace routes live under <code>/v1/workspace/*</code> and require{' '}
-          <code>X-API-Key</code> when <code>SEAL_API_KEY</code> is set. A successful{' '}
+          <code>X-API-Key</code>. A successful{' '}
           <code>GET /v1/workspace/settings</code> returns three useful views: the{' '}
           <code>effective</code> object you should treat as truth, a <code>schema</code> array
           describing each field&apos;s type and whether it hot-reloads, and <code>storage</code>{' '}

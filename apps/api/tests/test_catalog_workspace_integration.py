@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 import httpx
 import pytest
 from seal_core.settings import get_settings
-from tests.shared import TEST_API_KEY
+from tests.shared import live_api_headers
 
 
 def _api_base_url() -> str:
@@ -32,10 +32,6 @@ def _postgres_reachable() -> bool:
         return True
     except OSError:
         return False
-
-
-def _api_headers() -> dict[str, str]:
-    return {"X-API-Key": os.environ.get("SEAL_API_KEY", TEST_API_KEY)}
 
 
 def _api_reachable() -> bool:
@@ -69,7 +65,7 @@ def _table_description(body: dict, name: str) -> str | None:
 
 
 def test_live_patch_and_sync_preserve_catalog_description(live_http: httpx.Client) -> None:
-    headers = _api_headers()
+    headers = live_api_headers()
     catalog = live_http.get("/v1/catalog", headers=headers)
     assert catalog.status_code == 200, catalog.text
     if not any(t.get("name") == "orders" for t in catalog.json().get("tables", [])):
@@ -100,7 +96,7 @@ def test_live_patch_and_sync_preserve_catalog_description(live_http: httpx.Clien
 
 
 def test_live_workspace_settings_storage_uses_postgres(live_http: httpx.Client) -> None:
-    headers = _api_headers()
+    headers = live_api_headers()
     r = live_http.get("/v1/workspace/settings", headers=headers)
     assert r.status_code == 200, r.text
     storage = r.json().get("storage") or {}

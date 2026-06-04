@@ -39,8 +39,8 @@ export default function PythonSDKPage() {
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">API key</h2>
         <p>
-          When the server has <code>SEAL_API_KEY</code> set, pass <code>api_key=</code> (sent as{' '}
-          <code>X-API-Key</code>). See <Link href="/docs/authentication">Authentication</Link>.
+          Pass <code>api_key=</code> on every request (sent as <code>X-API-Key</code>). See{' '}
+          <Link href="/docs/authentication">Authentication</Link>.
         </p>
         <CodeBlock
           language="python"

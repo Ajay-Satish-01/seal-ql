@@ -211,8 +211,8 @@ export default function FeaturesPage() {
         <h2 id="auth">API authentication</h2>
         <p>
           Shared secret <code>SEAL_API_KEY</code> → <code>X-API-Key</code> on <code>/v1/*</code>.{' '}
-          <code>GET /health</code> stays public. Production: generate key,{' '}
-          <code>SEAL_AUTH_REQUIRED=true</code>, <code>SEAL_DEV_MODE=false</code>, optional{' '}
+          <code>GET /health</code> stays public. Production: generate with{' '}
+          <code>openssl rand -hex 32</code>, <code>SEAL_DEV_MODE=false</code>, optional{' '}
           <code>SEAL_DISABLE_DOCS=true</code>.
         </p>
         <p>

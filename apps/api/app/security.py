@@ -30,18 +30,15 @@ async def require_api_key(
     request: Request,
     api_key: str | None = Security(API_KEY_HEADER),
 ) -> None:
-    """Require a valid API key on protected routes when ``SEAL_API_KEY`` is configured."""
+    """Require a valid API key on all protected ``/v1/*`` routes."""
     settings = get_settings()
 
-    if settings.auth_required and not is_api_auth_enabled(settings):
-        logger.error("SEAL_AUTH_REQUIRED is enabled but SEAL_API_KEY is not set")
+    if not is_api_auth_enabled(settings):
+        logger.error("SEAL_API_KEY is not set but a protected route was called")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=_AUTH_MISCONFIGURED_DETAIL,
         )
-
-    if not is_api_auth_enabled(settings):
-        return
 
     if not _api_key_matches(api_key, settings.api_key):
         client_host = request.client.host if request.client else "unknown"

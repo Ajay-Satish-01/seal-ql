@@ -50,33 +50,25 @@ export const authConfig: ConfigRow[] = [
   {
     name: 'SEAL_API_KEY',
     type: 'string',
+    required: true,
     description:
-      'Shared secret clients send as the `X-API-Key` header on `/v1/*`. When set, missing or wrong keys receive HTTP 401.',
+      'Required at startup. Clients send this value as the `X-API-Key` header on every `/v1/*` call; missing or wrong keys receive HTTP 401.',
     expect:
       'SDKs and curl examples include the header automatically when you export this variable. The dashboard Settings page stores the same value in browser local storage for live API calls.',
-  },
-  {
-    name: 'SEAL_AUTH_REQUIRED',
-    type: 'boolean',
-    default: 'false (dev)',
-    description:
-      'When true, the API refuses to start unless `SEAL_API_KEY` is a real secret (no placeholders). Use in production and shared staging.',
-    expect:
-      'Startup fails fast with a clear configuration error if the key is empty or still `dev-local-change-me`. Prevents accidentally exposing an open API.',
   },
   {
     name: 'SEAL_DEV_MODE',
     type: 'boolean',
     default: 'true (.env.example)',
     description:
-      'Relaxes auth and enables immediate workspace hot-reload on PATCH. Must be false outside trusted local machines.',
+      'Enables immediate workspace hot-reload on PATCH. Must be false in production.',
     expect:
       'With `true`, workspace settings from the dashboard apply to the running API without `POST …/settings/apply`. With `false`, persisted changes sit in `pending_apply` until you apply or restart (see Workspace settings).',
   },
   {
     name: 'SEAL_DISABLE_DOCS',
     type: 'boolean',
-    default: 'follows SEAL_AUTH_REQUIRED',
+    default: 'false',
     description:
       'Hides Swagger UI and the OpenAPI JSON route on the API process — useful when the API is internet-facing.',
     expect:
@@ -333,7 +325,7 @@ export const vectorConfig: ConfigRow[] = [
     default: 'text-embedding-3-small',
     description: 'LiteLLM embedding model id used when indexing and querying vectors.',
     expect:
-      'Changing the model invalidates prior vectors — reindex before expecting RAG hits. API logs show embedding provider errors on failed index jobs.',
+      'Changing the model invalidates prior vectors — reindex before expecting RAG hits. Default `text-embedding-3-small` uses OpenAI; set `OPENAI_API_KEY` or `LLM_API_KEY` (or a key matching your `EMBEDDING_MODEL` provider). Startup logs warn when `VECTOR_STORE=chroma` but no embedding credentials are configured.',
   },
   {
     name: 'RAG_TOP_K',

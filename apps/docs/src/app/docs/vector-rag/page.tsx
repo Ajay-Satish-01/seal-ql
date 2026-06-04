@@ -38,6 +38,14 @@ RAG_TOP_K=5
 RAG_MAX_CONTEXT_TOKENS=1500`}
       />
 
+      <h2 className="font-heading mt-8 text-xl font-semibold">Embeddings</h2>
+      <p className="text-muted-foreground mt-2 text-sm">
+        Default <code>EMBEDDING_MODEL=text-embedding-3-small</code> uses OpenAI via LiteLLM. Set{' '}
+        <code>OPENAI_API_KEY</code> or <code>LLM_API_KEY</code> in <code>.env</code> when{' '}
+        <code>VECTOR_STORE=chroma</code>. The API logs a startup warning if Chroma is enabled without
+        embedding credentials.
+      </p>
+
       <h2 className="font-heading mt-8 text-xl font-semibold">What gets indexed</h2>
       <ul className="text-muted-foreground mt-4 list-disc space-y-2 pl-6 text-sm">
         <li>Data catalog descriptions (after sync)</li>

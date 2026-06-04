@@ -72,8 +72,8 @@ export function SdkPanel({ query }: SdkPanelProps) {
     <div className="space-y-4">
       <p className="text-muted-foreground text-xs">
         Snippets target <code className="text-foreground">{SITE.defaultBaseUrl}</code>. Replace with
-        your API URL and set <code className="text-foreground">apiKey</code> when{' '}
-        <code className="text-foreground">SEAL_API_KEY</code> is enabled.
+        your API URL and set <code className="text-foreground">apiKey</code> to match{' '}
+        <code className="text-foreground">SEAL_API_KEY</code> from your API <code>.env</code>.
       </p>
 
       <div className="border-border/50 flex flex-wrap gap-1 border-b">

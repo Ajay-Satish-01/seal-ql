@@ -101,7 +101,7 @@ After `make up && make seed`, run `make eval` or `make eval-planner` locally. Se
 
 Shippers should set:
 
-- `SEAL_API_KEY` + `SEAL_AUTH_REQUIRED=true` + `SEAL_DEV_MODE=false` + `SEAL_DISABLE_DOCS=true`
+- `SEAL_API_KEY` + `SEAL_DEV_MODE=false` + `SEAL_DISABLE_DOCS=true`
 - BFF pattern for browser clients — [docs/embedding.md](docs/embedding.md)
 - Mount `./config:/app/config` for catalog and optional `databases.yaml`
 

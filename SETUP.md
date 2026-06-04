@@ -47,23 +47,21 @@ Seal uses a **shared API key** (not OAuth or JWT). When `SEAL_API_KEY` is set, a
 
 | Variable | Purpose |
 |----------|---------|
-| `SEAL_API_KEY` | Shared secret; whitespace-only values are ignored (auth off). |
-| `SEAL_AUTH_REQUIRED` | If `true`, the API **refuses to start** without a real key. Placeholders are always rejected when this is `true`, even if `SEAL_DEV_MODE=true`. |
-| `SEAL_DISABLE_DOCS` | If `true`, hides `/docs`, `/redoc`, `/openapi.json` (defaults to `SEAL_AUTH_REQUIRED` when unset). |
-| `SEAL_DEV_MODE` | If `true` and `SEAL_AUTH_REQUIRED=false`, allows placeholder keys for local dev only. Must be `false` in production. |
+| `SEAL_API_KEY` | **Required.** Shared secret; whitespace-only values fail startup. |
+| `SEAL_DISABLE_DOCS` | If `true`, hides `/docs`, `/redoc`, `/openapi.json` (defaults to `false` when unset). |
+| `SEAL_DEV_MODE` | If `true`, workspace PATCH hot-reloads settings without `POST /v1/workspace/settings/apply`. Must be `false` in production. |
 
 **Production (recommended):**
 
 ```bash
 SEAL_API_KEY=$(openssl rand -hex 32)
-SEAL_AUTH_REQUIRED=true
 SEAL_DEV_MODE=false
 SEAL_DISABLE_DOCS=true
 ```
 
-**Local dev (repo `make up`):** copy `.env.example` → `.env` (placeholder key + `SEAL_DEV_MODE=true`). Root `docker-compose.yml` requires `SEAL_API_KEY` in `.env` but does not ship a default secret.
+**Local dev (repo `make up`):** copy `.env.example` → `.env`, set `SEAL_API_KEY` (`openssl rand -hex 32`), paste the same value into the dashboard **X-API-Key** when connecting. Root `docker-compose.yml` requires `SEAL_API_KEY` in `.env` but does not ship a default secret.
 
-**Production (image-only compose):** `docker-compose.example.yml` requires a real `SEAL_API_KEY` in `.env`, sets `SEAL_AUTH_REQUIRED=true`, `SEAL_DEV_MODE=false`, and `SEAL_DISABLE_DOCS=true` by default.
+**Production (image-only compose):** `docker-compose.example.yml` requires a real `SEAL_API_KEY` in `.env`, sets `SEAL_DEV_MODE=false`, and `SEAL_DISABLE_DOCS=true` by default.
 
 **Clients:** SDKs accept `api_key` / `apiKey` and send `X-API-Key`. Raw HTTP:
 

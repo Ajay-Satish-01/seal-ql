@@ -24,6 +24,7 @@ from app.dependencies import (
     get_semantic_registry,
 )
 from app.errors import public_query_error_detail, public_server_error_detail
+from app.llm_errors import raise_for_llm_failure
 from app.openapi_responses import QUERY_ENDPOINT_RESPONSES
 from app.schemas import QueryRequest, QueryResponse
 from app.security import require_api_key
@@ -101,5 +102,9 @@ async def execute_query(
         if "Validation" in str(e) or "Sanitization" in str(e):
             logger.error("Query failed: %s", e)
             raise HTTPException(status_code=400, detail=public_query_error_detail()) from e
+        try:
+            raise_for_llm_failure(e)
+        except HTTPException:
+            raise
         logger.exception("Failed to execute query")
         raise HTTPException(status_code=500, detail=public_server_error_detail()) from e
