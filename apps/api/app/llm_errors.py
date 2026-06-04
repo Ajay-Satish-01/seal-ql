@@ -16,5 +16,9 @@ def raise_for_llm_failure(exc: BaseException) -> None:
     if mapped is None:
         return
     status_code, detail = mapped
-    logger.error("LLM request failed: %s", exc)
+    logger.error(
+        "LLM request failed: %s (status=%s)",
+        type(exc).__name__,
+        getattr(exc, "status_code", None),
+    )
     raise HTTPException(status_code=status_code, detail=detail) from exc

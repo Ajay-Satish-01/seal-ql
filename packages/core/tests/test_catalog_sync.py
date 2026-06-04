@@ -89,3 +89,31 @@ async def test_sync_prunes_removed_table(tmp_path: Path) -> None:
     registry = DataCatalogRegistry()
     registry.load(path)
     assert registry.get_entry("b") is None
+
+
+@pytest.mark.asyncio
+async def test_sync_excludes_seal_app_schema(tmp_path: Path) -> None:
+    path = tmp_path / "catalog.yaml"
+    schema = DatabaseSchema(
+        dialect="postgres",
+        tables=[
+            _table("orders"),
+            TableSchema(
+                name="chat_sessions",
+                schema_name="seal_app",
+                kind=TableKind.TABLE,
+                columns=[
+                    ColumnInfo(
+                        name="session_id",
+                        data_type="uuid",
+                        normalized_type=ColumnType.STRING,
+                    )
+                ],
+            ),
+        ],
+    )
+    await sync_catalog(schema, path)
+    registry = DataCatalogRegistry()
+    registry.load(path)
+    assert registry.get_entry("orders") is not None
+    assert registry.get_entry("chat_sessions", schema_name="seal_app") is None

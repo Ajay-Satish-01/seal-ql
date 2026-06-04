@@ -308,7 +308,7 @@ class Settings(BaseSettings):
     def collect_embedding_configuration_warnings(self) -> list[str]:
         """Warnings when vector RAG is enabled but embeddings cannot authenticate."""
         warnings: list[str] = []
-        if self.vector_store.lower() != "chroma" and not self.vector_store_class:
+        if self.vector_store.lower() != "chroma" or self.vector_store_class:
             return warnings
         if self.has_embedding_credentials():
             return warnings

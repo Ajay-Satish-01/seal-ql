@@ -124,6 +124,19 @@ def test_warn_chroma_without_embedding_api_key(monkeypatch: pytest.MonkeyPatch) 
     assert any("embedding API key" in w for w in warnings)
 
 
+def test_no_chroma_warning_when_custom_vector_store_class(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("VECTOR_STORE", "none")
+    monkeypatch.setenv("VECTOR_STORE_CLASS", "my.module.CustomStore")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    clear_settings_cache()
+
+    warnings = get_settings().collect_embedding_configuration_warnings()
+    assert warnings == []
+
+
 def test_warn_cloud_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OLLAMA_PROFILE", "disabled")
     monkeypatch.setenv("LLM_MODEL", "gemini/gemini-1.5-flash")

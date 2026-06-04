@@ -235,8 +235,8 @@ export default function ApiReferencePage() {
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Workspace &amp; vector</h2>
         <p>
-          Full guide: <Link href="/docs/workspace">Workspace settings</Link>. Requires{' '}
-          <code>X-API-Key</code> on all routes.
+          Full guide: <Link href="/docs/workspace">Workspace settings</Link>. Include the{' '}
+          <code>X-API-Key</code> header on all <code>/v1/*</code> routes.
         </p>
         <EndpointBlock
           method="GET"

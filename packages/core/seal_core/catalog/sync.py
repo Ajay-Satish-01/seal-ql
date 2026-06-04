@@ -27,6 +27,17 @@ logger = logging.getLogger(__name__)
 _TABLE_KINDS = {TableKind.TABLE, TableKind.HYPERTABLE}
 _VIEW_KINDS = {TableKind.VIEW, TableKind.MATERIALIZED_VIEW, TableKind.CONTINUOUS_AGGREGATE}
 
+# Application metadata (chat sessions, workspace KV) — not NL-queryable analytics tables.
+_EXCLUDED_CATALOG_SCHEMAS = frozenset({"seal_app"})
+
+
+def _is_catalog_eligible(table: TableSchema) -> bool:
+    return table.schema_name not in _EXCLUDED_CATALOG_SCHEMAS
+
+
+def _eligible_tables(schema: DatabaseSchema) -> list[TableSchema]:
+    return [t for t in schema.tables if _is_catalog_eligible(t)]
+
 
 def _structural_hash(schema: DatabaseSchema) -> str:
     payload = [
@@ -36,7 +47,7 @@ def _structural_hash(schema: DatabaseSchema) -> str:
             "kind": t.kind.value,
             "columns": [(c.name, c.data_type) for c in t.columns],
         }
-        for t in schema.tables
+        for t in _eligible_tables(schema)
     ]
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
 
@@ -119,7 +130,7 @@ async def sync_catalog(
     new_tables: list[CatalogEntry] = []
     seen_keys: set[tuple[str, str]] = set()
 
-    for table in schema.tables:
+    for table in _eligible_tables(schema):
         key = catalog_entry_key(table.schema_name, table.name)
         seen_keys.add(key)
         prev = existing_map.get(key)

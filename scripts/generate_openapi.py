@@ -17,10 +17,7 @@ sys.path.insert(0, str(root_dir / "apps" / "api"))
 # Force deterministic generation regardless of the ambient shell environment:
 # include documented routes and avoid production-only doc hiding.
 os.environ["SEAL_DISABLE_DOCS"] = "false"
-os.environ.setdefault(
-    "SEAL_API_KEY",
-    "seal-openapi-gen-key-0123456789abcdef0123456789abcdef",
-)
+os.environ["SEAL_API_KEY"] = "seal-openapi-gen-key-0123456789abcdef0123456789abcdef"
 os.environ["SEAL_DEV_MODE"] = "true"
 
 import yaml  # noqa: E402
