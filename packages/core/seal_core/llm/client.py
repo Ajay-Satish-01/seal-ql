@@ -8,6 +8,7 @@ from __future__ import annotations
 import instructor
 from litellm import acompletion
 
+from seal_core.llm.logging_config import configure_litellm_logging
 from seal_core.settings import get_settings, validate_llm_configuration
 
 _config_validated = False
@@ -24,6 +25,7 @@ def validate_llm_env() -> None:
     if _config_validated:
         return
     _config_validated = True
+    configure_litellm_logging()
     validate_llm_configuration()
 
 

@@ -215,7 +215,7 @@ export function chatMessageFromQuery(query: string): string {
 
 export function localDevSetupSnippet(): string {
   return `cp .env.example .env
-# Set SEAL_API_KEY in .env (see .env.example). For local dev, placeholder + SEAL_DEV_MODE=true is OK.
+# Set SEAL_API_KEY in .env: openssl rand -hex 32 (paste same key in dashboard Connect)
 
 make up
 make seed
@@ -268,7 +268,6 @@ export function githubBlobUrl(repoPath: string): string {
 const PROD_ENV_BLOCK = `export SEAL_API_KEY=$(openssl rand -hex 32)
 printf '%s\\n' \\
   "SEAL_API_KEY=$SEAL_API_KEY" \\
-  "SEAL_AUTH_REQUIRED=true" \\
   "SEAL_DEV_MODE=false" \\
   "SEAL_DISABLE_DOCS=true" \\
   > .env`;
@@ -280,7 +279,7 @@ export function cloneFromSourceStackSnippet(options?: { silentCurl?: boolean }):
   return `git clone ${SITE.github}.git
 cd ${repo}
 cp .env.example .env
-# Dev-friendly .env (SEAL_DEV_MODE=true). For production keys, see Self-hosting after registry publish.
+# Set SEAL_API_KEY in .env before make up (see Authentication docs).
 make up
 make seed
 curl ${curlFlag}http://localhost:8000/health`;

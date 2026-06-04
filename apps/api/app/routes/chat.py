@@ -10,6 +10,8 @@ from seal_core.database.registry import DatabaseRegistry
 
 from app.database_routing import get_database_bundle, session_database_mismatch_detail
 from app.dependencies import get_chat_service, get_database_registry
+from app.errors import public_server_error_detail
+from app.llm_errors import raise_for_llm_failure
 from app.openapi_responses import CHAT_ENDPOINT_RESPONSES
 from app.schemas import ChatRequest, ChatResponse
 from app.security import require_api_key
@@ -75,6 +77,15 @@ async def chat(
         ) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except HTTPException:
+        raise
+    except Exception as exc:
+        try:
+            raise_for_llm_failure(exc)
+        except HTTPException:
+            raise
+        logger.exception("Chat request failed")
+        raise HTTPException(status_code=500, detail=public_server_error_detail()) from exc
 
     return ChatResponse.model_validate(
         {

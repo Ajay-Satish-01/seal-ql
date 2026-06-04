@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-# Known weak or documented placeholder keys — rejected when SEAL_AUTH_REQUIRED=true.
+# Known weak or documented placeholder keys — rejected at API startup.
 FORBIDDEN_API_KEYS: frozenset[str] = frozenset(
     {
         "dev-local-change-me",

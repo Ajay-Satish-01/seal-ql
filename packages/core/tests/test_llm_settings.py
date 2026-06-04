@@ -20,6 +20,10 @@ def _clear_llm_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "GEMINI_API_KEY",
         "OPENAI_API_KEY",
         "ANTHROPIC_API_KEY",
+        "GROQ_API_KEY",
+        "VECTOR_STORE",
+        "EMBEDDING_MODEL",
+        "OPENAI_API_KEY",
     ):
         monkeypatch.delenv(name, raising=False)
     clear_settings_cache()
@@ -61,6 +65,18 @@ def test_local_ollama_when_profile_default(monkeypatch: pytest.MonkeyPatch) -> N
     assert get_model() == "ollama/llama3.2:1b"
 
 
+def test_groq_api_key_counts_for_cloud(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OLLAMA_PROFILE", "disabled")
+    monkeypatch.setenv("LLM_MODEL", "groq/llama-3.3-70b-versatile")
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.setenv("GROQ_API_KEY", "gsk-test")
+
+    settings = get_settings()
+    assert settings.has_cloud_api_credentials()
+    assert settings.is_cloud_model()
+    assert not settings.collect_llm_configuration_warnings()
+
+
 def test_gemini_api_key_counts_for_cloud(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OLLAMA_PROFILE", "disabled")
     monkeypatch.setenv("LLM_MODEL", "gemini/gemini-1.5-flash")
@@ -97,6 +113,17 @@ def test_warn_unknown_ollama_profile(monkeypatch: pytest.MonkeyPatch) -> None:
     assert any("not recognized" in w for w in warnings)
 
 
+def test_warn_chroma_without_embedding_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VECTOR_STORE", "chroma")
+    monkeypatch.setenv("EMBEDDING_MODEL", "text-embedding-3-small")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    clear_settings_cache()
+
+    warnings = get_settings().collect_embedding_configuration_warnings()
+    assert any("embedding API key" in w for w in warnings)
+
+
 def test_warn_cloud_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OLLAMA_PROFILE", "disabled")
     monkeypatch.setenv("LLM_MODEL", "gemini/gemini-1.5-flash")
@@ -104,6 +131,7 @@ def test_warn_cloud_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "")
     monkeypatch.setenv("OPENAI_API_KEY", "")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "")
+    monkeypatch.setenv("GROQ_API_KEY", "")
     clear_settings_cache()
 
     warnings = get_settings().collect_llm_configuration_warnings()

@@ -129,8 +129,8 @@ export default function QuickstartPage() {
             title: 'Install the SDK and query',
             body: (
               <p>
-                Pass <code>apiKey</code> / <code>api_key</code> when the server requires{' '}
-                <code>X-API-Key</code>. See{' '}
+                Pass <code>apiKey</code> / <code>api_key</code> on every SDK call — the API always
+                requires <code>X-API-Key</code>. See{' '}
                 <Link href="/docs/authentication" className="text-primary hover:underline">
                   Authentication
                 </Link>
@@ -165,9 +165,9 @@ export default function QuickstartPage() {
             title: 'Clone and configure .env',
             body: (
               <p>
-                <code>cp .env.example .env</code> — placeholder <code>SEAL_API_KEY</code> is fine with{' '}
-                <code>SEAL_DEV_MODE=true</code>. <code>make up</code> fails fast if the key is
-                missing.
+                <code>cp .env.example .env</code> — includes a local test key; paste the same value
+                into the dashboard <strong>Connect</strong> bar. <code>make up</code> fails fast if{' '}
+                <code>SEAL_API_KEY</code> is missing or a documented placeholder.
               </p>
             ),
             code: `git clone ${SITE.github}.git

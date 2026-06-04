@@ -8,7 +8,7 @@ import { deleteSession, listSessions, type SessionSummary } from '@/lib/session-
 import { notifyErrorFrom, notifyInfo } from '@/lib/toast';
 import { Plus } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export function SessionSidebar() {
   const { apiUrl, apiKey, databaseId } = useConnection();
@@ -20,26 +20,30 @@ export function SessionSidebar() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const loadSessions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { sessions: list } = await listSessions(
-        apiUrl,
-        apiKey.trim() || undefined,
-        databaseId,
-      );
-      setSessions(list);
-    } catch (e) {
-      notifyErrorFrom(e, 'Failed to load chat sessions');
-      setSessions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [apiUrl, apiKey, databaseId]);
-
   useEffect(() => {
-    void loadSessions();
-  }, [loadSessions, refreshKey]);
+    let cancelled = false;
+    void (async () => {
+      setLoading(true);
+      try {
+        const { sessions: list } = await listSessions(
+          apiUrl,
+          apiKey.trim() || undefined,
+          databaseId,
+        );
+        if (!cancelled) setSessions(list);
+      } catch (e) {
+        if (!cancelled) {
+          notifyErrorFrom(e, 'Failed to load chat sessions');
+          setSessions([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, apiKey, databaseId, refreshKey]);
 
   function startNewChat() {
     router.push('/chat');

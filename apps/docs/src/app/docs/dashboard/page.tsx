@@ -138,9 +138,9 @@ export default function DashboardPage() {
         <h2 className="text-foreground mt-10 text-2xl font-bold">CORS & auth</h2>
         <p>
           Include <code>http://localhost:3001</code> in <code>CORS_ORIGINS</code> (default in{' '}
-          <code>.env.example</code>). When <code>SEAL_API_KEY</code> is set, paste the same key in the
-          connection bar. PATCH routes (workspace settings, catalog descriptions) require CORS{' '}
-          <code>PATCH</code> — enabled on the API.
+          <code>.env.example</code>). Paste the same <code>SEAL_API_KEY</code> from your API{' '}
+          <code>.env</code> into the connection bar. PATCH routes (workspace settings, catalog
+          descriptions) require CORS <code>PATCH</code> — enabled on the API.
         </p>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Configuration storage</h2>

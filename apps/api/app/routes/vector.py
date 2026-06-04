@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from seal_core.vector.indexer import VectorIndexBuilder
 
 from app.dependencies import get_data_catalog, get_schema_introspector
+from app.errors import public_server_error_detail
+from app.llm_errors import raise_for_llm_failure
 from app.openapi_responses import UNAUTHORIZED_RESPONSE
 from app.security import require_api_key
 
@@ -35,7 +37,17 @@ async def reindex_vector(
     store = getattr(request.app.state, "vector_store", None)
     if store is None:
         raise HTTPException(status_code=400, detail="Vector store is not configured.")
-    schema = await introspector.introspect()
-    builder = VectorIndexBuilder(store)
-    await builder.build(schema, catalog)
+    try:
+        schema = await introspector.introspect()
+        builder = VectorIndexBuilder(store)
+        await builder.build(schema, catalog)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        try:
+            raise_for_llm_failure(exc)
+        except HTTPException:
+            raise
+        logger.exception("Vector reindex failed")
+        raise HTTPException(status_code=500, detail=public_server_error_detail()) from exc
     return VectorReindexResponse(status="ok", indexed_tables=len(schema.tables))

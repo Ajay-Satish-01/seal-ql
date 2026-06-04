@@ -87,7 +87,7 @@ function ChatPage() {
   useEffect(() => {
     if (!urlSessionId) {
       loadedSessionUrlRef.current = undefined;
-      resetConversation();
+      queueMicrotask(resetConversation);
       return;
     }
     if (loadedSessionUrlRef.current === urlSessionId) {
@@ -143,8 +143,10 @@ function ChatPage() {
       return;
     }
     router.push('/chat');
-    resetConversation();
-    notifyInfo(`Database changed to "${databaseId}" — chat session cleared`);
+    queueMicrotask(() => {
+      resetConversation();
+      notifyInfo(`Database changed to "${databaseId}" — chat session cleared`);
+    });
   }, [databaseId, sessionId, history, activeDatabaseId, router, resetConversation]);
 
   function applyStreamMeta(data: ChatStreamMeta) {
@@ -238,9 +240,7 @@ function ChatPage() {
       title="Chat"
       description={`POST /v1/chat (SSE) on database "${databaseId}" — execution metadata arrives on seal.meta before token deltas.`}
     >
-      {loadingSession && (
-        <p className="text-muted-foreground text-sm">Loading conversation…</p>
-      )}
+      {loadingSession && <p className="text-muted-foreground text-sm">Loading conversation…</p>}
 
       {history.length > 0 && (
         <Card className="console-panel max-h-64 space-y-3 overflow-y-auto p-4">

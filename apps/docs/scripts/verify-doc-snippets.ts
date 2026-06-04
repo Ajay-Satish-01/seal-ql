@@ -32,7 +32,7 @@ assert.equal(quickstartUnpublished, cloneFromSourceStackSnippet({ silentCurl: tr
 assert.doesNotMatch(selfHostUnpublished, /docker pull/);
 assert.match(selfHostUnpublished, /git clone/);
 assert.match(selfHostUnpublished, /make up/);
-assert.match(selfHostUnpublished, /SEAL_DEV_MODE/);
+assert.match(selfHostUnpublished, /SEAL_API_KEY/);
 
 assert.doesNotMatch(quickstartUnpublished, /docker pull/);
 assert.match(quickstartUnpublished, /make seed/);

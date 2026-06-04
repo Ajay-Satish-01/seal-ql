@@ -35,10 +35,9 @@ export default function TypeScriptSDKPage() {
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">API key</h2>
         <p>
-          When the server has <code>SEAL_API_KEY</code> set, pass <code>apiKey</code> (sent as{' '}
-          <code>X-API-Key</code>). If you also pass custom <code>headers</code>,{' '}
-          <code>apiKey</code> wins over any <code>X-API-Key</code> in that object. See{' '}
-          <Link href="/docs/authentication">Authentication</Link>.
+          Pass <code>apiKey</code> on every request (sent as <code>X-API-Key</code>). If you also pass
+          custom <code>headers</code>, <code>apiKey</code> wins over any <code>X-API-Key</code> in
+          that object. See <Link href="/docs/authentication">Authentication</Link>.
         </p>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Client</h2>

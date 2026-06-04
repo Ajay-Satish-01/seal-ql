@@ -88,10 +88,10 @@ export default function ConfigurationPage() {
           intro={
             <>
               <p>
-                Authentication is header-based: clients send <code>X-API-Key</code> when{' '}
-                <code>SEAL_API_KEY</code> is defined. Development stacks relax validation so you can
-                iterate quickly; production stacks should require a real key and disable embedded API
-                documentation.
+                Authentication is always on: the API refuses to start without <code>SEAL_API_KEY</code>,
+                and clients send that value as <code>X-API-Key</code> on every <code>/v1/*</code> call.
+                Documented placeholders are rejected at startup. Set{' '}
+                <code>SEAL_DISABLE_DOCS=true</code> on internet-facing deployments.
               </p>
               <p>
                 See <Link href="/docs/authentication">Authentication</Link> for SDK examples and

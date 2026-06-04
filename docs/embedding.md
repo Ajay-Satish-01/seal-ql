@@ -95,7 +95,7 @@ See [chat-enhancement.md](chat-enhancement.md), [integrations/vector-stores.md](
 - Clients send **ids only** (`"default"`, `"analytics"`) — never connection URLs in JSON bodies
 - URLs live in server config (`DATABASE_URL`, `SEAL_DATABASES_PATH`, `SEAL_DATABASES`)
 - Unknown id → HTTP **404** `unknown_database_id`
-- Protect Seal with `SEAL_API_KEY`; use `SEAL_AUTH_REQUIRED=true` in production
+- Protect Seal with `SEAL_API_KEY` (always required at startup)
 
 ### Routing
 

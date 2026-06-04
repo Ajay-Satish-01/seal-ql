@@ -228,7 +228,7 @@ jobs:
         working-directory: sdks/typescript
         run: pnpm test
         env:
-          SEAL_API_KEY: dev-local-change-me
+          SEAL_API_KEY: seal-ci-test-api-key-0123456789abcdef0123456789abcdef
 
       - name: Stop services
         if: always()
@@ -342,7 +342,7 @@ jobs:
           docker compose logs api
           exit 1
         env:
-          SEAL_API_KEY: dev-local-change-me
+          SEAL_API_KEY: seal-ci-test-api-key-0123456789abcdef0123456789abcdef
           SEAL_DEV_MODE: "true"
           LLM_MODEL: ollama/qwen3.5:4b
           LLM_BASE_URL: http://localhost:11434

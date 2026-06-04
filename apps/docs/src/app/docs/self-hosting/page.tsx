@@ -101,25 +101,21 @@ export default function SelfHostingPage() {
             {
               name: 'SEAL_API_KEY',
               type: 'string',
+              required: true,
               description:
-                'Shared secret for X-API-Key on /v1/*. Set with SEAL_AUTH_REQUIRED=true in production.',
-            },
-            {
-              name: 'SEAL_AUTH_REQUIRED',
-              type: 'boolean',
-              description: 'When true, the API fails startup without a real key (no placeholders).',
+                'Required at startup. Shared secret for X-API-Key on all /v1/* routes (no optional auth).',
             },
             {
               name: 'SEAL_DISABLE_DOCS',
               type: 'boolean',
               description:
-                'Hide Swagger and /openapi.json. Production example defaults to true; when unset, follows SEAL_AUTH_REQUIRED.',
+                'Hide Swagger and /openapi.json. Production example defaults to true; local dev typically leaves docs enabled.',
             },
             {
               name: 'SEAL_DEV_MODE',
               type: 'boolean',
               description:
-                'Must be false in production. When true with SEAL_AUTH_REQUIRED=false, allows placeholder keys for local dev only.',
+                'Must be false in production. When true, workspace PATCH hot-reloads settings without apply endpoint.',
             },
             {
               name: 'DATABASE_URL',

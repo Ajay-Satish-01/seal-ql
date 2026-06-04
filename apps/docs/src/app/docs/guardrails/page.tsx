@@ -161,7 +161,10 @@ export default function GuardrailsPage() {
         </ul>
 
         <h2>Examples</h2>
-        <p>Requires <code>SEAL_API_KEY</code> in your shell when auth is enabled.</p>
+        <p>
+          Requires <code>SEAL_API_KEY</code> exported in your shell (same value as in the API{' '}
+          <code>.env</code>).
+        </p>
         <CodeBlock
           language="bash"
           code={`# Out-of-scope query → 400 with suggested_queries

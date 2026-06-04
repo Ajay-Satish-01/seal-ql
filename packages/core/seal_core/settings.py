@@ -113,6 +113,10 @@ class Settings(BaseSettings):
         default=None,
         description="Anthropic API key (also read by LiteLLM from the environment).",
     )
+    groq_api_key: str | None = Field(
+        default=None,
+        description="Groq API key (also read by LiteLLM from the environment).",
+    )
     llm_max_retries: int = Field(
         default=2,
         description="Retry attempts for LLM structured output validation.",
@@ -130,6 +134,7 @@ class Settings(BaseSettings):
         "gemini_api_key",
         "openai_api_key",
         "anthropic_api_key",
+        "groq_api_key",
         mode="before",
     )
     @classmethod
@@ -189,7 +194,11 @@ class Settings(BaseSettings):
 
     def has_cloud_api_credentials(self) -> bool:
         return bool(
-            self.llm_api_key or self.gemini_api_key or self.openai_api_key or self.anthropic_api_key
+            self.llm_api_key
+            or self.gemini_api_key
+            or self.openai_api_key
+            or self.anthropic_api_key
+            or self.groq_api_key
         )
 
     @property
@@ -212,8 +221,8 @@ class Settings(BaseSettings):
         """Explicit API key passed to Instructor/LiteLLM in cloud mode.
 
         Only the generic ``LLM_API_KEY`` is returned here. Provider-specific keys
-        (``GEMINI_API_KEY`` / ``OPENAI_API_KEY`` / ``ANTHROPIC_API_KEY``) are read
-        directly from the environment by LiteLLM, so returning None for those is
+        (``GEMINI_API_KEY`` / ``OPENAI_API_KEY`` / ``ANTHROPIC_API_KEY`` / ``GROQ_API_KEY``) are
+        read directly from the environment by LiteLLM, so returning None for those is
         expected — has_cloud_api_credentials() still validates their presence.
         """
         if self.use_cloud_llm():
@@ -264,7 +273,7 @@ class Settings(BaseSettings):
         if cloud_mode and not self.has_cloud_api_credentials():
             warnings.append(
                 "OLLAMA_PROFILE=disabled but no API key found. Set LLM_API_KEY or "
-                "GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY."
+                "GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY / GROQ_API_KEY."
             )
 
         return warnings
@@ -272,6 +281,48 @@ class Settings(BaseSettings):
     def log_llm_configuration_warnings(self) -> None:
         for message in self.collect_llm_configuration_warnings():
             logger.warning("LLM configuration: %s", message)
+
+    def resolved_embedding_model(self) -> str:
+        """LiteLLM embedding model string (defaults bare names to openai/)."""
+        model = self.embedding_model
+        if "/" not in model:
+            return f"openai/{model}"
+        return model
+
+    def resolved_embedding_api_key(self) -> str | None:
+        """API key for the configured embedding provider."""
+        model = self.resolved_embedding_model().lower()
+        if model.startswith("openai/"):
+            return self.openai_api_key or self.llm_api_key
+        if model.startswith("gemini/"):
+            return self.gemini_api_key or self.llm_api_key
+        if model.startswith("anthropic/"):
+            return self.anthropic_api_key or self.llm_api_key
+        if model.startswith("groq/"):
+            return self.groq_api_key or self.llm_api_key
+        return self.llm_api_key or self.openai_api_key
+
+    def has_embedding_credentials(self) -> bool:
+        return bool(self.resolved_embedding_api_key())
+
+    def collect_embedding_configuration_warnings(self) -> list[str]:
+        """Warnings when vector RAG is enabled but embeddings cannot authenticate."""
+        warnings: list[str] = []
+        if self.vector_store.lower() != "chroma" and not self.vector_store_class:
+            return warnings
+        if self.has_embedding_credentials():
+            return warnings
+        model = self.resolved_embedding_model()
+        warnings.append(
+            f"VECTOR_STORE=chroma but no embedding API key for {model!r}. "
+            "Set OPENAI_API_KEY (default EMBEDDING_MODEL uses OpenAI), LLM_API_KEY, "
+            "or a provider key matching your EMBEDDING_MODEL."
+        )
+        return warnings
+
+    def log_embedding_configuration_warnings(self) -> None:
+        for message in self.collect_embedding_configuration_warnings():
+            logger.warning("Embedding configuration: %s", message)
 
     def collect_vector_store_configuration_errors(self) -> list[str]:
         """Fatal misconfiguration for VECTOR_STORE (e.g. chroma without chromadb)."""
@@ -368,29 +419,17 @@ class Settings(BaseSettings):
         text = str(value).strip()
         return text if text else None
 
-    auth_required: bool = Field(
-        default=False,
-        validation_alias=AliasChoices("SEAL_AUTH_REQUIRED", "seal_auth_required"),
-        description=(
-            "When true, SEAL_API_KEY must be set at startup (no placeholder values). "
-            "Runtime: /v1/* requires X-API-Key whenever SEAL_API_KEY is set, "
-            "regardless of this flag."
-        ),
-    )
     disable_public_docs: bool | None = Field(
         default=None,
         validation_alias=AliasChoices("SEAL_DISABLE_DOCS", "seal_disable_docs"),
-        description=(
-            "Hide /docs, /redoc, and /openapi.json. Defaults to the value of "
-            "SEAL_AUTH_REQUIRED when unset."
-        ),
+        description="Hide /docs, /redoc, and /openapi.json. Defaults to false when unset.",
     )
     dev_mode: bool = Field(
         default=False,
         validation_alias=AliasChoices("SEAL_DEV_MODE", "seal_dev_mode"),
         description=(
-            "When true, allows documented placeholder API keys for local development. "
-            "Must be false in production."
+            "When true, workspace PATCH hot-reloads guardrails and LLM settings without "
+            "POST /v1/workspace/settings/apply. Must be false in production."
         ),
     )
     api_port: int = Field(
@@ -402,46 +441,27 @@ class Settings(BaseSettings):
         """Whether to hide /docs, /redoc, and /openapi.json."""
         if self.disable_public_docs is not None:
             return self.disable_public_docs
-        return self.auth_required
+        return False
 
     def validate_auth_configuration(self) -> list[str]:
         """Return fatal configuration errors for authentication."""
         errors: list[str] = []
-        if self.auth_required and not self.api_key:
+        if not self.api_key:
             errors.append(
-                "SEAL_AUTH_REQUIRED is true but SEAL_API_KEY is not set. "
+                "SEAL_API_KEY is not set. Authentication is always required. "
                 "Generate a secret (e.g. openssl rand -hex 32) and set SEAL_API_KEY."
             )
-        # auth_required is the stronger production signal: placeholders are never
-        # acceptable when auth is required, even if SEAL_DEV_MODE was left on.
-        if (
-            self.api_key
-            and is_forbidden_api_key(self.api_key)
-            and (self.auth_required or not self.dev_mode)
-        ):
+        elif is_forbidden_api_key(self.api_key):
             errors.append(
                 "SEAL_API_KEY is a documented placeholder. "
-                "Generate a secret (e.g. openssl rand -hex 32) or set SEAL_DEV_MODE=true "
-                "(local development only, and only when SEAL_AUTH_REQUIRED is false)."
+                "Generate a secret (e.g. openssl rand -hex 32) and set it in .env. "
+                "Paste the same value into the dashboard X-API-Key field when connecting."
             )
         return errors
 
     def log_auth_configuration_warnings(self) -> None:
         """Log auth mode at startup."""
-        if self.auth_required and self.api_key:
-            logger.info("API authentication: required (X-API-Key)")
-        elif self.api_key:
-            logger.info("API authentication: enabled (X-API-Key)")
-            if is_forbidden_api_key(self.api_key) and self.dev_mode:
-                logger.warning(
-                    "SEAL_API_KEY is a placeholder (SEAL_DEV_MODE=true). "
-                    "Use a generated secret before any shared or production deployment."
-                )
-        else:
-            logger.warning(
-                "API authentication is DISABLED (SEAL_API_KEY not set). "
-                "Do not expose this server to untrusted networks."
-            )
+        logger.info("API authentication: required (X-API-Key)")
         if self.effective_disable_public_docs():
             logger.info("Public API docs disabled (/docs, /redoc, /openapi.json)")
         elif self.api_key:
@@ -667,6 +687,7 @@ def validate_vector_store_configuration() -> None:
     if errors:
         raise RuntimeError("; ".join(errors))
     settings.log_vector_store_configuration()
+    settings.log_embedding_configuration_warnings()
 
 
 def validate_chat_session_store_configuration() -> None:
@@ -683,7 +704,6 @@ def settings_env_names() -> list[str]:
     """Canonical uppercase environment variable names accepted by :class:`Settings`."""
     alias_overrides: dict[str, str] = {
         "api_key": "SEAL_API_KEY",
-        "auth_required": "SEAL_AUTH_REQUIRED",
         "disable_public_docs": "SEAL_DISABLE_DOCS",
         "dev_mode": "SEAL_DEV_MODE",
     }

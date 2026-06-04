@@ -67,7 +67,7 @@ export function LlmConfigSection() {
             description: 'Ollama (requires OLLAMA_PROFILE default and LLM_BASE_URL).',
           },
           {
-            name: 'gemini/gemini-1.5-flash',
+            name: 'gemini/gemini-2.0-flash',
             type: 'cloud',
             description: 'Google Gemini (requires OLLAMA_PROFILE=disabled).',
           },
@@ -80,6 +80,11 @@ export function LlmConfigSection() {
             name: 'anthropic/claude-3-5-sonnet-20241022',
             type: 'cloud',
             description: 'Anthropic Claude (requires OLLAMA_PROFILE=disabled).',
+          },
+          {
+            name: 'groq/llama-3.3-70b-versatile',
+            type: 'cloud',
+            description: 'Groq (requires OLLAMA_PROFILE=disabled and GROQ_API_KEY).',
           },
         ]}
       />
@@ -112,6 +117,11 @@ export function LlmConfigSection() {
             name: 'ANTHROPIC_API_KEY',
             type: 'string',
             description: 'Used when LLM_MODEL starts with anthropic/.',
+          },
+          {
+            name: 'GROQ_API_KEY',
+            type: 'string',
+            description: 'Used when LLM_MODEL starts with groq/.',
           },
         ]}
       />
@@ -146,11 +156,11 @@ LLM_BASE_URL=http://ollama:11434`}
         language="bash"
         code={`# .env — cloud (LiteLLM)
 OLLAMA_PROFILE=disabled
-LLM_MODEL=gemini/gemini-1.5-flash
+LLM_MODEL=gemini/gemini-2.0-flash
 LLM_API_KEY=your-key-here
 
 # Equivalent: provider-specific key (LiteLLM convention)
-# LLM_MODEL=gemini/gemini-1.5-flash
+# LLM_MODEL=gemini/gemini-2.0-flash
 # GEMINI_API_KEY=your-key-here
 
 # OpenAI example:
@@ -159,7 +169,11 @@ LLM_API_KEY=your-key-here
 
 # Anthropic example:
 # LLM_MODEL=anthropic/claude-3-5-sonnet-20241022
-# ANTHROPIC_API_KEY=sk-ant-...`}
+# ANTHROPIC_API_KEY=sk-ant-...
+
+# Groq example:
+# LLM_MODEL=groq/llama-3.3-70b-versatile
+# GROQ_API_KEY=gsk_...`}
       />
       <p className="text-muted-foreground mt-4 leading-relaxed">
         <strong>What to expect:</strong> No Ollama container; latency follows your provider region.
@@ -172,7 +186,11 @@ LLM_API_KEY=your-key-here
         <code className="text-foreground">LLM_MODEL</code> does not match{' '}
         <code className="text-foreground">OLLAMA_PROFILE</code> (for example a{' '}
         <code className="text-foreground">gemini/</code> model without{' '}
-        <code className="text-foreground">OLLAMA_PROFILE=disabled</code>).
+        <code className="text-foreground">OLLAMA_PROFILE=disabled</code>). LiteLLM provider failures
+        (missing API key, invalid or decommissioned model, rate limits) return HTTP{' '}
+        <strong>502</strong> or <strong>503</strong> on <code>/v1/query</code> and{' '}
+        <code>/v1/chat</code> with a safe <code>detail</code> string — check server logs for the
+        underlying provider error.
       </p>
 
       <h3 className="text-foreground mt-8 mb-3 text-lg font-semibold">Apply and restart</h3>

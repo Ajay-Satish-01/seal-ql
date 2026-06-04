@@ -69,7 +69,7 @@ Then `make up` (Ollama container is not started).
 Use the published compose example (also at `apps/docs/public/compose/docker-compose.example.yml` on the docs site):
 
 1. Download `docker-compose.example.yml` and `seed.sql`.
-2. Create `.env` with `SEAL_API_KEY`, `SEAL_AUTH_REQUIRED=true`, `SEAL_DEV_MODE=false`, `SEAL_DISABLE_DOCS=true`.
+2. Create `.env` with `SEAL_API_KEY`, `SEAL_DEV_MODE=false`, `SEAL_DISABLE_DOCS=true`.
 3. Mount a host directory for config, e.g. `./config:/app/config` (catalog YAML, optional `databases.yaml`, workspace fallback).
 4. Apply workspace schema once: `psql … < scripts/migrate_app.sql` (creates `seal_app.workspace_kv` for settings and catalog description overrides).
 5. Optional: copy `config/databases.example.yaml` → `config/databases.yaml` for extra `database_id` backends.
@@ -84,8 +84,7 @@ Use the published compose example (also at `apps/docs/public/compose/docker-comp
 | `SEAL_DATABASES_PATH`   | Optional YAML for additional ids (e.g. `config/databases.yaml`) | `config/databases.yaml`                             |
 | `SEAL_DATABASES`        | Optional JSON env map of id → URL (Docker-friendly)             | —                                                   |
 | `SEAL_API_KEY`          | Shared secret for `X-API-Key` on `/v1/*`                        | —                                                   |
-| `SEAL_AUTH_REQUIRED`    | Fail startup without a real key                                 | `false` (dev), `true` (prod example)                |
-| `SEAL_DEV_MODE`         | Allow placeholder keys when auth not required                   | `true` (dev)                                        |
+| `SEAL_DEV_MODE`         | Workspace PATCH hot-reload without apply endpoint               | `true` (local dev), `false` (prod)                  |
 | `SEAL_DISABLE_DOCS`     | Hide `/docs` and `/openapi.json`                                | follows auth in prod                                |
 | `CORS_ORIGINS`          | JSON array of browser origins                                   | `["http://localhost:3000","http://localhost:3001"]` |
 | `MAX_ROWS`              | Row cap for generated SQL                                       | `10000`                                             |
@@ -196,7 +195,6 @@ docker run -d -p 8000:8000 \
   -e LLM_MODEL="gemini/gemini-1.5-flash" \
   -e LLM_API_KEY="your-key" \
   -e SEAL_API_KEY="$(openssl rand -hex 32)" \
-  -e SEAL_AUTH_REQUIRED=true \
   -e CHAT_ENHANCEMENT_ENABLED=true \
   -v "$(pwd)/config:/app/config" \
   seal/api:latest
@@ -290,7 +288,7 @@ flowchart LR
 | **Secrets** | `SEAL_API_KEY`, `LLM_API_KEY`, `DATABASE_URL` from Secrets Manager or SSM. |
 | **Config** | EFS mount at `/app/config` (`DATA_CATALOG_PATH`, catalog overrides). |
 | **LLM** | `OLLAMA_PROFILE=disabled`, `LLM_MODEL=gemini/...` or `openai/...` (no Ollama sidecar). |
-| **Auth** | `SEAL_AUTH_REQUIRED=true`, `SEAL_DEV_MODE=false`, `SEAL_DISABLE_DOCS=true`. |
+| **Auth** | `SEAL_API_KEY` required; `SEAL_DEV_MODE=false`, `SEAL_DISABLE_DOCS=true`. |
 | **Scaling** | Target tracking on CPU/latency; new tasks often take **1–3 minutes** (image pull + boot). |
 
 **Multi-task chat:** Set `CHAT_SESSION_STORE=postgres` and run `scripts/migrate_app.sql` (or `migrate_chat_sessions.sql`) so all tasks share `seal_app.chat_sessions`. If your primary `DATABASE_URL` is DuckDB, set `CHAT_SESSION_DATABASE_URL` to a Postgres connection string for session storage. With `memory`, use ALB sticky sessions or treat history as per-instance only.
@@ -304,7 +302,6 @@ OLLAMA_PROFILE=disabled
 LLM_MODEL=openai/gpt-4o-mini
 DATABASE_URL=postgresql+asyncpg://user:pass@mydb.xxxx.us-east-1.rds.amazonaws.com:5432/seal
 SEAL_API_KEY=<from-secrets-manager>
-SEAL_AUTH_REQUIRED=true
 SEAL_DEV_MODE=false
 SEAL_DISABLE_DOCS=true
 CORS_ORIGINS=["https://app.example.com"]
