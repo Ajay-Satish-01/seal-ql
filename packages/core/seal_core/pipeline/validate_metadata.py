@@ -112,6 +112,31 @@ def validate_enhancement_block(
     return errors
 
 
+def validate_explainability_fields(meta: dict[str, Any]) -> list[str]:
+    """Validate optional trust/explainability metadata keys when present."""
+    errors: list[str] = []
+    tables_used = meta.get("tables_used")
+    if tables_used is not None and (
+        not isinstance(tables_used, list) or not all(isinstance(item, str) for item in tables_used)
+    ):
+        errors.append("tables_used must be an array of strings")
+    columns_used = meta.get("columns_used")
+    if columns_used is not None and (
+        not isinstance(columns_used, list)
+        or not all(isinstance(item, str) for item in columns_used)
+    ):
+        errors.append("columns_used must be an array of strings")
+    catalog_matches = meta.get("catalog_matches")
+    if catalog_matches is not None:
+        if not isinstance(catalog_matches, list):
+            errors.append("catalog_matches must be an array")
+        else:
+            for i, item in enumerate(catalog_matches):
+                if not isinstance(item, dict) or "name" not in item:
+                    errors.append(f"catalog_matches[{i}] must be an object with name")
+    return errors
+
+
 def validate_suggested_queries(value: Any) -> list[str]:
     """Validate optional ``suggested_queries`` on refusal metadata."""
     errors: list[str] = []
@@ -174,6 +199,9 @@ def validate_query_metadata(meta: dict[str, Any]) -> list[str]:
     errors.extend(validate_execution_fields(meta, require_when_sql=True))
     if meta.get("used_sql") is not True:
         errors.append("used_sql must be true on successful query")
+    errors.extend(validate_explainability_fields(meta))
+    if "scope" in meta:
+        errors.extend(validate_scope_block(meta.get("scope")))
     errors.extend(
         validate_enhancement_block(
             meta.get("enhancement"),
@@ -208,6 +236,7 @@ def validate_nested_chat_metadata(meta: dict[str, Any], *, sql_at_top_level: boo
         errors.extend(validate_scope_block(meta.get("scope")))
     if "suggested_queries" in meta:
         errors.extend(validate_suggested_queries(meta.get("suggested_queries")))
+    errors.extend(validate_explainability_fields(meta))
     return errors
 
 
@@ -288,4 +317,5 @@ def validate_stream_meta_event(event: dict[str, Any]) -> list[str]:
         errors.extend(validate_scope_block(event.get("scope")))
     if "suggested_queries" in event:
         errors.extend(validate_suggested_queries(event.get("suggested_queries")))
+    errors.extend(validate_explainability_fields(event))
     return errors

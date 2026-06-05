@@ -26,7 +26,8 @@
       "@seal/chat-sse-events": ["../../shared/chat-sse-events.ts"],
       "@seal/api-error": ["../../shared/api-error.ts"],
       "@seal/chart-csv": ["../../shared/chart-csv.ts"],
-      "@seal/chart-spec": ["../../shared/chart-spec.ts"]
+      "@seal/chart-spec": ["../../shared/chart-spec.ts"],
+      "@seal/trust-explainability": ["../../shared/trust-explainability.ts"]
     }
   },
   "include": [

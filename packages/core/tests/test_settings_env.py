@@ -76,6 +76,26 @@ def test_settings_fields_documented_in_env_example() -> None:
     assert not missing, f"Settings env vars missing from .env.example: {missing}"
 
 
+def _compose_files() -> list[Path]:
+    root = _ENV_EXAMPLE.parent
+    return [
+        root / "docker-compose.yml",
+        root / "apps" / "docs" / "public" / "compose" / "docker-compose.example.yml",
+    ]
+
+
+def test_compose_files_declare_trust_explainability_default() -> None:
+    """Compose stacks expose the same trust toggle default as Settings (DRY guard)."""
+    needle = "SEAL_TRUST_EXPLAINABILITY_ENABLED"
+    default_fragment = f"{needle}:-false"
+    for path in _compose_files():
+        text = path.read_text(encoding="utf-8")
+        assert needle in text, f"{path.name} missing {needle}"
+        assert default_fragment in text.replace(" ", ""), (
+            f"{path.name} must default {needle} to false"
+        )
+
+
 def test_empty_optional_strings_become_none() -> None:
     settings = Settings(
         semantic_directory="",

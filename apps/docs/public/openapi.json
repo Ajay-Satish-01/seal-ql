@@ -870,6 +870,36 @@
         "type": "object",
         "title": "CatalogDescriptionsPatch"
       },
+      "CatalogMatchItem": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "schema": {
+            "type": "string",
+            "title": "Schema",
+            "default": "public"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CatalogMatchItem",
+        "description": "Catalog entry included in planner context."
+      },
       "CatalogResponse": {
         "properties": {
           "version": {
@@ -1043,8 +1073,29 @@
             "title": "Used Sql",
             "default": false
           },
-          "enhancement": {
-            "$ref": "#/components/schemas/EnhancementInfo"
+          "tables_used": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tables Used",
+            "description": "Tables referenced in executed SQL (SQLGlot validation)."
+          },
+          "columns_used": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Columns Used",
+            "description": "Columns referenced in executed SQL as table.column."
+          },
+          "catalog_matches": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogMatchItem"
+            },
+            "type": "array",
+            "title": "Catalog Matches",
+            "description": "Catalog entries selected for planner context."
           },
           "scope": {
             "anyOf": [
@@ -1056,6 +1107,9 @@
               }
             ],
             "description": "Guardrails scope decision when classified."
+          },
+          "enhancement": {
+            "$ref": "#/components/schemas/EnhancementInfo"
           },
           "refusal": {
             "anyOf": [
@@ -1581,11 +1635,17 @@
             "type": "string",
             "title": "Status",
             "description": "The health status of the API."
+          },
+          "trust_explainability_enabled": {
+            "type": "boolean",
+            "title": "Trust Explainability Enabled",
+            "description": "Whether trust/explainability fields are exposed on query and chat responses."
           }
         },
         "type": "object",
         "required": [
-          "status"
+          "status",
+          "trust_explainability_enabled"
         ],
         "title": "HealthResponse",
         "description": "Health check response."
@@ -1673,6 +1733,41 @@
             "type": "boolean",
             "title": "Used Sql",
             "default": false
+          },
+          "tables_used": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tables Used",
+            "description": "Tables referenced in executed SQL (SQLGlot validation)."
+          },
+          "columns_used": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Columns Used",
+            "description": "Columns referenced in executed SQL as table.column."
+          },
+          "catalog_matches": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogMatchItem"
+            },
+            "type": "array",
+            "title": "Catalog Matches",
+            "description": "Catalog entries selected for planner context."
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScopeMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Guardrails scope decision when trust explainability is enabled."
           }
         },
         "type": "object",
@@ -1736,6 +1831,14 @@
               }
             ],
             "description": "The Vega-Lite chart specification, if applicable."
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources",
+            "description": "Context tables selected for planning (when trust explainability is enabled)."
           },
           "metadata": {
             "anyOf": [
@@ -2337,8 +2440,29 @@
             "title": "Used Sql",
             "type": "boolean"
           },
-          "enhancement": {
-            "$ref": "#/components/schemas/EnhancementInfo"
+          "tables_used": {
+            "description": "Tables referenced in executed SQL (SQLGlot validation).",
+            "items": {
+              "type": "string"
+            },
+            "title": "Tables Used",
+            "type": "array"
+          },
+          "columns_used": {
+            "description": "Columns referenced in executed SQL as table.column.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Columns Used",
+            "type": "array"
+          },
+          "catalog_matches": {
+            "description": "Catalog entries selected for planner context.",
+            "items": {
+              "$ref": "#/components/schemas/CatalogMatchItem"
+            },
+            "title": "Catalog Matches",
+            "type": "array"
           },
           "scope": {
             "anyOf": [
@@ -2351,6 +2475,9 @@
             ],
             "default": null,
             "description": "Guardrails scope decision when classified."
+          },
+          "enhancement": {
+            "$ref": "#/components/schemas/EnhancementInfo"
           },
           "refusal": {
             "anyOf": [

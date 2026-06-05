@@ -6,7 +6,7 @@ from typing import Any, Self
 from pydantic import BaseModel, Field, model_validator
 from seal_charts.models import ChartSpec
 from seal_core.guardrails.models import ScopeMetadata
-from seal_core.pipeline.models import EnhancementMetadata, ExecutionMetadata
+from seal_core.pipeline.models import CatalogMatchItem, EnhancementMetadata, ExecutionMetadata
 from seal_core.settings import get_settings
 from seal_sql.result import ColumnMetadata
 
@@ -52,8 +52,16 @@ class QueryRequest(BaseModel):
     database_id: str = DATABASE_ID_FIELD
 
 
+class CatalogMatch(CatalogMatchItem):
+    """Re-exports core ``CatalogMatchItem`` for OpenAPI."""
+
+
 class QueryMetadata(ExecutionMetadata):
     """Execution metadata returned on successful /v1/query responses."""
+
+    scope: ScopeMetadata | None = Field(
+        None, description="Guardrails scope decision when trust explainability is enabled."
+    )
 
 
 class EnhancementInfo(EnhancementMetadata):
@@ -86,6 +94,10 @@ class QueryResponse(BaseModel):
     chart: ChartSpec | None = Field(
         None, description="The Vega-Lite chart specification, if applicable."
     )
+    sources: list[str] = Field(
+        default_factory=list,
+        description="Context tables selected for planning (when trust explainability is enabled).",
+    )
     metadata: QueryMetadata | dict[str, Any] = Field(
         default_factory=QueryMetadata,
         description="Execution metadata (time, row count, limits, etc.).",
@@ -96,6 +108,10 @@ class HealthResponse(BaseModel):
     """Health check response."""
 
     status: str = Field(..., description="The health status of the API.")
+    trust_explainability_enabled: bool = Field(
+        ...,
+        description="Whether trust/explainability fields are exposed on query and chat responses.",
+    )
 
 
 class DatabaseInfo(BaseModel):

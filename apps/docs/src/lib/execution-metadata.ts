@@ -34,9 +34,17 @@ export const QUERY_EXECUTION_FIELDS: MetadataFieldDef[] = [
   { name: 'database_id', description: 'Routed backend (default "default")' },
   {
     name: 'row_count, execution_time_ms, truncated, warnings, repair_attempts',
-    description: 'Execution stats and SQL boundary warnings',
+    description: 'Execution stats and SQL boundary warnings (repair_attempts when trust enabled)',
   },
   { name: 'used_sql', description: 'Always true on successful query' },
+  {
+    name: 'tables_used, columns_used, catalog_matches, scope',
+    description: 'SQL and catalog provenance when SEAL_TRUST_EXPLAINABILITY_ENABLED=true',
+  },
+  {
+    name: 'sources (top-level)',
+    description: 'Context tables selected for planning when trust explainability is enabled',
+  },
 ];
 
 export const CHAT_METADATA_EXTRA_FIELDS: MetadataFieldDef[] = [
@@ -94,6 +102,9 @@ export const QUERY_METADATA_EXAMPLE: ExecutionMetadata = {
   warnings: [],
   repair_attempts: 0,
   used_sql: true,
+  tables_used: ['orders'],
+  columns_used: ['orders.id'],
+  catalog_matches: [{ name: 'orders', schema: 'public', description: 'Customer orders' }],
 };
 
 export const CHAT_METADATA_SQL_EXAMPLE: ChatMetadata = {
@@ -167,6 +178,9 @@ export function buildDemoChatMetadata(
     warnings: queryMeta.warnings ?? [],
     repair_attempts: queryMeta.repair_attempts ?? 0,
     used_sql: true,
+    tables_used: QUERY_METADATA_EXAMPLE.tables_used,
+    columns_used: QUERY_METADATA_EXAMPLE.columns_used,
+    catalog_matches: QUERY_METADATA_EXAMPLE.catalog_matches,
     enhancement,
     scope: SCOPE_IN_SCOPE,
   };

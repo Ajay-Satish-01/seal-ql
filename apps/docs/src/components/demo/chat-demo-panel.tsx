@@ -4,6 +4,10 @@ import type { ChatApiResponse } from '@/lib/chat-api';
 import { Badge } from '@/components/ui/badge';
 import { CodeBlock } from '@/components/code-block';
 import { MetadataJsonPreview } from '@/components/demo/metadata-json-preview';
+import { MetadataPanel } from '@/components/demo/metadata-panel';
+import { isDemoTrustExplainabilityEnabled } from '@/lib/demo-trust';
+import { shouldShowTrustPanel } from '@seal/trust-explainability';
+import { TrustPanel } from '@/components/demo/trust-panel';
 import { ChartPanel } from './chart-panel';
 import type { ChartSpec } from 'seal';
 
@@ -15,6 +19,12 @@ interface ChatDemoPanelProps {
 export function ChatDemoPanel({ message, response }: ChatDemoPanelProps) {
   const chart = response.chart as ChartSpec | null | undefined;
   const results = (response.results ?? []) as Record<string, unknown>[];
+  const trustEnabled = isDemoTrustExplainabilityEnabled();
+  const showTrustPanel = shouldShowTrustPanel(trustEnabled, {
+    sql: response.sql,
+    sources: response.sources,
+    metadata: response.metadata,
+  });
 
   return (
     <div className="space-y-4">
@@ -36,17 +46,30 @@ export function ChatDemoPanel({ message, response }: ChatDemoPanelProps) {
 
       <div className="border-border/40 bg-muted/30 space-y-3 rounded-md border p-4 text-sm">
         <p className="whitespace-pre-wrap">{response.message}</p>
-        {response.sources && response.sources.length > 0 ? (
+        {!showTrustPanel && response.sources && response.sources.length > 0 ? (
           <p className="text-muted-foreground text-xs">sources: {response.sources.join(', ')}</p>
         ) : null}
       </div>
 
-      {response.sql ? (
-        <div>
-          <p className="text-foreground mb-2 text-sm font-semibold">Executed SQL</p>
-          <CodeBlock language="sql" code={response.sql} />
-        </div>
-      ) : null}
+      {showTrustPanel ? (
+        <TrustPanel
+          sql={response.sql}
+          sources={response.sources}
+          metadata={response.metadata}
+          subtitle="Simulated chat response with trust explainability fields enabled."
+        />
+      ) : (
+        <>
+          {response.sql ? (
+            <div>
+              <p className="text-foreground mb-2 text-sm font-semibold">Executed SQL</p>
+              <CodeBlock language="sql" code={response.sql} />
+            </div>
+          ) : null}
+          <MetadataPanel metadata={response.metadata} />
+          <MetadataJsonPreview metadata={response.metadata} />
+        </>
+      )}
 
       {chart ? (
         <div>
@@ -54,8 +77,6 @@ export function ChatDemoPanel({ message, response }: ChatDemoPanelProps) {
           <ChartPanel chart={chart} results={results} />
         </div>
       ) : null}
-
-      <MetadataJsonPreview metadata={response.metadata} />
     </div>
   );
 }

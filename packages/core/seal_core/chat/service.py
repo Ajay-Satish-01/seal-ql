@@ -25,6 +25,12 @@ from seal_core.guardrails.suggestions import merge_suggestions, suggest_queries
 from seal_core.llm.client import get_api_base, get_api_key, get_async_client, get_model
 from seal_core.pipeline.execute import ExecuteQueryResult, execute_natural_language_query
 from seal_core.pipeline.models import build_chat_metadata, build_stream_meta_event
+from seal_core.pipeline.provenance import build_catalog_matches
+from seal_core.pipeline.trust import (
+    apply_trust_gating_to_chat_response,
+    apply_trust_gating_to_stream_meta,
+    is_trust_explainability_enabled,
+)
 from seal_core.pipeline.validate_metadata import (
     enforce_nested_chat_metadata,
     enforce_stream_meta_validation,
@@ -85,6 +91,33 @@ class ChatResult:
     columns: list[Any] | None = None
     chart: Any | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+
+
+def _apply_trust_to_chat_result(result: ChatResult) -> ChatResult:
+    """Strip trust fields from chat JSON when explainability is disabled."""
+    if is_trust_explainability_enabled():
+        return result
+    gated = apply_trust_gating_to_chat_response(
+        {
+            "session_id": result.session_id,
+            "message": result.message,
+            "sources": result.sources,
+            "sql": result.sql,
+            "results": result.results,
+            "columns": result.columns,
+            "metadata": result.metadata,
+        }
+    )
+    return ChatResult(
+        session_id=str(gated["session_id"]),
+        message=str(gated["message"]),
+        sources=list(gated.get("sources") or []),
+        sql=gated.get("sql"),
+        results=gated.get("results"),
+        columns=gated.get("columns"),
+        chart=result.chart,
+        metadata=dict(gated.get("metadata") or {}),
+    )
 
 
 class ChatService:
@@ -387,10 +420,18 @@ class ChatService:
             chart=turn.chart.model_dump() if turn.chart is not None else None,
             scope=ctx.metadata.get("scope"),
             sql_error=bool(turn.meta.get("sql_error")),
+            catalog_matches=self._catalog_matches_for_context(ctx),
             **self._enhancement_metadata_kwargs(ctx),
         )
         enforce_stream_meta_validation(meta_event)
+        meta_event = apply_trust_gating_to_stream_meta(meta_event)
         return f"event: seal.meta\ndata: {json.dumps(meta_event)}\n\n"
+
+    def _catalog_matches_for_context(self, ctx: TurnContext) -> list[dict[str, Any]]:
+        sources = ctx.metadata.get("sources")
+        if not ctx.schema or not isinstance(sources, list) or not sources:
+            return []
+        return build_catalog_matches(sources, ctx.schema, self._catalog)
 
     async def _run_turn(self, ctx: TurnContext, *, include_charts: bool) -> ChatResult:
         scope = await self._scope_gate(ctx)
@@ -426,6 +467,7 @@ class ChatService:
             applied=list(ctx.metadata.get("applied", [])),
             scope=ctx.metadata.get("scope"),
             sql_error=bool(turn.meta.get("sql_error")),
+            catalog_matches=self._catalog_matches_for_context(ctx),
             **self._enhancement_metadata_kwargs(ctx),
         )
         enforce_nested_chat_metadata(
@@ -433,15 +475,17 @@ class ChatService:
             sql=turn.exec_result.sql if turn.exec_result else None,
         )
 
-        return ChatResult(
-            session_id=ctx.session_id,
-            message=answer.message,  # type: ignore[union-attr]
-            sources=list(ctx.metadata.get("sources", [])),
-            sql=turn.exec_result.sql if turn.exec_result else None,
-            results=preview,
-            columns=columns,
-            chart=turn.chart,
-            metadata=metadata,
+        return _apply_trust_to_chat_result(
+            ChatResult(
+                session_id=ctx.session_id,
+                message=answer.message,  # type: ignore[union-attr]
+                sources=list(ctx.metadata.get("sources", [])),
+                sql=turn.exec_result.sql if turn.exec_result else None,
+                results=preview,
+                columns=columns,
+                chart=turn.chart,
+                metadata=metadata,
+            )
         )
 
     async def _scope_gate(self, ctx: TurnContext):
@@ -464,10 +508,12 @@ class ChatService:
         )
         enforce_nested_chat_metadata(metadata, sql=None)
         if scope.source == "limits":
-            return ChatResult(
-                session_id=ctx.session_id,
-                message=LIMIT_REFUSAL_MESSAGE,
-                metadata=metadata,
+            return _apply_trust_to_chat_result(
+                ChatResult(
+                    session_id=ctx.session_id,
+                    message=LIMIT_REFUSAL_MESSAGE,
+                    metadata=metadata,
+                )
             )
 
         answer = await self._client.chat.completions.create(
@@ -485,10 +531,12 @@ class ChatService:
         final_suggestions = merge_suggestions(heuristic, llm_suggestions)
         metadata["suggested_queries"] = final_suggestions
         enforce_nested_chat_metadata(metadata, sql=None)
-        return ChatResult(
-            session_id=ctx.session_id,
-            message=answer.message,  # type: ignore[union-attr]
-            metadata=metadata,
+        return _apply_trust_to_chat_result(
+            ChatResult(
+                session_id=ctx.session_id,
+                message=answer.message,  # type: ignore[union-attr]
+                metadata=metadata,
+            )
         )
 
     async def _refusal_stream(self, ctx: TurnContext, scope) -> AsyncIterator[str]:
@@ -512,6 +560,7 @@ class ChatService:
             **self._enhancement_metadata_kwargs(ctx),
         )
         enforce_stream_meta_validation(meta_event)
+        meta_event = apply_trust_gating_to_stream_meta(meta_event)
         yield f"event: seal.meta\ndata: {json.dumps(meta_event)}\n\n"
         payload = {
             "object": "chat.completion.chunk",

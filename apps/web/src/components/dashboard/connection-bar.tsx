@@ -17,6 +17,7 @@ export function ConnectionBar() {
     setConnection,
     setDatabaseId,
     registerDatabases,
+    setTrustExplainabilityEnabled,
     refreshDatabases,
   } = useConnection();
   const [draftUrl, setDraftUrl] = useState(DEFAULT_API_URL);
@@ -58,6 +59,7 @@ export function ConnectionBar() {
 
       setConnection(url, key);
       registerDatabases(result.databases);
+      setTrustExplainabilityEnabled(result.trustExplainabilityEnabled);
       const host = normalizeBaseUrl(url);
       const dbCount = result.databases.length;
       const dbNote =

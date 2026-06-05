@@ -12,6 +12,7 @@ from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
 from seal_core.guardrails.models import ScopeResult
 from seal_core.pipeline.execute import ExecuteQueryResult
 from seal_core.planner.models import ChartType, QueryPlan
+from seal_core.settings import clear_settings_cache
 from seal_sql.result import ColumnMetadata
 
 
@@ -51,8 +52,16 @@ def _exec_result() -> ExecuteQueryResult:
     )
 
 
+def _enable_trust(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SEAL_TRUST_EXPLAINABILITY_ENABLED", "true")
+    clear_settings_cache()
+
+
 @pytest.mark.asyncio
-async def test_run_turn_sql_metadata_includes_execution_fields() -> None:
+async def test_run_turn_sql_metadata_includes_execution_fields(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _enable_trust(monkeypatch)
     service = ChatService(
         planner=MagicMock(),
         registry=_registry(),
@@ -186,7 +195,8 @@ async def test_run_turn_no_sql_when_decision_skips_data() -> None:
 
 
 @pytest.mark.asyncio
-async def test_format_meta_event_includes_execution_fields() -> None:
+async def test_format_meta_event_includes_execution_fields(monkeypatch: pytest.MonkeyPatch) -> None:
+    _enable_trust(monkeypatch)
     from seal_core.chat.service import InScopeTurnData
 
     service = ChatService(

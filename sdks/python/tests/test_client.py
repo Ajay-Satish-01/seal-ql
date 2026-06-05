@@ -18,7 +18,7 @@ from seal import (
 # Fixtures / Helpers
 # ============================================================
 
-_HEALTH_RESPONSE = {"status": "ok"}
+_HEALTH_RESPONSE = {"status": "ok", "trust_explainability_enabled": False}
 _SCHEMA_RESPONSE = {"dialect": "postgres", "tables": []}
 _QUERY_RESPONSE = {
     "sql": "SELECT 1 AS id LIMIT 10000",

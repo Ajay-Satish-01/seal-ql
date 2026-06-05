@@ -2,6 +2,8 @@
 
 import { ChartPanel } from '@/components/dashboard/chart-panel';
 import { MetadataPanel } from '@/components/dashboard/metadata-panel';
+import { shouldShowTrustPanel } from '@seal/trust-explainability';
+import { TrustPanel } from '@/components/dashboard/trust-panel';
 import { PageShell } from '@/components/dashboard/page-shell';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -48,7 +50,7 @@ export default function ChatPageWrapper() {
 }
 
 function ChatPage() {
-  const { apiUrl, apiKey, databaseId } = useConnection();
+  const { apiUrl, apiKey, databaseId, trustExplainabilityEnabled } = useConnection();
   const { refreshSessions } = useChatSessionList();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -235,6 +237,12 @@ function ChatPage() {
     notifyInfo('Started a new chat session');
   }
 
+  const showTrustPanel = shouldShowTrustPanel(trustExplainabilityEnabled, {
+    sql,
+    sources,
+    metadata,
+  });
+
   return (
     <PageShell
       title="Chat"
@@ -258,8 +266,10 @@ function ChatPage() {
       <Card className="console-panel space-y-4 p-4">
         <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs">
           <span>database_id: {activeDatabaseId ?? databaseId}</span>
-          {sessionId && <span>session: {sessionId}</span>}
-          {sources.length > 0 && <span>sources: {sources.join(', ')}</span>}
+          {sessionId ? <span>session: {sessionId}</span> : null}
+          {!showTrustPanel && sources.length > 0 ? (
+            <span>sources: {sources.join(', ')}</span>
+          ) : null}
         </div>
         <textarea
           value={message}
@@ -290,19 +300,29 @@ function ChatPage() {
         </Card>
       )}
 
-      <MetadataPanel
-        metadata={metadata}
-        subtitle="From SSE seal.meta (flat JSON). JSON chat uses the same fields under metadata."
-      />
+      {showTrustPanel ? (
+        <TrustPanel
+          className="console-panel"
+          sql={sql}
+          sources={sources}
+          metadata={metadata}
+          subtitle="From SSE seal.meta when SEAL_TRUST_EXPLAINABILITY_ENABLED is on for this API."
+        />
+      ) : (
+        <MetadataPanel
+          metadata={metadata}
+          subtitle="From SSE seal.meta (flat JSON). JSON chat uses the same fields under metadata."
+        />
+      )}
 
-      {sql && (
+      {!showTrustPanel && sql ? (
         <Card className="console-panel p-4">
           <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
             SQL
           </p>
           <pre className="overflow-x-auto font-mono text-xs">{sql}</pre>
         </Card>
-      )}
+      ) : null}
 
       {chart && (
         <Card className="console-panel p-4">

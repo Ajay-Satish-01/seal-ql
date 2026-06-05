@@ -63,6 +63,14 @@ export default function ExecutionMetadataPage() {
         <code>shared/stream-meta.ts</code> (unknown enum values fail client parse).
       </Callout>
 
+      <Callout variant="info" title="Trust / explainability toggle">
+        Set <code>SEAL_TRUST_EXPLAINABILITY_ENABLED=true</code> to expose SQL provenance (
+        <code>tables_used</code>, <code>columns_used</code>, <code>catalog_matches</code>),{' '}
+        <code>sources</code>, <code>scope</code>, and <code>repair_attempts</code>. Default is{' '}
+        <code>false</code> so production deployments do not leak SQL or provenance unless
+        explicitly enabled. See <DocLink href="/docs/configuration">Configuration</DocLink>.
+      </Callout>
+
       <Callout variant="info" title="Strict validation">
         Set <code>STRICT_STREAM_META_VALIDATION=true</code> (alias{' '}
         <code>STRICT_METADATA_VALIDATION</code>) to fail requests when metadata or{' '}

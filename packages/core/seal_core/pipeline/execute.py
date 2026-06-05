@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, Any
 
 from seal_sql.boundary import format_boundary_errors, validate_and_sanitize
 
+from seal_core.pipeline.provenance import format_columns_used
+
 if TYPE_CHECKING:
     from seal_sql.executor import QueryExecutor
     from seal_sql.result import ColumnMetadata, QueryResult
@@ -32,6 +34,8 @@ class ExecuteQueryResult:
     truncated: bool
     warnings: list[str] = field(default_factory=list)
     repair_attempts: int = 0
+    tables_used: list[str] = field(default_factory=list)
+    columns_used: list[str] = field(default_factory=list)
 
 
 async def execute_natural_language_query(
@@ -88,6 +92,13 @@ async def execute_natural_language_query(
 
     assert boundary_result is not None and result is not None
 
+    validation = boundary_result.validation
+    tables_used: list[str] = []
+    columns_used: list[str] = []
+    if validation is not None:
+        tables_used = sorted(validation.tables_referenced)
+        columns_used = format_columns_used(validation.columns_referenced)
+
     return ExecuteQueryResult(
         sql=boundary_result.executable_sql,
         columns=result.columns,
@@ -98,4 +109,6 @@ async def execute_natural_language_query(
         truncated=result.truncated,
         warnings=list(boundary_result.warnings),
         repair_attempts=repair_attempts,
+        tables_used=tables_used,
+        columns_used=columns_used,
     )

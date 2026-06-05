@@ -187,6 +187,15 @@ export const chatConfig: ConfigRow[] = [
       'Use in CI or staging to catch contract regressions early. Default off so production stays resilient to minor shape drift.',
   },
   {
+    name: 'SEAL_TRUST_EXPLAINABILITY_ENABLED',
+    type: 'boolean',
+    default: 'false',
+    description:
+      'When true, API and SSE responses include trust/explainability fields: SQL provenance (tables_used, columns_used), catalog_matches, sources, scope, repair_attempts, and chat sql/results preview.',
+    expect:
+      'Leave false in production when end users should not see SQL or provenance. Enable in dev, staging, or operator-only dashboards.',
+  },
+  {
     name: 'CHAT_SESSION_STORE',
     type: 'string',
     default: 'memory',

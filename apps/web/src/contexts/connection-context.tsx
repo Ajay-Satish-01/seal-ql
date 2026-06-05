@@ -1,6 +1,9 @@
 'use client';
 
 import {
+  readTrustExplainabilityFromEnv,
+} from '@seal/trust-explainability';
+import {
   DEFAULT_API_URL,
   DEFAULT_DATABASE_ID,
   getStoredApiKey,
@@ -27,9 +30,11 @@ type ConnectionContextValue = {
   databaseId: string;
   registeredDatabases: DatabaseInfo[];
   revision: number;
+  trustExplainabilityEnabled: boolean;
   setConnection: (apiUrl: string, apiKey: string) => void;
   setDatabaseId: (databaseId: string) => void;
   registerDatabases: (list: DatabaseInfo[]) => void;
+  setTrustExplainabilityEnabled: (enabled: boolean) => void;
   refreshDatabases: () => Promise<void>;
 };
 
@@ -43,6 +48,9 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
     { database_id: DEFAULT_DATABASE_ID, dialect: 'postgres', is_default: true },
   ]);
   const [revision, setRevision] = useState(0);
+  const [trustExplainabilityEnabled, setTrustExplainabilityEnabled] = useState(
+    readTrustExplainabilityFromEnv,
+  );
 
   useEffect(() => {
     // Hydrate from localStorage after mount (not available during SSR).
@@ -103,9 +111,11 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       databaseId,
       registeredDatabases,
       revision,
+      trustExplainabilityEnabled,
       setConnection,
       setDatabaseId,
       registerDatabases,
+      setTrustExplainabilityEnabled,
       refreshDatabases,
     }),
     [
@@ -114,6 +124,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       databaseId,
       registeredDatabases,
       revision,
+      trustExplainabilityEnabled,
       setConnection,
       setDatabaseId,
       registerDatabases,

@@ -1,12 +1,13 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Security
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from seal_core.chat.errors import SessionDatabaseMismatchError
 from seal_core.chat.models import ChatMessage
 from seal_core.chat.service import ChatService
 from seal_core.chat.session.ids import InvalidSessionIdError
 from seal_core.database.registry import DatabaseRegistry
+from seal_core.pipeline.trust import apply_trust_gating_to_chat_response
 
 from app.database_routing import get_database_bundle, session_database_mismatch_detail
 from app.dependencies import get_chat_service, get_database_registry
@@ -87,15 +88,19 @@ async def chat(
         logger.exception("Chat request failed")
         raise HTTPException(status_code=500, detail=public_server_error_detail()) from exc
 
-    return ChatResponse.model_validate(
-        {
-            "session_id": result.session_id,
-            "message": result.message,
-            "sources": result.sources,
-            "sql": result.sql,
-            "results": result.results,
-            "columns": result.columns,
-            "chart": result.chart,
-            "metadata": result.metadata,
-        }
+    return JSONResponse(
+        content=apply_trust_gating_to_chat_response(
+            {
+                "session_id": result.session_id,
+                "message": result.message,
+                "sources": result.sources,
+                "sql": result.sql,
+                "results": result.results,
+                "columns": result.columns,
+                "chart": result.chart.model_dump()
+                if hasattr(result.chart, "model_dump")
+                else result.chart,
+                "metadata": result.metadata,
+            }
+        )
     )

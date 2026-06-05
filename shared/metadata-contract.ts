@@ -29,6 +29,12 @@ export interface ScopeMetadata {
   source: ScopeSource;
 }
 
+export interface CatalogMatchItem {
+  name: string;
+  schema?: string;
+  description?: string | null;
+}
+
 /** Shared execution fields on query and chat. */
 export interface ExecutionMetadata {
   database_id?: string;
@@ -38,6 +44,9 @@ export interface ExecutionMetadata {
   warnings?: string[];
   repair_attempts?: number;
   used_sql?: boolean;
+  tables_used?: string[];
+  columns_used?: string[];
+  catalog_matches?: CatalogMatchItem[];
   enhancement?: EnhancementMetadata;
 }
 

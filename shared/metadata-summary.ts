@@ -46,6 +46,27 @@ export function metadataBadges(meta: ChatMetadata | ExecutionMetadata): Metadata
   }
   if (chatMeta.scope && !chatMeta.scope.in_scope) {
     badges.push({ label: `scope: ${chatMeta.scope.reason}`, variant: 'warning' });
+  } else if (chatMeta.scope?.in_scope) {
+    badges.push({ label: `scope: in (${chatMeta.scope.source})`, variant: 'default' });
+  }
+
+  if (typeof meta.repair_attempts === 'number' && meta.repair_attempts > 0) {
+    badges.push({
+      label: `${meta.repair_attempts} repair(s)`,
+      variant: 'warning',
+    });
+  }
+  if (meta.tables_used && meta.tables_used.length > 0) {
+    badges.push({
+      label: `${meta.tables_used.length} table(s)`,
+      variant: 'muted',
+    });
+  }
+  if (meta.catalog_matches && meta.catalog_matches.length > 0) {
+    badges.push({
+      label: `${meta.catalog_matches.length} catalog match(es)`,
+      variant: 'muted',
+    });
   }
 
   const enh = meta.enhancement;
