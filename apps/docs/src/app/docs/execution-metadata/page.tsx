@@ -14,7 +14,7 @@ import {
 
 export default function ExecutionMetadataPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Execution metadata"
         description="Shared execution fields on /v1/query and /v1/chat — aligned across JSON and SSE seal.meta."

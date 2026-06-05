@@ -5,7 +5,7 @@ import { Callout } from '@/components/docs/callout';
 
 export default function ArchitecturePage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="System architecture"
         description="How natural language becomes validated SQL, results, and charts."

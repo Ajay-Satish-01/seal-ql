@@ -6,7 +6,7 @@ import { ParamTable } from '@/components/docs/param-table';
 
 export default function AuthenticationPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Authentication"
         description="Every Seal deployment requires a shared API key on /v1/*."

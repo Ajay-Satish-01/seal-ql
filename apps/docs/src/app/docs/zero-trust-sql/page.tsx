@@ -5,7 +5,7 @@ import { DocsProse } from '@/components/docs/docs-prose';
 
 export default function ZeroTrustSqlPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Zero-trust SQL boundary"
         description="How Seal parses, validates, and sanitizes every LLM-generated statement before it reaches your database."

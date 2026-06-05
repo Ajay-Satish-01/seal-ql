@@ -14,7 +14,7 @@ export default function DataCatalogPage() {
   const base = SITE.defaultBaseUrl;
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Data catalog"
         description="Auto-generated YAML with optional business descriptions — used globally by chat and query."

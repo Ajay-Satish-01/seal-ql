@@ -5,7 +5,7 @@ import { ParamTable } from '@/components/docs/param-table';
 
 export default function ChartsAnalysisPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Charts & Analysis"
         description="How Seal chooses chart types and returns Vega-Lite specs."

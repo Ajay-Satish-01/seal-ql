@@ -6,7 +6,7 @@ import { DocLink } from '@/components/docs/doc-link';
 
 export default function FeaturesPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Features"
         description="Everything Seal provides for production NL analytics — from introspection to charts."

@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function VectorRagPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Vector RAG"
         description="Optional Chroma-backed retrieval over catalog, schema comments, and document folders."

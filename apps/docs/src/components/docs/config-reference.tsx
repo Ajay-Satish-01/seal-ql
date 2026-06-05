@@ -29,14 +29,12 @@ export function ConfigReference({ rows, className }: ConfigReferenceProps) {
         className,
       )}
     >
-      <table className="w-full min-w-[40rem] text-left">
+      <table className="w-full min-w-[52rem] text-left">
         <thead>
           <tr className="border-border/50 bg-muted/40 border-b">
             <th className="text-foreground px-4 py-3 font-semibold">Variable</th>
             <th className="text-foreground px-4 py-3 font-semibold">Type</th>
-            <th className="text-foreground hidden px-4 py-3 font-semibold sm:table-cell">
-              Default
-            </th>
+            <th className="text-foreground px-4 py-3 font-semibold">Default</th>
             <th className="text-foreground px-4 py-3 font-semibold">Purpose</th>
             <th className="text-foreground px-4 py-3 font-semibold">What to expect</th>
           </tr>
@@ -49,7 +47,7 @@ export function ConfigReference({ rows, className }: ConfigReferenceProps) {
                 {row.required ? <span className="text-destructive ml-1">*</span> : null}
               </td>
               <td className="px-4 py-3 align-top font-mono text-xs">{row.type}</td>
-              <td className="hidden px-4 py-3 align-top font-mono text-xs sm:table-cell">
+              <td className="px-4 py-3 align-top font-mono text-xs">
                 {row.default ?? '—'}
               </td>
               <td className="px-4 py-3 align-top leading-relaxed">{row.description}</td>

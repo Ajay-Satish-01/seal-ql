@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 
 export default function QuickstartPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Quickstart"
         description="From zero to a working NL → SQL → chart flow in under fifteen minutes."

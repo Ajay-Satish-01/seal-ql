@@ -15,7 +15,7 @@ import {
 
 export default function IntegrationGuidePage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Integration Guide"
         description="Connect your application to a self-hosted Seal API."

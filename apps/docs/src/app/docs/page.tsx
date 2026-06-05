@@ -107,7 +107,7 @@ const CAPABILITY_CARDS = [
 
 export default function DocsPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="What is Seal?"
         description="An open-source AI SQL gateway: natural language → validated SQL → results and Vega-Lite charts."

@@ -4,7 +4,7 @@ import { Callout } from '@/components/docs/callout';
 
 export default function DashboardPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Operational dashboard"
         description="Live API console at apps/web (port 3001) for Query, Chat, Schema, Catalog, Settings, and Vector."

@@ -5,7 +5,7 @@ import { DocsProse } from '@/components/docs/docs-prose';
 
 export default function LocalEvalsPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Local planner evals"
         description="Grade the query planner against a fixed dataset on your machine."

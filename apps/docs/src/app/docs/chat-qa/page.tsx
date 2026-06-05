@@ -17,7 +17,7 @@ export default function ChatQaPage() {
   const base = SITE.defaultBaseUrl;
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Chat & Q&A"
         description="Schema-grounded conversational analytics with optional charts, streaming, and session memory."

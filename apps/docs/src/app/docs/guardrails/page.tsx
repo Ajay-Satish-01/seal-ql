@@ -8,7 +8,7 @@ import { guardrailsConfig } from '@/data/configuration-reference';
 
 export default function GuardrailsPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Guardrails"
         description="How Seal decides whether a message belongs on a data analytics API — before SQL, RAG, or multi-step chat models run."
