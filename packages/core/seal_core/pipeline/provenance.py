@@ -19,11 +19,25 @@ def format_columns_used(columns_referenced: dict[str, set[str]]) -> list[str]:
     return out
 
 
-def _schema_name_for_table(schema: DatabaseSchema, table_name: str) -> str:
-    for table in schema.tables:
-        if table.name == table_name:
-            return table.schema_name
-    return "public"
+def _split_table_identifier(table_name: str) -> tuple[str | None, str]:
+    if "." not in table_name:
+        return None, table_name
+    schema_part, bare_name = table_name.rsplit(".", 1)
+    return schema_part, bare_name
+
+
+def _schema_name_for_table(schema: DatabaseSchema, table_name: str) -> str | None:
+    schema_hint, bare_name = _split_table_identifier(table_name)
+    if schema_hint is not None:
+        for table in schema.tables:
+            if table.name == bare_name and table.schema_name == schema_hint:
+                return table.schema_name
+        return None
+
+    matches = [table.schema_name for table in schema.tables if table.name == bare_name]
+    if len(matches) == 1:
+        return matches[0]
+    return None
 
 
 def build_catalog_matches(
@@ -34,13 +48,14 @@ def build_catalog_matches(
     """Catalog entries selected for planner context."""
     matches: list[dict[str, Any]] = []
     for name in table_names:
+        _, bare_name = _split_table_identifier(name)
         schema_name = _schema_name_for_table(schema, name)
-        entry = catalog.get_entry(name, schema_name) if catalog else None
+        entry = catalog.get_entry(bare_name, schema_name) if catalog and schema_name else None
         description = catalog.get_description(entry) if entry and catalog else None
         matches.append(
             {
-                "name": name,
-                "schema": schema_name,
+                "name": bare_name,
+                "schema": schema_name or "unknown",
                 "description": description,
             }
         )

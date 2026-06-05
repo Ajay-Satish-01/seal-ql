@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from seal_charts.engine import ChartEngine
 from seal_core.catalog.registry import DataCatalogRegistry
@@ -70,7 +71,7 @@ async def execute_query(
             request.query,
             schema,
             catalog,
-            full_schema=False,
+            full_schema=True,
         )
 
         exec_result = await execute_natural_language_query(
@@ -80,7 +81,7 @@ async def execute_query(
             executor=bundle.executor,
             semantic_registry=semantic,
             data_catalog=catalog,
-            table_names=table_names,
+            table_names=None,
         )
 
         result = QueryResult(
@@ -103,17 +104,16 @@ async def execute_query(
         metadata["scope"] = ScopeMetadata.from_result(scope).model_dump(exclude_none=True)
         enforce_query_metadata(metadata)
 
-        response_payload = apply_trust_gating_to_query_response(
-            QueryResponse(
-                sql=exec_result.sql,
-                columns=exec_result.columns,
-                results=exec_result.rows,
-                chart=chart_spec,
-                sources=table_names,
-                metadata=metadata,
-            ).model_dump()
+        response_model = QueryResponse(
+            sql=exec_result.sql,
+            columns=exec_result.columns,
+            results=exec_result.rows,
+            chart=chart_spec,
+            sources=table_names,
+            metadata=metadata,
         )
-        return JSONResponse(content=response_payload)
+        response_payload = apply_trust_gating_to_query_response(response_model.model_dump())
+        return JSONResponse(content=jsonable_encoder(response_payload))
     except HTTPException:
         raise
     except InvalidQueryMetadataError as e:

@@ -115,9 +115,11 @@ export function TrustPanel({
           {tabs.map((id) => (
             <button
               key={id}
+              id={`tab-${id}`}
               type="button"
               role="tab"
               aria-selected={activeTab === id}
+              aria-controls={`panel-${id}`}
               onClick={() => setTab(id)}
               className={
                 activeTab === id
@@ -131,7 +133,12 @@ export function TrustPanel({
         </div>
       ) : null}
 
-      <div role="tabpanel" className="min-h-[4rem]">
+      <div
+        id={`panel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`tab-${activeTab}`}
+        className="min-h-[4rem]"
+      >
         {activeTab === 'sql' && typeof sql === 'string' ? (
           <pre className="border-border/50 bg-muted/25 max-h-72 overflow-auto rounded-md border p-3 font-mono text-xs leading-relaxed">
             {sql}

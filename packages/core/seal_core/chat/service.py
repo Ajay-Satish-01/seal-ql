@@ -423,8 +423,8 @@ class ChatService:
             catalog_matches=self._catalog_matches_for_context(ctx),
             **self._enhancement_metadata_kwargs(ctx),
         )
-        enforce_stream_meta_validation(meta_event)
         meta_event = apply_trust_gating_to_stream_meta(meta_event)
+        enforce_stream_meta_validation(meta_event)
         return f"event: seal.meta\ndata: {json.dumps(meta_event)}\n\n"
 
     def _catalog_matches_for_context(self, ctx: TurnContext) -> list[dict[str, Any]]:
@@ -559,8 +559,8 @@ class ChatService:
             suggested_queries=suggested if isinstance(suggested, list) else None,
             **self._enhancement_metadata_kwargs(ctx),
         )
-        enforce_stream_meta_validation(meta_event)
         meta_event = apply_trust_gating_to_stream_meta(meta_event)
+        enforce_stream_meta_validation(meta_event)
         yield f"event: seal.meta\ndata: {json.dumps(meta_event)}\n\n"
         payload = {
             "object": "chat.completion.chunk",

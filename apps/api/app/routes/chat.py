@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, StreamingResponse
 from seal_core.chat.errors import SessionDatabaseMismatchError
 from seal_core.chat.models import ChatMessage
@@ -88,19 +89,18 @@ async def chat(
         logger.exception("Chat request failed")
         raise HTTPException(status_code=500, detail=public_server_error_detail()) from exc
 
-    return JSONResponse(
-        content=apply_trust_gating_to_chat_response(
-            {
-                "session_id": result.session_id,
-                "message": result.message,
-                "sources": result.sources,
-                "sql": result.sql,
-                "results": result.results,
-                "columns": result.columns,
-                "chart": result.chart.model_dump()
-                if hasattr(result.chart, "model_dump")
-                else result.chart,
-                "metadata": result.metadata,
-            }
-        )
+    response_payload = apply_trust_gating_to_chat_response(
+        {
+            "session_id": result.session_id,
+            "message": result.message,
+            "sources": result.sources,
+            "sql": result.sql,
+            "results": result.results,
+            "columns": result.columns,
+            "chart": (
+                result.chart.model_dump() if hasattr(result.chart, "model_dump") else result.chart
+            ),
+            "metadata": result.metadata,
+        }
     )
+    return JSONResponse(content=jsonable_encoder(response_payload))
