@@ -236,6 +236,17 @@ def test_redact_database_url_masks_password() -> None:
     assert "***:***@localhost:5432" in redacted
 
 
+def test_redact_database_url_masks_sensitive_query_params() -> None:
+    redacted = redact_database_url(
+        "postgresql://localhost/seal?password=secret&api_key=abc123&sslmode=require",
+    )
+    assert "secret" not in redacted
+    assert "abc123" not in redacted
+    assert "password=%2A%2A%2A" in redacted or "password=***" in redacted
+    assert "api_key=%2A%2A%2A" in redacted or "api_key=***" in redacted
+    assert "sslmode=require" in redacted
+
+
 def test_failed_matrix_legs_identifies_bad_run() -> None:
     matrix = {
         "comparison": True,

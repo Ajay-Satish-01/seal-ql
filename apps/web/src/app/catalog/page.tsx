@@ -115,6 +115,8 @@ export default function CatalogPage() {
   }
 
   function save() {
+    if (isPending || isSyncing) return;
+
     const dirtyTables = tables.filter((table) => {
       const key = catalogEntryKey(table);
       return descriptionForEntry(table) !== (savedSnapshot[key] ?? '');
@@ -276,7 +278,10 @@ export default function CatalogPage() {
 
       {tables.length > 0 && (
         <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={save} disabled={isSaving || !hasUnsavedChanges}>
+          <Button
+            onClick={save}
+            disabled={isSaving || isPending || isSyncing || !hasUnsavedChanges}
+          >
             {isSaving ? 'Saving…' : `Save ${dirtyCount > 0 ? dirtyCount : ''} description${dirtyCount === 1 ? '' : 's'}`.trim()}
           </Button>
         </div>

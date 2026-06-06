@@ -11,7 +11,7 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypedDict
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from seal_core.planner.planner import QueryPlanner
 from seal_core.schema.introspector import get_introspector
@@ -114,6 +114,34 @@ def require_non_empty_csv(value: str, *, flag_name: str) -> list[str]:
     return items
 
 
+_SENSITIVE_QUERY_KEYS = frozenset(
+    {
+        "password",
+        "passwd",
+        "pwd",
+        "token",
+        "auth",
+        "secret",
+        "access_token",
+        "api_key",
+        "api-key",
+    }
+)
+
+
+def _redact_query_params(query: str) -> str:
+    """Mask sensitive query-string values for safe logging/output."""
+    if not query:
+        return query
+    redacted_pairs: list[tuple[str, str]] = []
+    for key, value in parse_qsl(query, keep_blank_values=True):
+        if key.lower() in _SENSITIVE_QUERY_KEYS:
+            redacted_pairs.append((key, "***"))
+        else:
+            redacted_pairs.append((key, value))
+    return urlencode(redacted_pairs)
+
+
 def redact_database_url(db_url: str) -> str:
     """Redact credentials from a database URL for logs and JSON output."""
     try:
@@ -137,7 +165,8 @@ def redact_database_url(db_url: str) -> str:
             host_part = f"{host_part}:{parsed.port}"
         netloc = f"***:***@{host_part}"
 
-    return urlunparse(parsed._replace(netloc=netloc))
+    query = _redact_query_params(parsed.query)
+    return urlunparse(parsed._replace(netloc=netloc, query=query))
 
 
 def clamp_positive_timeout(value: str) -> float:
