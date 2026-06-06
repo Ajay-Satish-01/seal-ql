@@ -14,8 +14,12 @@ export default function LocalEvalsPage() {
       <DocsProse>
         <p>
           The harness in <code>evals/seal_evals/runner.py</code> runs each line in{' '}
-          <code>evals/data/eval_set.jsonl</code> through the same planner and SQLGlot boundary used in
-          production, then optionally executes validated SQL against your seeded Postgres database.
+          <code>evals/data/eval_set.jsonl</code> (public benchmark; see{' '}
+          <code>EVAL_SET_EXPECTED_*</code> in <code>evals/seal_evals/runner.py</code> — analytics,
+          TimescaleDB/dialect-sensitive
+          cases, and <code>should_fail</code> safety negatives) through the same planner and SQLGlot
+          boundary used in production, then optionally executes validated SQL against your seeded
+          Postgres database.
         </p>
 
         <h2>Prerequisites</h2>
@@ -54,6 +58,27 @@ uv run pytest evals/tests/test_runner.py -v`}
           (boolean). Omitting <code>database_url</code> targets seeded Postgres on{' '}
           <code>localhost:5432</code> — not an in-memory database.
         </p>
+
+        <h2>Model and dialect comparison</h2>
+        <p>
+          Pass <code>--models</code> and/or <code>--dialect-urls</code> for side-by-side matrix runs on
+          the same JSONL. Output includes <code>&quot;comparison&quot;: true</code> and a{' '}
+          <code>runs</code> array with one result per dialect URL × model. Exit code{' '}
+          <strong>1</strong> when any leg fails the minimum rate or records hard errors.
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`# Compare two local Ollama models (planner-only smoke)
+uv run python evals/seal_evals/runner.py --planner-only \\
+  --models ollama/llama3.2:1b,ollama/qwen2.5:3b
+
+# Compare Postgres vs in-memory DuckDB
+uv run python evals/seal_evals/runner.py --planner-only \\
+  --dialect-urls postgresql+asyncpg://postgres:postgres@localhost:5432/seal,duckdb:///:memory:
+
+# Via Make (comma-separated MODELS / DIALECT_URLS)
+MODELS=ollama/llama3.2:1b,ollama/qwen2.5:3b EVAL_PLANNER=1 make eval-compare`}
+        />
 
         <h2>Interpreting results</h2>
         <p>

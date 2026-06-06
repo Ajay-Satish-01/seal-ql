@@ -16,6 +16,7 @@ Markdown in this directory describes **how Seal works** for contributors and int
 | Deploying on AWS (ECS / Lambda) | [../DEPLOYMENT.md#aws-deployment](../DEPLOYMENT.md#aws-deployment) |
 | Cutting a release | [../RELEASING.md](../RELEASING.md) (no docs site page — repo-only) |
 | Running local planner evals | [local-evals.md](local-evals.md) → `/docs/local-evals` |
+| Editing catalog descriptions | [catalog-curation.md](catalog-curation.md) → `/docs/data-catalog` |
 
 ## Core pipeline
 
@@ -33,6 +34,7 @@ Markdown in this directory describes **how Seal works** for contributors and int
 | --- | ----- | --------- |
 | [multi-database.md](multi-database.md) | `database_id`, `DatabaseRegistry`, session pinning | `/docs/multi-database` |
 | [workspace-api.md](workspace-api.md) | Postgres workspace KV, hot-reload, catalog overrides | `/docs/workspace` |
+| [catalog-curation.md](catalog-curation.md) | Description edit → save → next query/chat flow | `/docs/data-catalog` |
 | Env tables (user-facing) | — | `/docs/configuration` |
 
 ## Integrations (`docs/integrations/`)
@@ -80,7 +82,7 @@ make check            # Full CI mirror (includes above)
 | ---- | ---- |
 | [local-evals.md](local-evals.md) | When to run, commands, metrics, why PR CI excludes LLM evals |
 | [evals/seal_evals/runner.py](../evals/seal_evals/runner.py) | CLI: plan → validate → (optional) execute |
-| [evals/data/eval_set.jsonl](../evals/data/eval_set.jsonl) | 20 NL questions on seed schema |
+| [evals/data/eval_set.jsonl](../evals/data/eval_set.jsonl) | Public NL benchmark (`EVAL_SET_EXPECTED_*` in runner) |
 
 ```bash
 make up && make seed && make eval-planner   # local smoke test

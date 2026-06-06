@@ -45,18 +45,30 @@ export function DashboardSidebar() {
           );
         })}
       </nav>
-      <p className="text-muted-foreground px-4 py-3 text-xs leading-relaxed">
-        Live API · port 3001
-        <br />
-        <a
-          href={docsPageUrl('/docs/embedding')}
-          target="_blank"
-          rel="noreferrer"
-          className="text-primary hover:underline"
-        >
-          Embedding guide
-        </a>
-      </p>
+      <div className="text-muted-foreground space-y-1 px-4 py-3 text-xs leading-relaxed">
+        <p>Live API · port 3001</p>
+        <p className="flex flex-wrap gap-x-2 gap-y-0.5">
+          <a
+            href={docsPageUrl('/docs/embedding')}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary hover:underline"
+          >
+            Embedding guide
+          </a>
+          <span aria-hidden className="text-border">
+            ·
+          </span>
+          <a
+            href={docsPageUrl('/docs/local-evals')}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary hover:underline"
+          >
+            Local evals
+          </a>
+        </p>
+      </div>
     </aside>
   );
 }

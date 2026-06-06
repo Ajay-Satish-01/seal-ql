@@ -81,19 +81,21 @@ async def patch_catalog_descriptions(
     overrides = await store.get_catalog_overrides()
     for item in body.tables:
         key = f"{item.schema_name}.{item.name}"
-        overrides[key] = {
-            "table_description": item.table_description,
-            "view_description": item.view_description,
-        }
+        merged = dict(overrides.get(key, {}))
+        if "table_description" in item.model_fields_set:
+            merged["table_description"] = item.table_description
+        if "view_description" in item.model_fields_set:
+            merged["view_description"] = item.view_description
+        overrides[key] = merged
     await store.save_catalog_overrides(overrides)
 
     for item in body.tables:
         entry = registry.get_entry(item.name, item.schema_name)
         if entry is None:
             continue
-        if item.table_description is not None:
+        if "table_description" in item.model_fields_set:
             entry.table_description = item.table_description
-        if item.view_description is not None:
+        if "view_description" in item.model_fields_set:
             entry.view_description = item.view_description
 
     cat = registry.catalog

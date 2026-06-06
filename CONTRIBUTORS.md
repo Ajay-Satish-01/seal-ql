@@ -193,7 +193,7 @@ Seal features self-correcting query mechanisms and domain-aware schema reasoning
 
 **Guide:** [docs/local-evals.md](docs/local-evals.md) · docs site `/docs/local-evals`
 
-- **`EvalRunner`** — `evals/seal_evals/runner.py` + **`evals/data/eval_set.jsonl`** (20 questions, including `should_fail` cases).
+- **`EvalRunner`** — `evals/seal_evals/runner.py` + **`evals/data/eval_set.jsonl`** (`EVAL_SET_EXPECTED_*` constants; including `should_fail` cases).
 - Metrics: `validation_rate` / `execution_rate` over `scored_queries`, plus `timeouts`, `repair_successes`, `expected_failures_caught`. Default `--min-execution-rate` **0.6**; per-case `--query-timeout` = `query_timeout_seconds × 3 + 120`.
 - **Local (Docker stack):**
   ```bash

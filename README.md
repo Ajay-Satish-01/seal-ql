@@ -93,7 +93,7 @@ console.log(chat.message, chat.sql);
 * **API Key Authentication**: `SEAL_API_KEY` required at startup; shared `X-API-Key` on all `/v1/*` routes (`SEAL_DEV_MODE`, `SEAL_DISABLE_DOCS`).
 * **LLM Guardrails**: Scope gate on `/v1/query` and `/v1/chat` — in-scope analytics/schema only; chat returns HTTP 200 with `metadata.suggested_queries` on refusal; query returns HTTP 400 with structured `detail` (`query_out_of_scope`, `reason`, up to three `suggested_queries`). SDKs raise `QueryOutOfScopeError` on query guardrails failures.
 * **Workspace API**: Hot-reload guardrails and chat settings in dev; catalog description overrides; vector reindex.
-* **Local planner evals**: Dataset `evals/data/eval_set.jsonl` and `make eval` / `make eval-planner` for manual planner grading on a seeded stack ([docs/local-evals.md](docs/local-evals.md) — not in PR CI).
+* **Local planner evals**: Public JSONL benchmark (`evals/data/eval_set.jsonl`; see `EVAL_SET_EXPECTED_*` in `evals/seal_evals/runner.py`) with `make eval`, `make eval-planner`, and `make eval-compare` for manual grading on a seeded stack ([docs/local-evals.md](docs/local-evals.md) — not in PR CI).
 
 ---
 

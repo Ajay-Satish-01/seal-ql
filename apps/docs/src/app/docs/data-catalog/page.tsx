@@ -138,6 +138,40 @@ make sync-catalog          # writes config/catalog.yaml
       <CodeBlock language="python" code={pythonCatalogSnippet(base)} />
       <CodeBlock language="typescript" code={tsCatalogSnippet(base)} />
 
+      <h2 className="font-heading mt-8 text-xl font-semibold">Curation loop (edit → save → query)</h2>
+      <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+        Descriptions you save are merged into the live catalog registry immediately — the{' '}
+        <strong>next</strong> <code>POST /v1/query</code> or chat turn uses your text. No API restart
+        is required.
+      </p>
+      <ol className="text-muted-foreground mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed">
+        <li>
+          Open the operational dashboard <Link href="/docs/dashboard">Catalog page</Link> (port 3001)
+          or call <code>PATCH /v1/catalog/descriptions</code>.
+        </li>
+        <li>
+          Edit a table description and click <strong>Save descriptions</strong>. The dashboard
+          shows an <em>Active override</em> badge and a confirmation that overrides are live for
+          planning.
+        </li>
+        <li>
+          Run a query or chat message on the same API instance. The planner reads your description
+          from the in-memory registry.
+        </li>
+        <li>
+          After a schema migration, run <code>POST /v1/catalog/sync</code>. YAML is rebuilt from
+          introspection; Postgres overrides are <strong>re-applied</strong> (see{' '}
+          <code>preserved</code> in the sync response).
+        </li>
+      </ol>
+
+      <Callout variant="success" title="Try it">
+        Add a distinctive description to <code>public.orders</code>, save, then ask{' '}
+        <em>&quot;What is total revenue from completed orders?&quot;</em> on{' '}
+        <Link href="/demo">/demo</Link> or the dashboard Query page. Compare SQL table choice before
+        and after.
+      </Callout>
+
       <h2 className="font-heading mt-8 text-xl font-semibold">How descriptions improve answers</h2>
       <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
         Without descriptions, the planner sees only column names and types. Adding a description
