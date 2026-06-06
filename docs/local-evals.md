@@ -32,9 +32,28 @@ EVAL_MIN_RATE=0.3 make eval-planner
 
 ## Dataset
 
-- **Path:** `evals/data/eval_set.jsonl` (20 NL questions on the seed schema, including `should_fail` safety cases).
+- **Path:** `evals/data/eval_set.jsonl` — public benchmark (`EVAL_SET_EXPECTED_TOTAL` / `EVAL_SET_EXPECTED_SHOULD_FAIL` in `evals/seal_evals/runner.py`; currently 27 questions including TimescaleDB/dialect-sensitive prompts and `should_fail` safety cases).
 - **Runner:** `evals/seal_evals/runner.py`
 - Each line must be a JSON object with exactly `question` (string) and `should_fail` (boolean).
+
+## Model and dialect comparison
+
+Compare models or database URLs side-by-side on the same JSONL:
+
+```bash
+# Two LiteLLM models on seeded Postgres
+uv run python evals/seal_evals/runner.py --planner-only \
+  --models ollama/llama3.2:1b,ollama/qwen2.5:3b
+
+# Postgres vs DuckDB (pass explicit URLs)
+uv run python evals/seal_evals/runner.py --planner-only \
+  --dialect-urls postgresql+asyncpg://postgres:postgres@localhost:5432/seal,duckdb:///:memory:
+
+# Full matrix via Make (MODELS and DIALECT_URLS are comma-separated)
+MODELS=ollama/llama3.2:1b,ollama/qwen2.5:3b make eval-compare
+```
+
+Matrix runs print JSON with `"comparison": true` and a `runs` array (one entry per dialect URL × model). Exit code **1** if any leg falls below `--min-execution-rate` or records hard errors.
 
 ## CLI default database URL
 

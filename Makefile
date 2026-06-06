@@ -1,4 +1,4 @@
-.PHONY: up down build test test-cov logs shell lint format seed setup check ci help eval eval-planner eval-local
+.PHONY: up down build test test-cov logs shell lint format seed setup check ci help eval eval-planner eval-local eval-compare
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -222,6 +222,13 @@ EVAL_HOST_DB_URL ?= postgresql+asyncpg://postgres:postgres@localhost:5432/seal
 eval-local: ## Local only: run eval runner on host (ARGS=DB URL; EVAL_PLANNER=1 for validation-only)
 	uv run python evals/seal_evals/runner.py \
 		$(or $(ARGS),$(EVAL_HOST_DB_URL)) \
+		$(if $(EVAL_PLANNER),--planner-only,) $(EVAL_MIN_RATE_FLAG)
+
+eval-compare: ## Local only: matrix compare (MODELS=m1,m2; DIALECT_URLS=url1,url2; EVAL_PLANNER=1)
+	uv run python evals/seal_evals/runner.py \
+		$(or $(ARGS),$(EVAL_HOST_DB_URL)) \
+		$(if $(MODELS),--models $(MODELS),) \
+		$(if $(DIALECT_URLS),--dialect-urls $(DIALECT_URLS),) \
 		$(if $(EVAL_PLANNER),--planner-only,) $(EVAL_MIN_RATE_FLAG)
 
 check-e2e: ## Run live E2E tests (requires `make up` + `make seed`)

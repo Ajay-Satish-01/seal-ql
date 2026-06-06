@@ -106,6 +106,7 @@ export interface QueryResponse {
 export interface CatalogTable {
   name: string;
   schema?: string;
+  kind?: string;
   table_description?: string | null;
   view_description?: string | null;
 }

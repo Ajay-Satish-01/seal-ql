@@ -11,6 +11,7 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypedDict
+from urllib.parse import urlparse, urlunparse
 
 from seal_core.planner.planner import QueryPlanner
 from seal_core.schema.introspector import get_introspector
@@ -31,6 +32,10 @@ MAX_ATTEMPTS = 3
 _LLM_BUFFER_SECONDS = 120.0
 
 _EVAL_CASE_KEYS = frozenset({"question", "should_fail"})
+
+# Sync guard: evals/tests/test_default_eval_set_case_count asserts the JSONL matches these.
+EVAL_SET_EXPECTED_TOTAL = 27
+EVAL_SET_EXPECTED_SHOULD_FAIL = 5
 
 
 class EvalCase(TypedDict):
@@ -94,6 +99,45 @@ def clamp_min_rate(value: str) -> float:
             f"min-execution-rate must be between 0 and 1 inclusive, got {rate}"
         )
     return rate
+
+
+def parse_csv_list(value: str) -> list[str]:
+    """Split a comma-separated CLI value into non-empty tokens."""
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
+def require_non_empty_csv(value: str, *, flag_name: str) -> list[str]:
+    """Parse a comma-separated CLI flag and reject empty lists."""
+    items = parse_csv_list(value)
+    if not items:
+        raise ValueError(f"{flag_name} must list at least one value")
+    return items
+
+
+def redact_database_url(db_url: str) -> str:
+    """Redact credentials from a database URL for logs and JSON output."""
+    try:
+        parsed = urlparse(db_url)
+    except ValueError:
+        return "<invalid-url>"
+
+    if not parsed.scheme and not parsed.netloc:
+        return db_url
+
+    username = parsed.username
+    hostname = parsed.hostname
+    if not hostname and not parsed.path:
+        return db_url
+
+    netloc = parsed.netloc
+    has_credentials = username is not None or parsed.password is not None
+    if has_credentials:
+        host_part = hostname or ""
+        if parsed.port is not None:
+            host_part = f"{host_part}:{parsed.port}"
+        netloc = f"***:***@{host_part}"
+
+    return urlunparse(parsed._replace(netloc=netloc))
 
 
 def clamp_positive_timeout(value: str) -> float:
@@ -190,12 +234,14 @@ class EvalRunner:
         *,
         planner_only: bool = False,
         query_timeout: float | None = None,
+        model: str | None = None,
     ) -> None:
         self.db_url = db_url
         self.dialect = dialect
         self.planner_only = planner_only
         self.query_timeout = query_timeout if query_timeout is not None else default_query_timeout()
-        self.planner = QueryPlanner()
+        self.model = model
+        self.planner = QueryPlanner(model=model)
         self.executor = QueryExecutor(dialect, db_url)
         self.introspector = get_introspector(dialect, db_url)
 
@@ -256,7 +302,12 @@ class EvalRunner:
                 await task
             self._record_timeout(metrics, question=question, should_fail=should_fail)
 
-    async def run_evals(self, jsonl_path: str | Path) -> dict[str, Any]:
+    async def run_evals(
+        self,
+        jsonl_path: str | Path,
+        *,
+        schema: DatabaseSchema | None = None,
+    ) -> dict[str, Any]:
         path = Path(jsonl_path)
         if not path.exists():
             raise FileNotFoundError(f"Eval set not found at {path}")
@@ -264,10 +315,10 @@ class EvalRunner:
         metrics = empty_metrics()
 
         async with self._resources():
-            schema = await self.load_schema()
+            loaded_schema = schema if schema is not None else await self.load_schema()
             for case in iter_eval_cases(path):
                 metrics["total_queries"] += 1
-                await self._run_eval_case(case, schema, metrics)
+                await self._run_eval_case(case, loaded_schema, metrics)
 
         return summarize_metrics(metrics, planner_only=self.planner_only)
 
@@ -364,21 +415,205 @@ def build_arg_parser() -> argparse.ArgumentParser:
             f"{MAX_ATTEMPTS} + {_LLM_BUFFER_SECONDS:.0f})"
         ),
     )
+    parser.add_argument(
+        "--models",
+        type=str,
+        default=None,
+        metavar="MODELS",
+        help=(
+            "Comma-separated LiteLLM model identifiers for side-by-side comparison "
+            "(default: settings LLM_MODEL)"
+        ),
+    )
+    parser.add_argument(
+        "--dialect-urls",
+        type=str,
+        default=None,
+        metavar="URLS",
+        help=(
+            "Comma-separated database URLs for dialect comparison "
+            "(default: positional database_url)"
+        ),
+    )
     return parser
+
+
+def resolved_models(models_arg: str | None) -> list[str | None]:
+    """Return model list for matrix runs; None means settings default."""
+    if not models_arg:
+        return [None]
+    return require_non_empty_csv(models_arg, flag_name="--models")
+
+
+def resolved_dialect_urls(
+    dialect_urls_arg: str | None,
+    *,
+    positional_url: str,
+) -> list[str]:
+    """Return database URLs for matrix runs."""
+    if dialect_urls_arg:
+        return require_non_empty_csv(dialect_urls_arg, flag_name="--dialect-urls")
+    if not positional_url.strip():
+        raise ValueError("database_url is required")
+    return [positional_url]
+
+
+def run_label(*, db_url: str, dialect: str, model: str | None) -> dict[str, str]:
+    """Stable metadata for one matrix leg."""
+    resolved_model = model or get_settings().resolved_llm_model
+    return {
+        "database_url_redacted": redact_database_url(db_url),
+        "dialect": dialect,
+        "model": resolved_model,
+    }
+
+
+async def load_schema_for_url(
+    db_url: str,
+    dialect: str,
+    *,
+    query_timeout: float | None,
+) -> DatabaseSchema:
+    """Introspect once per database URL for matrix runs."""
+    runner = EvalRunner(
+        db_url,
+        dialect,
+        planner_only=True,
+        query_timeout=query_timeout,
+    )
+    async with runner._resources():
+        return await runner.load_schema()
+
+
+async def run_eval_matrix(
+    *,
+    database_urls: list[str],
+    models: list[str | None],
+    jsonl_path: Path,
+    planner_only: bool,
+    query_timeout: float | None,
+) -> dict[str, Any]:
+    """Run evals for each dialect URL × model combination."""
+    if not models:
+        raise ValueError("--models must list at least one model")
+    if not database_urls:
+        raise ValueError("--dialect-urls must list at least one database URL")
+
+    runs: list[dict[str, Any]] = []
+    schema_cache: dict[str, DatabaseSchema] = {}
+
+    for db_url in database_urls:
+        dialect = dialect_for_url(db_url)
+        if db_url not in schema_cache:
+            schema_cache[db_url] = await load_schema_for_url(
+                db_url,
+                dialect,
+                query_timeout=query_timeout,
+            )
+        schema = schema_cache[db_url]
+
+        for model in models:
+            runner = EvalRunner(
+                db_url,
+                dialect,
+                planner_only=planner_only,
+                query_timeout=query_timeout,
+                model=model,
+            )
+            label = run_label(db_url=db_url, dialect=dialect, model=model)
+            logger.info(
+                "Matrix leg: dialect=%s model=%s url=%s",
+                label["dialect"],
+                label["model"],
+                label["database_url_redacted"],
+            )
+            metrics = await runner.run_evals(jsonl_path, schema=schema)
+            runs.append({**label, **metrics})
+
+    return {
+        "comparison": True,
+        "planner_only": planner_only,
+        "runs": runs,
+    }
+
+
+def failed_matrix_legs(
+    matrix: dict[str, Any],
+    *,
+    min_rate: float,
+    planner_only: bool,
+) -> list[dict[str, Any]]:
+    """Return matrix legs that failed thresholds."""
+    runs = matrix.get("runs")
+    if not isinstance(runs, list):
+        return []
+
+    rate_key = "validation_rate" if planner_only else "execution_rate"
+    failed: list[dict[str, Any]] = []
+    for run in runs:
+        if not isinstance(run, dict):
+            continue
+        if not should_exit_nonzero(run, min_rate=min_rate, planner_only=planner_only):
+            continue
+        failed.append(
+            {
+                "dialect": run.get("dialect"),
+                "model": run.get("model"),
+                "database_url_redacted": run.get("database_url_redacted"),
+                rate_key: run.get(rate_key),
+                "error_count": run.get("error_count"),
+                "scored_queries": run.get("scored_queries"),
+            }
+        )
+    return failed
+
+
+def matrix_should_exit_nonzero(
+    matrix: dict[str, Any],
+    *,
+    min_rate: float,
+    planner_only: bool,
+) -> bool:
+    """Exit non-zero when any matrix leg fails thresholds."""
+    runs = matrix.get("runs")
+    if not isinstance(runs, list) or not runs:
+        return True
+    return bool(failed_matrix_legs(matrix, min_rate=min_rate, planner_only=planner_only))
 
 
 async def _async_main(args: argparse.Namespace) -> int:
     logging.basicConfig(level=logging.INFO)
-    dialect = dialect_for_url(args.database_url)
-    runner = EvalRunner(
-        args.database_url,
-        dialect,
-        planner_only=args.planner_only,
-        query_timeout=args.query_timeout,
-    )
+    try:
+        models = resolved_models(args.models)
+        database_urls = resolved_dialect_urls(
+            args.dialect_urls,
+            positional_url=args.database_url,
+        )
+    except ValueError as exc:
+        logger.error("%s", exc)
+        return 1
+
+    is_matrix = len(models) > 1 or len(database_urls) > 1
 
     try:
-        results = await runner.run_evals(args.jsonl)
+        if is_matrix:
+            results = await run_eval_matrix(
+                database_urls=database_urls,
+                models=models,
+                jsonl_path=args.jsonl,
+                planner_only=args.planner_only,
+                query_timeout=args.query_timeout,
+            )
+        else:
+            dialect = dialect_for_url(database_urls[0])
+            runner = EvalRunner(
+                database_urls[0],
+                dialect,
+                planner_only=args.planner_only,
+                query_timeout=args.query_timeout,
+                model=models[0],
+            )
+            results = await runner.run_evals(args.jsonl)
     except FileNotFoundError as exc:
         logger.error("%s", exc)
         return 1
@@ -389,21 +624,52 @@ async def _async_main(args: argparse.Namespace) -> int:
     print("\n=== Eval Results ===")
     print(json.dumps(results, indent=2))
 
-    if should_exit_nonzero(
-        results,
-        min_rate=args.min_execution_rate,
-        planner_only=args.planner_only,
-    ):
-        rate_key = "validation_rate" if args.planner_only else "execution_rate"
-        logger.error(
-            "Eval failed: error_count=%s timeouts=%s %s=%s scored=%s (min=%s)",
-            results.get("error_count"),
-            results.get("timeouts"),
-            rate_key,
-            results.get(rate_key),
-            results.get("scored_queries"),
-            args.min_execution_rate,
+    if is_matrix:
+        failed = matrix_should_exit_nonzero(
+            results,
+            min_rate=args.min_execution_rate,
+            planner_only=args.planner_only,
         )
+    else:
+        failed = should_exit_nonzero(
+            results,
+            min_rate=args.min_execution_rate,
+            planner_only=args.planner_only,
+        )
+
+    if failed:
+        if is_matrix:
+            for leg in failed_matrix_legs(
+                results,
+                min_rate=args.min_execution_rate,
+                planner_only=args.planner_only,
+            ):
+                rate_key = "validation_rate" if args.planner_only else "execution_rate"
+                logger.error(
+                    "Matrix leg failed: dialect=%s model=%s url=%s %s=%s scored=%s errors=%s",
+                    leg.get("dialect"),
+                    leg.get("model"),
+                    leg.get("database_url_redacted"),
+                    rate_key,
+                    leg.get(rate_key),
+                    leg.get("scored_queries"),
+                    leg.get("error_count"),
+                )
+            logger.error(
+                "Matrix eval failed: one or more legs below min rate %s",
+                args.min_execution_rate,
+            )
+        else:
+            rate_key = "validation_rate" if args.planner_only else "execution_rate"
+            logger.error(
+                "Eval failed: error_count=%s timeouts=%s %s=%s scored=%s (min=%s)",
+                results.get("error_count"),
+                results.get("timeouts"),
+                rate_key,
+                results.get(rate_key),
+                results.get("scored_queries"),
+                args.min_execution_rate,
+            )
         return 1
     return 0
 

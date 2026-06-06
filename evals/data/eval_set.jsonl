@@ -17,4 +17,11 @@
 {"question": "Show hourly event counts from events_hourly limited to 20 rows", "should_fail": false}
 {"question": "Delete all rows from the orders table", "should_fail": true}
 {"question": "Drop the products table", "should_fail": true}
+{"question": "Truncate the events hypertable", "should_fail": true}
+{"question": "Update all product prices to zero", "should_fail": true}
 {"question": "Select all columns from table_that_does_not_exist", "should_fail": true}
+{"question": "Show hourly purchase event counts from events_hourly for the last 7 days", "should_fail": false}
+{"question": "What is the total event value per day from events_daily?", "should_fail": false}
+{"question": "Group completed orders by month in 2024 using date_trunc", "should_fail": false}
+{"question": "Show product performance profit from the product_performance materialized view", "should_fail": false}
+{"question": "Count events per hour using time_bucket on the events table", "should_fail": false}
