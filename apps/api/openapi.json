@@ -997,7 +997,7 @@
           "chart_type"
         ],
         "title": "ChartSpec",
-        "description": "The final visualization specification.\n\nAttributes:\n    chart_type: The determined type of chart (line, bar, table, etc.).\n    vega_lite_spec: A JSON-serializable dictionary containing a valid Vega-Lite v5 spec.\n        If chart_type is 'table' or 'metric_card', this will be empty (as they are\n        rendered natively by the UI, not via Vega-Lite).\n    metadata: Additional metadata for rendering (e.g., suggested titles, formatting hints)."
+        "description": "The final visualization specification.\n\nAttributes:\n    chart_type: The determined type of chart (line, bar, table, etc.).\n    vega_lite_spec: A JSON-serializable dictionary containing a valid Vega-Lite spec.\n        If chart_type is 'table' or 'metric_card', this will be empty (as they are\n        rendered natively by the UI, not via Vega-Lite).\n    metadata: Additional metadata for rendering (e.g., suggested titles, formatting hints)."
       },
       "ChartType": {
         "type": "string",

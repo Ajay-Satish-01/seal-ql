@@ -5,7 +5,7 @@ description = "YAML-based semantic metrics layer for Seal"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.10.0",
-    "pyyaml>=6.0",
+    "pyyaml>=6.0.0",
 ]
 
 [project.optional-dependencies]

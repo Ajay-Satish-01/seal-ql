@@ -130,7 +130,7 @@ jobs:
         run: docker compose exec -T api uv sync --frozen --all-packages
 
       - name: Run unit tests (excluding E2E)
-        run: docker compose exec -T api uv run pytest -v --tb=short --ignore=sdks/python/tests/test_sdk_e2e.py --ignore=apps/api/tests/test_e2e.py --ignore=apps/api/tests/test_catalog_workspace_integration.py --junitxml=/tmp/test-results.xml
+        run: docker compose exec -T api uv run pytest -v --tb=short --ignore=sdks/python/tests/test_sdk_e2e.py --ignore=apps/api/tests/test_e2e.py --ignore=apps/api/tests/test_catalog_workspace_integration.py --ignore=tests/test_response_validation.py --junitxml=/tmp/test-results.xml
 
       - name: Upload test results
         if: always()

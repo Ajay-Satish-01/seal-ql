@@ -11,12 +11,14 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "packages" / "core"))
+sys.path.insert(0, str(ROOT / "packages" / "charts"))
 
 from response_validation import (  # noqa: E402
     validate_chat_response,
     validate_chat_stream_meta,
     validate_query_response,
 )
+from seal_charts import VEGA_LITE_SCHEMA  # noqa: E402
 from seal_core.pipeline.validate_metadata import chat_response_to_stream_meta  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -220,7 +222,7 @@ def test_bar_missing_encoding_fails() -> None:
         "results": [{"a": 1, "b": 2}],
         "chart": {
             "chart_type": "bar",
-            "vega_lite_spec": {"$schema": "https://vega.github.io/schema/vega-lite/v5.json"},
+            "vega_lite_spec": {"$schema": VEGA_LITE_SCHEMA},
             "metadata": {"x_field": "a", "y_field": "b"},
         },
         "metadata": _query_metadata(),

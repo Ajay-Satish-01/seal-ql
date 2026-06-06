@@ -5,6 +5,7 @@ import { Callout } from '@/components/docs/callout';
 import { DocsProse } from '@/components/docs/docs-prose';
 import { ParamTable } from '@/components/docs/param-table';
 import { SITE } from '@/lib/constants';
+// Schema URL in inline JSON examples below must stay aligned with VEGA_LITE_SCHEMA from 'seal'.
 
 export default function ChartsAnalysisPage() {
   const base = SITE.defaultBaseUrl;
@@ -110,7 +111,7 @@ export default function ChartsAnalysisPage() {
           code={`{
   "chart_type": "bar",
   "vega_lite_spec": {
-    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
     "data": { "values": [
       { "category": "Electronics", "total_revenue": 45200 },
       { "category": "Clothing", "total_revenue": 32100 },

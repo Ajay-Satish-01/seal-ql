@@ -37,11 +37,15 @@ def _explainability_to_json(message: ChatMessage) -> str | None:
 def _parse_explainability(raw: Any) -> ChatMessageExplainability | None:
     if raw is None:
         return None
-    if isinstance(raw, str):
-        raw = json.loads(raw)
-    if not isinstance(raw, dict):
+    try:
+        if isinstance(raw, str):
+            raw = json.loads(raw)
+        if not isinstance(raw, dict):
+            return None
+        return ChatMessageExplainability.model_validate(raw)
+    except (json.JSONDecodeError, ValueError, TypeError) as exc:
+        logger.debug("Skipping malformed explainability payload: %s", exc)
         return None
-    return ChatMessageExplainability.model_validate(raw)
 
 
 class PostgresSessionStore(BaseSessionStore):

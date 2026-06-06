@@ -16,7 +16,7 @@ class ChartSpec(BaseModel):
 
     Attributes:
         chart_type: The determined type of chart (line, bar, table, etc.).
-        vega_lite_spec: A JSON-serializable dictionary containing a valid Vega-Lite v5 spec.
+        vega_lite_spec: A JSON-serializable dictionary containing a valid Vega-Lite spec.
             If chart_type is 'table' or 'metric_card', this will be empty (as they are
             rendered natively by the UI, not via Vega-Lite).
         metadata: Additional metadata for rendering (e.g., suggested titles, formatting hints).

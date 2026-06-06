@@ -306,7 +306,9 @@ class TestModels:
             "results": [{"name": "Alice"}, {"name": "Bob"}],
             "chart": {
                 "chart_type": "bar",
-                "vega_lite_spec": {"$schema": "https://vega.github.io/schema/vega-lite/v5.json"},
+                "vega_lite_spec": {
+                    "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+                },
                 "metadata": {},
             },
             "metadata": {"row_count": 2},

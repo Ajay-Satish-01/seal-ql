@@ -5,6 +5,7 @@ import {
   QUERY_METADATA_EXAMPLE,
   chatStreamMetaExample,
 } from '@/lib/execution-metadata';
+import { VEGA_LITE_SCHEMA } from 'seal/constants';
 
 export type OpenAPISpec = typeof openapi;
 
@@ -75,7 +76,7 @@ export function schemaToExample(schemaName: string): string {
       chart: {
         chart_type: 'bar',
         vega_lite_spec: {
-          $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+          $schema: VEGA_LITE_SCHEMA,
           data: {
             values: [{ category: 'Electronics', total_revenue: 45200.5 }],
           },

@@ -40,7 +40,7 @@
         "chart": {
           "chart_type": "bar",
           "vega_lite_spec": {
-            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
             "title": "Revenue by Product Category",
             "width": "container",
             "height": "container",
@@ -144,7 +144,7 @@
         "chart": {
           "chart_type": "line",
           "vega_lite_spec": {
-            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
             "title": "Hourly Event Volume",
             "width": "container",
             "height": "container",
@@ -245,7 +245,7 @@
         "chart": {
           "chart_type": "pie",
           "vega_lite_spec": {
-            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
             "title": "Orders by Region",
             "width": "container",
             "height": "container",
@@ -462,7 +462,7 @@
         "chart": {
           "chart_type": "scatter",
           "vega_lite_spec": {
-            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
             "title": "Customer Segments",
             "width": "container",
             "height": "container",

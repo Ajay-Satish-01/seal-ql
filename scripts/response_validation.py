@@ -8,9 +8,13 @@ from typing import Any
 
 _ROOT = Path(__file__).resolve().parents[1]
 _CORE = _ROOT / "packages" / "core"
+_CHARTS = _ROOT / "packages" / "charts"
 if str(_CORE) not in sys.path:
     sys.path.insert(0, str(_CORE))
+if str(_CHARTS) not in sys.path:
+    sys.path.insert(0, str(_CHARTS))
 
+from seal_charts import VEGA_LITE_SCHEMA  # noqa: E402
 from seal_core.pipeline.validate_metadata import (  # noqa: E402
     validate_execution_fields,
     validate_nested_chat_metadata,
@@ -149,7 +153,7 @@ def _validate_vega_spec(
         errors.append(f"chart_type {chart_type!r} requires non-empty vega_lite_spec")
         return errors
 
-    if spec.get("$schema") != "https://vega.github.io/schema/vega-lite/v5.json":
+    if spec.get("$schema") != VEGA_LITE_SCHEMA:
         errors.append("vega_lite_spec missing or wrong $schema")
 
     data = spec.get("data")
