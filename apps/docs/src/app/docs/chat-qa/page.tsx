@@ -94,12 +94,15 @@ ${curlChat(base, 'Show revenue for the largest table', { sessionId: 'YOUR_SESSIO
         code={tsChatSnippet(base, 'Orders by region last week', { includeCharts: true })}
       />
 
-      <h2 className="font-heading mt-8 text-xl font-semibold">Session history</h2>
+      <h2 className="font-heading mt-8 text-xl font-semibold">Session history &amp; explainability</h2>
       <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
         With <code>CHAT_SESSION_STORE=postgres</code> (and <code>scripts/migrate_app.sql</code>{' '}
-        applied), conversations persist in <code>seal_app.chat_sessions</code>. The operational
-        dashboard (<code>apps/web</code>, port 3001) lists past chats and resumes them. API
-        endpoints:
+        applied), conversations persist in <code>seal_app.chat_sessions</code>. Each assistant
+        message stores an <strong>explainability snapshot</strong> — the SQL, sources, metadata,
+        chart spec, and result preview from that turn. When you load a past session, the same
+        explainability data is available for review. The operational dashboard (
+        <code>apps/web</code>, port 3001) lists past chats and resumes them with per-turn
+        explainability buttons. API endpoints:
       </p>
       <ul className="text-muted-foreground mt-4 list-disc space-y-2 pl-6 text-sm">
         <li>
@@ -145,6 +148,8 @@ ${curlDeleteSession(base, 'YOUR_SESSION_ID')}`}
 
       <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
         Full field reference: <DocLink href="/docs/execution-metadata">Execution metadata</DocLink>.
+        Provenance and scope details:{' '}
+        <DocLink href="/docs/trust-explainability">Trust &amp; explainability</DocLink>.
       </p>
 
       <Callout variant="warning" title="Multi-database sessions">

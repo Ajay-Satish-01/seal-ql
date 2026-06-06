@@ -94,6 +94,10 @@ export default function ExecutionMetadataPage() {
       <h2 className="font-heading mt-8 text-xl font-semibold">Related</h2>
       <ul className="text-muted-foreground mt-4 list-disc space-y-2 pl-6 text-sm">
         <li>
+          <DocLink href="/docs/trust-explainability">Trust &amp; explainability</DocLink> —
+          provenance, catalog matches, scope decisions, repair history, and dashboard panels
+        </li>
+        <li>
           <DocLink href="/docs/multi-database">Multi-database routing</DocLink> —{' '}
           <code>database_id</code> on every request
         </li>

@@ -53,6 +53,8 @@ export default function QueryPage() {
     metadata,
   });
 
+  const hasResults = results.length > 0 || chart != null;
+
   return (
     <PageShell
       title="Query"
@@ -77,6 +79,15 @@ export default function QueryPage() {
         </Button>
       </Card>
 
+      {hasResults ? (
+        <Card className="console-panel p-4">
+          <p className="text-muted-foreground mb-3 text-xs font-medium tracking-wide uppercase">
+            Results
+          </p>
+          <ChartPanel chart={chart} results={results} />
+        </Card>
+      ) : null}
+
       {showTrustPanel ? (
         <TrustPanel
           className="console-panel"
@@ -84,29 +95,22 @@ export default function QueryPage() {
           sql={sql}
           sources={sources}
           metadata={metadata}
-          subtitle="Provenance and scope when SEAL_TRUST_EXPLAINABILITY_ENABLED is on for this API."
+          subtitle="Provenance, scope, and execution details for this query."
         />
       ) : (
         <>
-          <MetadataPanel metadata={metadata} title="Query metadata" />
           {sql ? (
-            <Card className="console-panel p-4">
-              <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-                SQL
+            <Card className="console-panel space-y-2 p-4">
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Generated SQL
               </p>
-              <pre className="overflow-x-auto font-mono text-xs">{sql}</pre>
+              <pre className="border-border/50 bg-muted/25 max-h-72 overflow-auto rounded-lg border p-3 font-mono text-xs leading-relaxed">
+                {sql}
+              </pre>
             </Card>
           ) : null}
+          <MetadataPanel metadata={metadata} title="Query metadata" />
         </>
-      )}
-
-      {(results.length > 0 || chart) && (
-        <Card className="console-panel p-4">
-          <p className="text-muted-foreground mb-3 text-xs font-medium tracking-wide uppercase">
-            Results
-          </p>
-          <ChartPanel chart={chart} results={results} />
-        </Card>
       )}
     </PageShell>
   );

@@ -10,10 +10,19 @@ export interface SessionSummary {
   updated_at: string;
 }
 
+export interface SessionMessageExplainability {
+  sql?: string | null;
+  sources?: string[];
+  metadata?: Record<string, unknown> | null;
+  chart?: Record<string, unknown> | null;
+  results?: Record<string, unknown>[];
+}
+
 export interface SessionMessage {
   role: string;
   content: string;
   created_at: string | null;
+  explainability?: SessionMessageExplainability | null;
 }
 
 export interface SessionDetail {

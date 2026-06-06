@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -12,6 +11,7 @@ import litellm
 from seal_charts.engine import ChartEngine
 
 from seal_core.chat.errors import SessionDatabaseMismatchError
+from seal_core.chat.explainability import ChatMessageExplainability
 from seal_core.chat.models import ChatAnswer, ChatDecision, ChatMessage
 from seal_core.chat.prompts import CHAT_ANSWER_SYSTEM, CHAT_DECISION_SYSTEM
 from seal_core.chat.retriever import ContextRetriever
@@ -35,6 +35,7 @@ from seal_core.pipeline.validate_metadata import (
     enforce_nested_chat_metadata,
     enforce_stream_meta_validation,
 )
+from seal_core.serialization import safe_json_dumps
 from seal_core.settings import get_settings
 
 if TYPE_CHECKING:
@@ -71,6 +72,7 @@ class TurnContext:
     enhancement_enabled: bool
     enhancement_requested: bool = False
     database_id: str = DEFAULT_DATABASE_ID
+    last_explainability: ChatMessageExplainability | None = None
 
 
 @dataclass
@@ -201,6 +203,7 @@ class ChatService:
             return
 
         turn = await self._in_scope_turn_pipeline(ctx, include_charts=include_charts)
+        ctx.last_explainability = self._explainability_snapshot_from_turn(ctx, turn)
         yield self._format_meta_event(ctx, turn)
 
         llm_messages = self._build_answer_messages(ctx, turn.exec_result, turn.system)
@@ -229,7 +232,7 @@ class ChatService:
                             }
                         ],
                     }
-                    yield f"data: {json.dumps(payload)}\n\n"
+                    yield f"data: {safe_json_dumps(payload)}\n\n"
 
             completed = True
         finally:
@@ -316,6 +319,43 @@ class ChatService:
             "orchestrator_available": self._orchestrator is not None,
         }
 
+    def _explainability_snapshot_from_turn(
+        self,
+        ctx: TurnContext,
+        turn: InScopeTurnData,
+    ) -> ChatMessageExplainability:
+        used_sql = turn.exec_result is not None
+        metadata = build_chat_metadata(
+            database_id=ctx.database_id,
+            exec_result=turn.exec_result,
+            used_sql=used_sql,
+            enhancement_enabled=ctx.enhancement_enabled,
+            applied=list(ctx.metadata.get("applied", [])),
+            scope=ctx.metadata.get("scope"),
+            sql_error=bool(turn.meta.get("sql_error")),
+            catalog_matches=self._catalog_matches_for_context(ctx),
+            **self._enhancement_metadata_kwargs(ctx),
+        )
+        enforce_nested_chat_metadata(
+            metadata,
+            sql=turn.exec_result.sql if turn.exec_result else None,
+        )
+        preview = turn.exec_result.rows[:50] if turn.exec_result else []
+        chart_dict = turn.chart.model_dump() if turn.chart is not None else None
+        return ChatMessageExplainability(
+            sql=turn.exec_result.sql if turn.exec_result else None,
+            sources=list(ctx.metadata.get("sources", [])),
+            metadata=metadata,
+            chart=chart_dict,
+            results=preview,
+        )
+
+    def _explainability_snapshot_from_metadata(
+        self,
+        metadata: dict[str, Any],
+    ) -> ChatMessageExplainability:
+        return ChatMessageExplainability(metadata=dict(metadata))
+
     async def _persist_turn_messages(
         self,
         ctx: TurnContext,
@@ -329,7 +369,11 @@ class ChatService:
         if assistant_message.strip():
             await self._sessions.append(
                 ctx.session_id,
-                ChatMessage(role="assistant", content=assistant_message),
+                ChatMessage(
+                    role="assistant",
+                    content=assistant_message,
+                    explainability=ctx.last_explainability,
+                ),
             )
         if pin_database:
             await self._complete_turn(ctx)
@@ -425,7 +469,7 @@ class ChatService:
         )
         meta_event = apply_trust_gating_to_stream_meta(meta_event)
         enforce_stream_meta_validation(meta_event)
-        return f"event: seal.meta\ndata: {json.dumps(meta_event)}\n\n"
+        return f"event: seal.meta\ndata: {safe_json_dumps(meta_event)}\n\n"
 
     def _catalog_matches_for_context(self, ctx: TurnContext) -> list[dict[str, Any]]:
         sources = ctx.metadata.get("sources")
@@ -474,6 +518,7 @@ class ChatService:
             metadata,
             sql=turn.exec_result.sql if turn.exec_result else None,
         )
+        ctx.last_explainability = self._explainability_snapshot_from_turn(ctx, turn)
 
         return _apply_trust_to_chat_result(
             ChatResult(
@@ -507,6 +552,7 @@ class ChatService:
             **self._enhancement_metadata_kwargs(ctx),
         )
         enforce_nested_chat_metadata(metadata, sql=None)
+        ctx.last_explainability = self._explainability_snapshot_from_metadata(metadata)
         if scope.source == "limits":
             return _apply_trust_to_chat_result(
                 ChatResult(
@@ -531,6 +577,7 @@ class ChatService:
         final_suggestions = merge_suggestions(heuristic, llm_suggestions)
         metadata["suggested_queries"] = final_suggestions
         enforce_nested_chat_metadata(metadata, sql=None)
+        ctx.last_explainability = self._explainability_snapshot_from_metadata(metadata)
         return _apply_trust_to_chat_result(
             ChatResult(
                 session_id=ctx.session_id,
@@ -561,12 +608,12 @@ class ChatService:
         )
         meta_event = apply_trust_gating_to_stream_meta(meta_event)
         enforce_stream_meta_validation(meta_event)
-        yield f"event: seal.meta\ndata: {json.dumps(meta_event)}\n\n"
+        yield f"event: seal.meta\ndata: {safe_json_dumps(meta_event)}\n\n"
         payload = {
             "object": "chat.completion.chunk",
             "choices": [{"index": 0, "delta": {"content": result.message}, "finish_reason": None}],
         }
-        yield f"data: {json.dumps(payload)}\n\n"
+        yield f"data: {safe_json_dumps(payload)}\n\n"
         await self._persist_turn_messages(
             ctx,
             user_message=ctx.user_message,
@@ -677,7 +724,7 @@ class ChatService:
             messages.append({"role": "user", "content": last_content})
 
         if exec_result:
-            preview = json.dumps(exec_result.rows[: settings.chat_answer_preview_rows], default=str)
+            preview = safe_json_dumps(exec_result.rows[: settings.chat_answer_preview_rows])
             messages.append(
                 {
                     "role": "user",

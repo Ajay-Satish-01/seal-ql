@@ -2054,6 +2054,63 @@
         "type": "object",
         "title": "SessionListResponse"
       },
+      "SessionMessageExplainabilitySchema": {
+        "properties": {
+          "sql": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sql"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "chart": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chart"
+          },
+          "results": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "title": "SessionMessageExplainabilitySchema",
+        "description": "Persisted trust / execution snapshot for one assistant turn."
+      },
       "SessionMessageSchema": {
         "properties": {
           "role": {
@@ -2076,6 +2133,17 @@
             ],
             "title": "Created At",
             "description": "ISO-8601 when available (postgres)."
+          },
+          "explainability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionMessageExplainabilitySchema"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "SQL, metadata, and chart context when stored for assistant messages."
           }
         },
         "type": "object",

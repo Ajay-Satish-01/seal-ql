@@ -71,6 +71,30 @@ def apply_trust_gating_to_chat_response(response: dict[str, Any]) -> dict[str, A
     return gated
 
 
+def apply_trust_gating_to_stored_explainability(
+    explainability: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Strip trust fields from persisted session explainability on read.
+
+    Returns ``None`` when gating leaves no meaningful content so the API
+    omits the field entirely instead of returning an empty shell.
+    """
+    if explainability is None or is_trust_explainability_enabled():
+        return explainability
+    gated = dict(explainability)
+    gated["sql"] = None
+    gated["sources"] = []
+    gated["results"] = []
+    gated["chart"] = None
+    metadata = gated.get("metadata")
+    if isinstance(metadata, dict):
+        gated["metadata"] = strip_trust_metadata(metadata)
+    remaining_meta = gated.get("metadata")
+    if not isinstance(remaining_meta, dict) or not remaining_meta:
+        return None
+    return gated
+
+
 def apply_trust_gating_to_query_response(response: dict[str, Any]) -> dict[str, Any]:
     """Strip trust fields from query JSON responses (sql/results remain)."""
     if is_trust_explainability_enabled():

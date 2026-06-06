@@ -1,9 +1,12 @@
 'use client';
 
 import { ChartPanel } from '@/components/dashboard/chart-panel';
-import { MetadataPanel } from '@/components/dashboard/metadata-panel';
-import { shouldShowTrustPanel } from '@seal/trust-explainability';
-import { TrustPanel } from '@/components/dashboard/trust-panel';
+import {
+  ExplainabilityTrigger,
+  shouldRenderExplainabilityTrigger,
+  TrustExplainabilityDialog,
+  type ExplainabilitySurface,
+} from '@/components/dashboard/trust-explainability-dialog';
 import { PageShell } from '@/components/dashboard/page-shell';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -12,16 +15,38 @@ import { useConnection } from '@/hooks/use-connection';
 import { streamChat, type ChatStreamMeta } from '@/lib/chat-api';
 import type { ChatMetadata } from '@/lib/execution-metadata';
 import { chatMetadataFromPartial, chatMetadataFromStreamMeta } from '@/lib/metadata-from-stream';
-import { getSession } from '@/lib/session-api';
+import { getSession, type SessionMessageExplainability } from '@/lib/session-api';
 import { notifyErrorFrom, notifyInfo, notifySuccess } from '@/lib/toast';
 import type { ChartSpec } from 'seal';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { memo, Suspense, useCallback, useEffect, useRef, useState, useTransition } from 'react';
 
-type ChatTurn = {
+type TurnExplainability = {
+  sql: string | null;
+  sources: string[];
+  metadata: ChatMetadata | null;
+  chart: ChartSpec | null;
+  results: Record<string, unknown>[];
+};
+
+type UserTurn = {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user';
   content: string;
+};
+
+type AssistantTurn = {
+  id: string;
+  role: 'assistant';
+  content: string;
+  explainability: TurnExplainability;
+};
+
+type ChatTurn = UserTurn | AssistantTurn;
+
+type PendingAssistant = {
+  content: string;
+  explainability: TurnExplainability;
 };
 
 function turnId(): string {
@@ -30,15 +55,51 @@ function turnId(): string {
     : `turn-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function initialTurnState() {
+function emptyExplainability(): TurnExplainability {
   return {
-    answer: '',
-    sql: null as string | null,
-    results: [] as Record<string, unknown>[],
-    chart: null as ChartSpec | null,
-    metadata: null as ChatMetadata | null,
-    sources: [] as string[],
+    sql: null,
+    sources: [],
+    metadata: null,
+    chart: null,
+    results: [],
   };
+}
+
+function explainabilityFromStreamMeta(data: ChatStreamMeta): TurnExplainability {
+  return {
+    sql: data.sql ?? null,
+    sources: data.sources ?? [],
+    metadata: chatMetadataFromStreamMeta(data),
+    chart: data.chart ? (data.chart as unknown as ChartSpec) : null,
+    results: data.results ?? [],
+  };
+}
+
+function explainabilityFromSession(
+  stored: SessionMessageExplainability | null | undefined,
+): TurnExplainability {
+  if (!stored) return emptyExplainability();
+  return {
+    sql: stored.sql ?? null,
+    sources: stored.sources ?? [],
+    metadata: (stored.metadata as ChatMetadata | null) ?? null,
+    chart: stored.chart ? (stored.chart as unknown as ChartSpec) : null,
+    results: stored.results ?? [],
+  };
+}
+
+function mergePartialExplainability(
+  current: TurnExplainability,
+  partial: Partial<ChatStreamMeta>,
+): TurnExplainability {
+  const next = { ...current };
+  if (partial.sources?.length) next.sources = partial.sources;
+  if (typeof partial.sql === 'string') next.sql = partial.sql;
+  const partialMeta = chatMetadataFromPartial(partial);
+  if (partialMeta) {
+    next.metadata = { ...(next.metadata ?? {}), ...partialMeta };
+  }
+  return next;
 }
 
 export default function ChatPageWrapper() {
@@ -48,6 +109,49 @@ export default function ChatPageWrapper() {
     </Suspense>
   );
 }
+
+const AssistantMessage = memo(function AssistantMessage({
+  content,
+  explainability,
+  trustExplainabilityEnabled,
+  onOpenExplainability,
+  streaming = false,
+  explainabilityPending = false,
+}: {
+  content: string;
+  explainability: TurnExplainability;
+  trustExplainabilityEnabled: boolean;
+  onOpenExplainability: (surface: ExplainabilitySurface) => void;
+  streaming?: boolean;
+  explainabilityPending?: boolean;
+}) {
+  const showExplainability = shouldRenderExplainabilityTrigger(
+    trustExplainabilityEnabled,
+    explainability,
+  );
+
+  return (
+    <div className="border-border/50 bg-muted/15 space-y-3 rounded-lg border px-3 py-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <span className="text-primary text-xs font-medium tracking-wide uppercase">assistant</span>
+        {showExplainability ? (
+          <ExplainabilityTrigger
+            disabled={explainabilityPending}
+            onClick={() => onOpenExplainability(explainability)}
+          />
+        ) : null}
+      </div>
+      {content ? (
+        <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
+      ) : streaming ? (
+        <p className="text-muted-foreground text-sm">Streaming…</p>
+      ) : null}
+      {explainability.chart ? (
+        <ChartPanel chart={explainability.chart} results={explainability.results} />
+      ) : null}
+    </div>
+  );
+});
 
 function ChatPage() {
   const { apiUrl, apiKey, databaseId, trustExplainabilityEnabled } = useConnection();
@@ -59,31 +163,57 @@ function ChatPage() {
   const [message, setMessage] = useState('What tables are in the database?');
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [activeDatabaseId, setActiveDatabaseId] = useState<string | undefined>();
-  const [history, setHistory] = useState<ChatTurn[]>([]);
-  const [answer, setAnswer] = useState('');
-  const [sql, setSql] = useState<string | null>(null);
-  const [results, setResults] = useState<Record<string, unknown>[]>([]);
-  const [chart, setChart] = useState<ChartSpec | null>(null);
-  const [metadata, setMetadata] = useState<ChatMetadata | null>(null);
-  const [sources, setSources] = useState<string[]>([]);
+  const [turns, setTurns] = useState<ChatTurn[]>([]);
+  const [pendingAssistant, setPendingAssistant] = useState<PendingAssistant | null>(null);
   const [isPending, startTransition] = useTransition();
   const [loadingSession, setLoadingSession] = useState(false);
+  const [explainabilityOpen, setExplainabilityOpen] = useState(false);
+  const [activeExplainability, setActiveExplainability] = useState<ExplainabilitySurface | null>(
+    null,
+  );
   const abortRef = useRef<AbortController | null>(null);
   const prevDatabaseRef = useRef(databaseId);
   const loadedSessionUrlRef = useRef<string | undefined>(undefined);
+  const pendingRef = useRef<PendingAssistant | null>(null);
+
+  const setPending = useCallback((value: PendingAssistant | null) => {
+    pendingRef.current = value;
+    setPendingAssistant(value);
+  }, []);
+
+  const updatePending = useCallback(
+    (updater: (prev: PendingAssistant | null) => PendingAssistant | null) => {
+      setPendingAssistant((prev) => {
+        const next = updater(prev);
+        pendingRef.current = next;
+        return next;
+      });
+    },
+    [],
+  );
 
   const resetConversation = useCallback(() => {
     loadedSessionUrlRef.current = undefined;
-    const cleared = initialTurnState();
     setSessionId(undefined);
     setActiveDatabaseId(undefined);
-    setHistory([]);
-    setAnswer(cleared.answer);
-    setSql(cleared.sql);
-    setResults(cleared.results);
-    setChart(cleared.chart);
-    setMetadata(cleared.metadata);
-    setSources(cleared.sources);
+    setTurns([]);
+    pendingRef.current = null;
+    setPendingAssistant(null);
+    setExplainabilityOpen(false);
+    setActiveExplainability(null);
+  }, []);
+
+  const openExplainability = useCallback((surface: ExplainabilitySurface) => {
+    setActiveExplainability(surface);
+    setExplainabilityOpen(true);
+  }, []);
+
+  const handleExplainabilityOpenChange = useCallback((open: boolean) => {
+    setExplainabilityOpen(open);
+  }, []);
+
+  const handleExplainabilityAnimationComplete = useCallback((open: boolean) => {
+    if (!open) setActiveExplainability(null);
   }, []);
 
   useEffect(() => {
@@ -102,21 +232,26 @@ function ChatPage() {
       try {
         const detail = await getSession(apiUrl, urlSessionId, apiKey.trim() || undefined);
         if (cancelled) return;
-        const turns: ChatTurn[] = detail.messages.map((m) => ({
-          id: turnId(),
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        }));
-        const cleared = initialTurnState();
+        const loaded: ChatTurn[] = detail.messages.map((m) => {
+          if (m.role === 'assistant') {
+            return {
+              id: turnId(),
+              role: 'assistant' as const,
+              content: m.content,
+              explainability: explainabilityFromSession(m.explainability),
+            };
+          }
+          return {
+            id: turnId(),
+            role: 'user' as const,
+            content: m.content,
+          };
+        });
         setSessionId(detail.session_id);
         setActiveDatabaseId(detail.database_id ?? undefined);
-        setHistory(turns);
-        setAnswer(cleared.answer);
-        setSql(cleared.sql);
-        setResults(cleared.results);
-        setChart(cleared.chart);
-        setMetadata(cleared.metadata);
-        setSources(cleared.sources);
+        setTurns(loaded);
+        pendingRef.current = null;
+        setPendingAssistant(null);
         loadedSessionUrlRef.current = urlSessionId;
       } catch (e) {
         if (!cancelled) {
@@ -139,7 +274,7 @@ function ChatPage() {
       return;
     }
     const hadSession =
-      sessionId !== undefined || history.length > 0 || activeDatabaseId !== undefined;
+      sessionId !== undefined || turns.length > 0 || activeDatabaseId !== undefined;
     prevDatabaseRef.current = databaseId;
     if (!hadSession) {
       return;
@@ -149,17 +284,19 @@ function ChatPage() {
       resetConversation();
       notifyInfo(`Database changed to "${databaseId}" — chat session cleared`);
     });
-  }, [databaseId, sessionId, history, activeDatabaseId, router, resetConversation]);
+  }, [databaseId, sessionId, turns, activeDatabaseId, router, resetConversation]);
 
   function applyStreamMeta(data: ChatStreamMeta) {
     setSessionId(data.session_id);
     if (data.database_id) setActiveDatabaseId(data.database_id);
-    setSql(data.sql ?? null);
-    if (data.results?.length) setResults(data.results);
-    if (data.chart) setChart(data.chart as unknown as ChartSpec);
-    if (data.sources?.length) setSources(data.sources);
-    setMetadata(chatMetadataFromStreamMeta(data));
+    updatePending((prev) =>
+      prev
+        ? { ...prev, explainability: explainabilityFromStreamMeta(data) }
+        : { content: '', explainability: explainabilityFromStreamMeta(data) },
+    );
     if (!urlSessionId || urlSessionId !== data.session_id) {
+      // Pin before navigation so the session loader does not refetch and wipe in-flight state.
+      loadedSessionUrlRef.current = data.session_id;
       router.replace(`/chat?session=${encodeURIComponent(data.session_id)}`);
     }
   }
@@ -167,8 +304,13 @@ function ChatPage() {
   function applyPartialStreamMeta(partial: Partial<ChatStreamMeta>) {
     if (partial.session_id) setSessionId(partial.session_id);
     if (partial.database_id) setActiveDatabaseId(partial.database_id);
-    if (partial.sources?.length) setSources(partial.sources);
-    if (typeof partial.sql === 'string') setSql(partial.sql);
+    updatePending((prev) => {
+      const base = prev ?? { content: '', explainability: emptyExplainability() };
+      return {
+        ...base,
+        explainability: mergePartialExplainability(base.explainability, partial),
+      };
+    });
   }
 
   function send() {
@@ -181,14 +323,8 @@ function ChatPage() {
       return;
     }
 
-    const cleared = initialTurnState();
-    setAnswer(cleared.answer);
-    setSql(cleared.sql);
-    setResults(cleared.results);
-    setChart(cleared.chart);
-    setMetadata(cleared.metadata);
-    setSources(cleared.sources);
-    setHistory((prev) => [...prev, { id: turnId(), role: 'user', content: userMessage }]);
+    setTurns((prev) => [...prev, { id: turnId(), role: 'user', content: userMessage }]);
+    setPending({ content: '', explainability: emptyExplainability() });
     setMessage('');
 
     startTransition(async () => {
@@ -210,20 +346,32 @@ function ChatPage() {
             applyStreamMeta(event.data);
           } else if (event.type === 'meta_error') {
             applyPartialStreamMeta(event.partial);
-            const partialMeta = chatMetadataFromPartial(event.partial);
-            if (partialMeta) setMetadata(partialMeta);
             notifyInfo(`seal.meta validation: ${event.error}`);
           } else if (event.type === 'delta') {
             streamed += event.content;
-            setAnswer((prev) => prev + event.content);
+            updatePending((prev) =>
+              prev ? { ...prev, content: prev.content + event.content } : null,
+            );
           }
         }
-        if (streamed) {
-          setHistory((prev) => [...prev, { id: turnId(), role: 'assistant', content: streamed }]);
+        const final = pendingRef.current;
+        const replyText = final?.content?.trim() || streamed.trim();
+        if (final && replyText) {
+          setTurns((history) => [
+            ...history,
+            {
+              id: turnId(),
+              role: 'assistant',
+              content: final.content || streamed,
+              explainability: final.explainability,
+            },
+          ]);
           notifySuccess('Chat response complete');
           refreshSessions();
         }
+        setPending(null);
       } catch (e) {
+        setPending(null);
         if ((e as Error).name !== 'AbortError') {
           notifyErrorFrom(e, 'Chat failed');
         }
@@ -237,11 +385,7 @@ function ChatPage() {
     notifyInfo('Started a new chat session');
   }
 
-  const showTrustPanel = shouldShowTrustPanel(trustExplainabilityEnabled, {
-    sql,
-    sources,
-    metadata,
-  });
+  const activeSources = pendingAssistant?.explainability.sources ?? [];
 
   return (
     <PageShell
@@ -250,16 +394,40 @@ function ChatPage() {
     >
       {loadingSession && <p className="text-muted-foreground text-sm">Loading conversation…</p>}
 
-      {history.length > 0 && (
-        <Card className="console-panel max-h-64 space-y-3 overflow-y-auto p-4">
-          {history.map((turn) => (
-            <div key={turn.id} className="text-sm">
-              <span className="text-primary text-xs font-medium tracking-wide uppercase">
-                {turn.role}
-              </span>
-              <p className="mt-1 leading-relaxed whitespace-pre-wrap">{turn.content}</p>
-            </div>
-          ))}
+      {(turns.length > 0 || pendingAssistant) && (
+        <Card className="console-panel max-h-[32rem] space-y-4 overflow-y-auto p-4">
+          {turns.map((turn) =>
+            turn.role === 'user' ? (
+              <div key={turn.id} className="text-sm">
+                <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  user
+                </span>
+                <p className="mt-1 leading-relaxed whitespace-pre-wrap">{turn.content}</p>
+              </div>
+            ) : (
+              <AssistantMessage
+                key={turn.id}
+                content={turn.content}
+                explainability={turn.explainability}
+                trustExplainabilityEnabled={trustExplainabilityEnabled}
+                onOpenExplainability={openExplainability}
+              />
+            ),
+          )}
+          {pendingAssistant ? (
+            <AssistantMessage
+              content={pendingAssistant.content}
+              explainability={pendingAssistant.explainability}
+              trustExplainabilityEnabled={trustExplainabilityEnabled}
+              onOpenExplainability={openExplainability}
+              streaming={isPending}
+              explainabilityPending={
+                isPending &&
+                !pendingAssistant.explainability.metadata &&
+                !pendingAssistant.explainability.sql
+              }
+            />
+          ) : null}
         </Card>
       )}
 
@@ -267,9 +435,7 @@ function ChatPage() {
         <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs">
           <span>database_id: {activeDatabaseId ?? databaseId}</span>
           {sessionId ? <span>session: {sessionId}</span> : null}
-          {!showTrustPanel && sources.length > 0 ? (
-            <span>sources: {sources.join(', ')}</span>
-          ) : null}
+          {activeSources.length > 0 ? <span>sources: {activeSources.join(', ')}</span> : null}
         </div>
         <textarea
           value={message}
@@ -291,44 +457,19 @@ function ChatPage() {
         </div>
       </Card>
 
-      {answer && (
-        <Card className="console-panel p-4">
-          <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-            Assistant
-          </p>
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{answer}</p>
-        </Card>
-      )}
-
-      {showTrustPanel ? (
-        <TrustPanel
-          className="console-panel"
-          sql={sql}
-          sources={sources}
-          metadata={metadata}
-          subtitle="From SSE seal.meta when SEAL_TRUST_EXPLAINABILITY_ENABLED is on for this API."
+      {activeExplainability ? (
+        <TrustExplainabilityDialog
+          open={explainabilityOpen}
+          onOpenChange={handleExplainabilityOpenChange}
+          onOpenChangeComplete={handleExplainabilityAnimationComplete}
+          sql={activeExplainability.sql}
+          sources={activeExplainability.sources}
+          metadata={activeExplainability.metadata}
+          chart={activeExplainability.chart}
+          results={activeExplainability.results}
+          trustExplainabilityEnabled={trustExplainabilityEnabled}
         />
-      ) : (
-        <MetadataPanel
-          metadata={metadata}
-          subtitle="From SSE seal.meta (flat JSON). JSON chat uses the same fields under metadata."
-        />
-      )}
-
-      {!showTrustPanel && sql ? (
-        <Card className="console-panel p-4">
-          <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-            SQL
-          </p>
-          <pre className="overflow-x-auto font-mono text-xs">{sql}</pre>
-        </Card>
       ) : null}
-
-      {chart && (
-        <Card className="console-panel p-4">
-          <ChartPanel chart={chart} results={results} />
-        </Card>
-      )}
     </PageShell>
   );
 }

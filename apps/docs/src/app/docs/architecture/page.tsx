@@ -50,6 +50,11 @@ export default function ArchitecturePage() {
                                                 │
                     ┌───────────────────────────▼───────────────────────────┐
                     │ Chart engine → Vega-Lite spec + rows + metadata         │
+                    └───────────────────────────┬───────────────────────────┘
+                                                │
+                    ┌───────────────────────────▼───────────────────────────┐
+                    │ Trust gating (SEAL_TRUST_EXPLAINABILITY_ENABLED)       │
+                    │   → strips or passes SQL, provenance, scope, sources  │
                     └─────────────────────────────────────────────────────────┘`}
         </pre>
 
@@ -142,6 +147,7 @@ export default function ArchitecturePage() {
         <p>
           Deeper dives: <Link href="/docs/how-it-works">How it works</Link> ·{' '}
           <Link href="/docs/features">Features</Link> ·{' '}
+          <Link href="/docs/trust-explainability">Trust &amp; explainability</Link> ·{' '}
           <Link href="/docs/api-reference">API reference</Link> ·{' '}
           <Link href="/docs/self-hosting">Self-hosting</Link>.
         </p>

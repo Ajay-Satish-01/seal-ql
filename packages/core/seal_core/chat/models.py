@@ -6,10 +6,13 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from seal_core.chat.explainability import ChatMessageExplainability  # noqa: TC001
+
 
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant", "system"]
     content: str
+    explainability: ChatMessageExplainability | None = None
 
 
 class ChatDecision(BaseModel):

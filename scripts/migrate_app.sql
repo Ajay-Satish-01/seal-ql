@@ -27,8 +27,12 @@ CREATE TABLE IF NOT EXISTS seal_app.chat_messages (
     session_id UUID NOT NULL REFERENCES seal_app.chat_sessions(session_id) ON DELETE CASCADE,
     role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
     content TEXT NOT NULL,
+    explainability JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE seal_app.chat_messages
+    ADD COLUMN IF NOT EXISTS explainability JSONB;
 
 CREATE INDEX IF NOT EXISTS idx_chat_messages_session_created
     ON seal_app.chat_messages (session_id, created_at);

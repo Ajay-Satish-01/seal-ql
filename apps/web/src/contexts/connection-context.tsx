@@ -1,8 +1,6 @@
 'use client';
 
-import {
-  readTrustExplainabilityFromEnv,
-} from '@seal/trust-explainability';
+import { readTrustExplainabilityFromEnv } from '@seal/trust-explainability';
 import {
   DEFAULT_API_URL,
   DEFAULT_DATABASE_ID,

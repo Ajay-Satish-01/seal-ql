@@ -232,10 +232,24 @@ class SessionListResponse(BaseModel):
     )
 
 
+class SessionMessageExplainabilitySchema(BaseModel):
+    """Persisted trust / execution snapshot for one assistant turn."""
+
+    sql: str | None = None
+    sources: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] | None = None
+    chart: dict[str, Any] | None = None
+    results: list[dict[str, Any]] = Field(default_factory=list)
+
+
 class SessionMessageSchema(BaseModel):
     role: str
     content: str
     created_at: datetime | None = Field(None, description="ISO-8601 when available (postgres).")
+    explainability: SessionMessageExplainabilitySchema | None = Field(
+        None,
+        description="SQL, metadata, and chart context when stored for assistant messages.",
+    )
 
 
 class SessionDetailResponse(BaseModel):

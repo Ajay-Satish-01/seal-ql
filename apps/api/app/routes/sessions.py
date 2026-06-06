@@ -7,8 +7,10 @@ from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Security
 from seal_core.chat.session.ids import InvalidSessionIdError, parse_session_id
+from seal_core.pipeline.trust import apply_trust_gating_to_stored_explainability
 
 if TYPE_CHECKING:
+    from seal_core.chat.models import ChatMessage
     from seal_core.chat.session.base import BaseSessionStore
 
 from app.dependencies import get_session_store
@@ -16,6 +18,7 @@ from app.openapi_responses import SESSION_ROUTE_RESPONSES, UNAUTHORIZED_RESPONSE
 from app.schemas import (
     SessionDetailResponse,
     SessionListResponse,
+    SessionMessageExplainabilitySchema,
     SessionMessageSchema,
     SessionSummarySchema,
 )
@@ -27,6 +30,18 @@ router = APIRouter()
 
 def _epoch_to_datetime(ts: float) -> datetime:
     return datetime.fromtimestamp(ts, tz=UTC)
+
+
+def _explainability_for_response(
+    message: ChatMessage,
+) -> SessionMessageExplainabilitySchema | None:
+    if message.explainability is None:
+        return None
+    payload = message.explainability.model_dump(mode="json")
+    gated = apply_trust_gating_to_stored_explainability(payload)
+    if gated is None:
+        return None
+    return SessionMessageExplainabilitySchema.model_validate(gated)
 
 
 @router.get("/chat/sessions", response_model=SessionListResponse, responses=UNAUTHORIZED_RESPONSE)
@@ -99,6 +114,7 @@ async def get_chat_session(
                     if i < len(timestamps) and timestamps[i] is not None
                     else None
                 ),
+                explainability=_explainability_for_response(m),
             )
             for i, m in enumerate(state.messages)
         ],

@@ -978,6 +978,28 @@ export interface components {
              */
             readonly has_more: boolean;
         };
+        /**
+         * SessionMessageExplainabilitySchema
+         * @description Persisted trust / execution snapshot for one assistant turn.
+         */
+        readonly SessionMessageExplainabilitySchema: {
+            /** Sql */
+            readonly sql?: string | null;
+            /** Sources */
+            readonly sources?: readonly string[];
+            /** Metadata */
+            readonly metadata?: {
+                readonly [key: string]: unknown;
+            } | null;
+            /** Chart */
+            readonly chart?: {
+                readonly [key: string]: unknown;
+            } | null;
+            /** Results */
+            readonly results?: readonly {
+                readonly [key: string]: unknown;
+            }[];
+        };
         /** SessionMessageSchema */
         readonly SessionMessageSchema: {
             /** Role */
@@ -989,6 +1011,8 @@ export interface components {
              * @description ISO-8601 when available (postgres).
              */
             readonly created_at?: string | null;
+            /** @description SQL, metadata, and chart context when stored for assistant messages. */
+            readonly explainability?: components["schemas"]["SessionMessageExplainabilitySchema"] | null;
         };
         /** SessionSummarySchema */
         readonly SessionSummarySchema: {

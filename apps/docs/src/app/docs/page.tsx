@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   ArrowRight,
   Database,
+  Eye,
   Shield,
   Zap,
   BarChart,
@@ -90,6 +91,12 @@ const CAPABILITY_CARDS = [
     title: 'API key auth',
     desc: 'X-API-Key on /v1/*; BFF pattern — your backend holds the secret, not browsers.',
     href: '/docs/authentication',
+  },
+  {
+    icon: Eye,
+    title: 'Trust & explainability',
+    desc: 'Full provenance: SQL, catalog matches, scope decisions, repair history, and execution metrics per turn.',
+    href: '/docs/trust-explainability',
   },
   {
     icon: Puzzle,

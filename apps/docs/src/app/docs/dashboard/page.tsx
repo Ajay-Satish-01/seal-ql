@@ -135,6 +135,44 @@ export default function DashboardPage() {
           </tbody>
         </table>
 
+        <h2 className="text-foreground mt-10 text-2xl font-bold">Trust &amp; explainability panel</h2>
+        <p>
+          When <code>SEAL_TRUST_EXPLAINABILITY_ENABLED=true</code>, both the Query and Chat pages
+          display a <strong>Trust &amp; explainability</strong> panel with five tabs:
+        </p>
+        <ul>
+          <li>
+            <strong>SQL</strong> — the exact generated SQL query
+          </li>
+          <li>
+            <strong>Sources</strong> — tables identified by the planner
+          </li>
+          <li>
+            <strong>Provenance</strong> — catalog matches with business descriptions, tables
+            and columns referenced in the SQL
+          </li>
+          <li>
+            <strong>Scope</strong> — guardrails verdict (in-scope/out-of-scope with source and
+            reason), SQL repair attempts, refusal status, enhancement pipeline steps
+          </li>
+          <li>
+            <strong>Metadata</strong> — execution time, row count, truncation, warnings, and
+            the full raw JSON
+          </li>
+        </ul>
+        <p>
+          On the <strong>Query</strong> page the panel appears inline below results. On the{' '}
+          <strong>Chat</strong> page, each assistant message has an <em>Explainability</em>{' '}
+          button that opens a dialog showing the tabbed view for that specific turn. Clicking
+          different messages shows different explainability data — each turn has its own snapshot.
+        </p>
+        <p>
+          When trust is disabled, the Query page shows a simpler SQL card and raw metadata panel
+          without provenance. See{' '}
+          <Link href="/docs/trust-explainability">Trust &amp; explainability</Link> for full
+          details, API examples, and SDK usage.
+        </p>
+
         <h2 className="text-foreground mt-10 text-2xl font-bold">CORS & auth</h2>
         <p>
           Include <code>http://localhost:3001</code> in <code>CORS_ORIGINS</code> (default in{' '}
