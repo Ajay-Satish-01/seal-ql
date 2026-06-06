@@ -16,6 +16,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./constants": {
+      "import": "./dist/constants.js",
+      "types": "./dist/constants.d.ts"
     }
   },
   "keywords": [
@@ -59,9 +63,9 @@
   "dependencies": {},
   "peerDependencies": {
     "react": "^18.0.0",
-    "vega": "^5.30.0",
-    "vega-lite": "^5.20.0",
-    "vega-embed": "^6.26.0"
+    "vega": "^6.2.0",
+    "vega-lite": "^6.2.0",
+    "vega-embed": "^7.0.0"
   },
   "peerDependenciesMeta": {
     "react": {

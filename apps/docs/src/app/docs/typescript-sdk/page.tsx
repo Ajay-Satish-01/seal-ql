@@ -13,7 +13,7 @@ import {
 
 export default function TypeScriptSDKPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="TypeScript SDK"
         description="Query your database and render Vega-Lite charts in React."

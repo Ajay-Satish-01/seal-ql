@@ -27,6 +27,7 @@ export {
   QueryOutOfScopeError,
   ServerError,
 } from './errors.js';
+export { VEGA_LITE_SCHEMA } from './constants.js';
 export type {
   CatalogResponse,
   ChartType,

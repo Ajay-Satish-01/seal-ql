@@ -106,6 +106,9 @@ sync-docs-assets: openapi docs-fixtures ## Copy seed.sql and OpenAPI into docs s
 	cp -f config/catalog.example.yaml apps/docs/public/config/catalog.example.yaml
 	@echo "✅ Synced docs assets (seed.sql, openapi.json, seal-tools, catalog.example)"
 
+verify-dependency-catalog: ## Fail if JS/Python manifests drift from config/dependency-catalog.yaml
+	uv run python scripts/verify_dependency_catalog.py
+
 verify-openapi-sync: openapi-ts ## Fail if committed OpenAPI + SDK types differ from generated
 	@test -f sdks/typescript/src/generated/openapi.ts || (echo "❌ Missing sdks/typescript/src/generated/openapi.ts — run: make openapi-ts" && exit 1)
 	cp apps/api/openapi.json apps/docs/src/data/openapi.json
@@ -151,30 +154,33 @@ check: ## Run all checks (lint + format check + tests) — same as CI
 	@echo "═══════════════════════════════════════"
 	@echo "  Running full CI check suite"
 	@echo "═══════════════════════════════════════"
-	@echo "\n📋 1/9 — Ruff fix & lint..."
+	@echo "\n📋 1/11 — Ruff fix & lint..."
 	docker compose run --rm -T api uv run ruff check --fix .
-	@echo "\n📋 2/9 — Ruff format..."
+	@echo "\n📋 2/11 — Ruff format..."
 	docker compose run --rm -T api uv run ruff format .
-	@echo "\n📋 3/9 — TS ESLint & Prettier..."
+	@echo "\n📋 3/11 — TS ESLint & Prettier..."
 	cd sdks/typescript && pnpm run lint && pnpm run format
-	@echo "\n📋 4/9 — Python Tests..."
+	@echo "\n📋 4/11 — Python Tests..."
 	docker compose run --rm -T api uv sync --frozen --all-packages
 	docker compose run --rm -T api uv run pytest -v --tb=short \
 		--ignore=sdks/python/tests/test_sdk_e2e.py \
 		--ignore=apps/api/tests/test_e2e.py \
-		--ignore=apps/api/tests/test_catalog_workspace_integration.py
-	@echo "\n📋 5/9 — Demo fixture & metadata contract validation..."
+		--ignore=apps/api/tests/test_catalog_workspace_integration.py \
+		--ignore=tests/test_response_validation.py
+	@echo "\n📋 5/11 — Demo fixture & metadata contract validation..."
 	uv run pytest tests/test_response_validation.py packages/core/tests/test_chat_flatten_contract.py -v --tb=short
 	cd apps/docs && pnpm run verify:chat-flatten && pnpm run verify:stream-meta
-	@echo "\n📋 6/9 — OpenAPI docs sync..."
+	@echo "\n📋 6/11 — Dependency catalog..."
+	$(MAKE) verify-dependency-catalog
+	@echo "\n📋 7/11 — OpenAPI docs sync..."
 	$(MAKE) verify-openapi-sync
-	@echo "\n📋 7/10 — Docs app build..."
+	@echo "\n📋 8/11 — Docs app build..."
 	$(MAKE) check-docs
-	@echo "\n📋 8/10 — Dashboard app build..."
+	@echo "\n📋 9/11 — Dashboard app build..."
 	$(MAKE) check-dashboard
-	@echo "\n📋 9/10 — TS SDK tests..."
+	@echo "\n📋 10/11 — TS SDK tests..."
 	cd sdks/typescript && pnpm test
-	@echo "\n📋 10/10 — Prod Image Build..."
+	@echo "\n📋 11/11 — Prod Image Build..."
 	docker build --target prod -t seal/api:test -f apps/api/Dockerfile .
 	@echo "\n═══════════════════════════════════════"
 	@echo "  ✅ All checks passed!"

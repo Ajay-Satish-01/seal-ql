@@ -1,0 +1,198 @@
+# Shared third-party dependency versions for the Seal monorepo.
+#
+# Bump versions here only — then run:
+#   make verify-dependency-catalog        # check alignment
+#   uv lock                               # Python lock refresh
+#   cd apps/docs && pnpm install          # JS lockfile refresh (repeat for apps/web)
+#
+# Notes:
+#   - SDK (sdks/typescript) uses React 18 peer dep intentionally — wider range
+#     for library consumers. Its dev deps are NOT cataloged here.
+#   - Root pyproject.toml constraint-dependencies must mirror python.constraints.
+
+# ─── JavaScript ────────────────────────────────────────────────────────────────
+
+javascript:
+  # Vega visualization stack
+  vega: "^6.2.0"
+  vega-lite: "^6.2.0"
+  vega-embed: "^7.0.0"
+
+  # Next.js framework
+  next: "16.2.6"
+  react: "19.2.4"
+  react-dom: "19.2.4"
+
+  # Shared UI libraries
+  "@base-ui/react": "^1.5.0"
+  class-variance-authority: "^0.7.1"
+  clsx: "^2.1.1"
+  framer-motion: "^12.40.0"
+  lucide-react: "^1.17.0"
+  next-themes: "^0.4.6"
+  shadcn: "^4.8.3"
+  tailwind-merge: "^3.6.0"
+  tw-animate-css: "^1.4.0"
+
+  # Dev tooling (shared between apps)
+  "@tailwindcss/postcss": "^4"
+  "@tailwindcss/typography": "^0.5.16"
+  "@types/node": "^20"
+  "@types/react": "^19"
+  "@types/react-dom": "^19"
+  eslint: "^9"
+  eslint-config-next: "16.2.6"
+  prettier: "^3.8.3"
+  prettier-plugin-tailwindcss: "^0.8.0"
+  tailwindcss: "^4"
+  typescript: "^5"
+
+  packages:
+    apps/docs:
+      dependencies:
+        - vega
+        - vega-lite
+        - vega-embed
+        - next
+        - react
+        - react-dom
+        - "@base-ui/react"
+        - class-variance-authority
+        - clsx
+        - framer-motion
+        - lucide-react
+        - next-themes
+        - shadcn
+        - tailwind-merge
+        - tw-animate-css
+      devDependencies:
+        - "@tailwindcss/postcss"
+        - "@tailwindcss/typography"
+        - "@types/node"
+        - "@types/react"
+        - "@types/react-dom"
+        - eslint
+        - eslint-config-next
+        - prettier
+        - prettier-plugin-tailwindcss
+        - tailwindcss
+        - typescript
+
+    apps/web:
+      dependencies:
+        - vega
+        - vega-lite
+        - vega-embed
+        - next
+        - react
+        - react-dom
+        - "@base-ui/react"
+        - class-variance-authority
+        - clsx
+        - framer-motion
+        - lucide-react
+        - next-themes
+        - shadcn
+        - tailwind-merge
+        - tw-animate-css
+      devDependencies:
+        - "@tailwindcss/postcss"
+        - "@tailwindcss/typography"
+        - "@types/node"
+        - "@types/react"
+        - "@types/react-dom"
+        - eslint
+        - eslint-config-next
+        - prettier
+        - prettier-plugin-tailwindcss
+        - tailwindcss
+        - typescript
+
+    sdks/typescript:
+      peerDependencies:
+        - vega
+        - vega-lite
+        - vega-embed
+
+# ─── Python ────────────────────────────────────────────────────────────────────
+
+python:
+  # Root pyproject.toml [tool.uv].constraint-dependencies
+  constraints:
+    litellm: ">=1.83.7,<2"
+
+  # Canonical versions for shared deps
+  pydantic: ">=2.10.0"
+  pydantic-settings: ">=2.6.0"
+  asyncpg: ">=0.30.0"
+  duckdb: ">=1.1.0"
+  pyyaml: ">=6.0.0"
+  instructor: ">=1.7.0"
+  httpx: ">=0.28.0"
+  polars: ">=1.15.0"
+  pandas: ">=2.2.0"
+  ruff: ">=0.15.14"
+  pytest: ">=8.0"
+  pytest-asyncio: ">=0.24.0"
+
+  packages:
+    packages/core:
+      dependencies:
+        - pydantic
+        - pydantic-settings
+        - asyncpg
+        - duckdb
+        - pyyaml
+        - instructor
+        - litellm
+      dev:
+        - pytest
+        - pytest-asyncio
+      chromadb_linux_extra: ">=0.6,<0.7"
+
+    packages/sql:
+      dependencies:
+        - pydantic
+        - asyncpg
+        - duckdb
+        - polars
+      dev:
+        - pytest
+        - pytest-asyncio
+        - pandas
+
+    packages/charts:
+      dependencies:
+        - pydantic
+      dev:
+        - pytest
+
+    packages/semantic:
+      dependencies:
+        - pydantic
+        - pyyaml
+      dev:
+        - pytest
+
+    apps/api:
+      dependencies:
+        - pydantic
+      dev:
+        - pytest
+        - pytest-asyncio
+        - ruff
+        - httpx
+
+    sdks/python:
+      dependencies:
+        - pydantic
+        - httpx
+      dev:
+        - pytest
+        - pytest-asyncio
+      polars_optional: ">=1.15.0"
+      pandas_optional: ">=2.2.0"
+
+    evals:
+      dev:
+        - pytest

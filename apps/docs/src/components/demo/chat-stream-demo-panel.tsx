@@ -3,14 +3,23 @@
 import type { ChatStreamDemo } from '@/lib/demo-chat-fixtures';
 import { Badge } from '@/components/ui/badge';
 import { MetadataJsonBlock } from '@/components/docs/metadata-json-block';
+import { isDemoTrustExplainabilityEnabled } from '@/lib/demo-trust';
 import { formatMetadataJson } from '@/lib/execution-metadata';
-import { CodeBlock } from '@/components/code-block';
+import { shouldShowTrustPanel } from '@seal/trust-explainability';
+import { TrustPanel } from '@/components/demo/trust-panel';
 
 interface ChatStreamDemoPanelProps {
   demo: ChatStreamDemo;
 }
 
 export function ChatStreamDemoPanel({ demo }: ChatStreamDemoPanelProps) {
+  const trustEnabled = isDemoTrustExplainabilityEnabled();
+  const showTrustPanel = shouldShowTrustPanel(trustEnabled, {
+    sql: demo.meta.sql,
+    sources: demo.meta.sources ?? undefined,
+    metadata: demo.meta,
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -27,7 +36,17 @@ export function ChatStreamDemoPanel({ demo }: ChatStreamDemoPanelProps) {
         <p className="text-sm leading-relaxed">&ldquo;{demo.message}&rdquo;</p>
       </div>
 
-      <MetadataJsonBlock title="event: seal.meta" code={formatMetadataJson(demo.meta)} />
+      {showTrustPanel ? (
+        <TrustPanel
+          title="seal.meta trust surface"
+          sql={demo.meta.sql}
+          sources={demo.meta.sources ?? undefined}
+          metadata={demo.meta}
+          subtitle="Flat SSE seal.meta payload with trust explainability fields."
+        />
+      ) : (
+        <MetadataJsonBlock title="event: seal.meta" code={formatMetadataJson(demo.meta)} />
+      )}
 
       <div>
         <p className="text-foreground mb-2 text-sm font-semibold">Answer tokens (data: chunks)</p>

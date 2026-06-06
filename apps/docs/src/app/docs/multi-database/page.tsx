@@ -10,7 +10,7 @@ export default function MultiDatabasePage() {
   const base = SITE.defaultBaseUrl;
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Multi-database routing"
         description="Connect Seal to one or more SQL databases, then pick which one each request uses — explained from scratch with examples."

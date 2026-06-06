@@ -7,7 +7,7 @@ import { DocsProse } from '@/components/docs/docs-prose';
 
 export default function EmbeddingPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Embedding Seal"
         description="How to run Seal as an internal capability layer behind your app, agent, or API gateway — responsibilities, deployment patterns, and safety boundaries."

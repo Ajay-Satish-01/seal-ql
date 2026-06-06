@@ -10,7 +10,7 @@ import { SITE } from '@/lib/constants';
 
 export default function PromptEnhancementPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Prompt enhancement"
         description="How chat turns gain schema, catalog, vector, and memory context before decision and answer LLMs run."

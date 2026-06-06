@@ -6,7 +6,7 @@ import { DocsProse } from '@/components/docs/docs-prose';
 
 export default function TestingPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Testing & CI"
         description="How Seal validates changes — fast mocked unit tests locally and live end-to-end suites in CI."

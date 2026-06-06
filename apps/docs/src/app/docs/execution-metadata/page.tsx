@@ -14,7 +14,7 @@ import {
 
 export default function ExecutionMetadataPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Execution metadata"
         description="Shared execution fields on /v1/query and /v1/chat — aligned across JSON and SSE seal.meta."
@@ -63,6 +63,14 @@ export default function ExecutionMetadataPage() {
         <code>shared/stream-meta.ts</code> (unknown enum values fail client parse).
       </Callout>
 
+      <Callout variant="info" title="Trust / explainability toggle">
+        Set <code>SEAL_TRUST_EXPLAINABILITY_ENABLED=true</code> to expose SQL provenance (
+        <code>tables_used</code>, <code>columns_used</code>, <code>catalog_matches</code>),{' '}
+        <code>sources</code>, <code>scope</code>, and <code>repair_attempts</code>. Default is{' '}
+        <code>false</code> so production deployments do not leak SQL or provenance unless
+        explicitly enabled. See <DocLink href="/docs/configuration">Configuration</DocLink>.
+      </Callout>
+
       <Callout variant="info" title="Strict validation">
         Set <code>STRICT_STREAM_META_VALIDATION=true</code> (alias{' '}
         <code>STRICT_METADATA_VALIDATION</code>) to fail requests when metadata or{' '}
@@ -85,6 +93,10 @@ export default function ExecutionMetadataPage() {
 
       <h2 className="font-heading mt-8 text-xl font-semibold">Related</h2>
       <ul className="text-muted-foreground mt-4 list-disc space-y-2 pl-6 text-sm">
+        <li>
+          <DocLink href="/docs/trust-explainability">Trust &amp; explainability</DocLink> —
+          provenance, catalog matches, scope decisions, repair history, and dashboard panels
+        </li>
         <li>
           <DocLink href="/docs/multi-database">Multi-database routing</DocLink> —{' '}
           <code>database_id</code> on every request

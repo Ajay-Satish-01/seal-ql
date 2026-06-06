@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function VectorRagPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Vector RAG"
         description="Optional Chroma-backed retrieval over catalog, schema comments, and document folders."
@@ -53,6 +53,67 @@ RAG_MAX_CONTEXT_TOKENS=1500`}
         <li>Optional markdown/text under <code>RAG_DOCUMENTS_PATH</code></li>
       </ul>
 
+      <h2 className="font-heading mt-8 text-xl font-semibold">Reindex</h2>
+      <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+        After enabling Chroma, updating catalog descriptions, or adding documents, trigger a
+        reindex so the vector store reflects your latest content:
+      </p>
+      <CodeBlock
+        language="bash"
+        code={`# Reindex the vector store
+curl -s -X POST http://localhost:8000/v1/vector/reindex \\
+  -H "X-API-Key: your-api-key"
+
+# Verify enhancement uses vector RAG
+curl -s -X POST http://localhost:8000/v1/chat \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: your-api-key" \\
+  -d '{"message":"What are the key revenue metrics?"}' \\
+  | jq '.metadata.enhancement'`}
+      />
+      <p className="text-muted-foreground mt-2 text-sm">
+        When vector RAG is active, <code>metadata.enhancement.applied</code> includes{' '}
+        <code>&quot;vector_rag&quot;</code>. When skipped (non-default database, store disabled),{' '}
+        <code>metadata.enhancement.vector_skipped_reason</code> explains why.
+      </p>
+
+      <h2 className="font-heading mt-8 text-xl font-semibold">Example response with RAG</h2>
+      <CodeBlock
+        language="json"
+        code={`{
+  "metadata": {
+    "enhancement": {
+      "enabled": true,
+      "applied": ["schema_context", "vector_rag", "catalog_descriptions"],
+      "vector_skipped_reason": null
+    },
+    "scope": { "in_scope": true, "source": "heuristic" },
+    "used_sql": true
+  }
+}`}
+      />
+
+      <h2 className="font-heading mt-8 text-xl font-semibold">Adding custom documents</h2>
+      <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+        Place markdown or text files in <code>RAG_DOCUMENTS_PATH</code> (default{' '}
+        <code>/app/rag-docs</code> inside the container). These are chunked and embedded alongside
+        catalog text:
+      </p>
+      <CodeBlock
+        language="bash"
+        code={`# Mount a local directory with your documents
+# In docker-compose.yml:
+#   volumes:
+#     - ./rag-docs:/app/rag-docs
+
+# Example document: rag-docs/revenue-glossary.md
+# Contains: "Revenue is calculated as SUM(amount) from the orders table..."
+
+# After adding documents, reindex:
+curl -s -X POST http://localhost:8000/v1/vector/reindex \\
+  -H "X-API-Key: your-api-key"`}
+      />
+
       <p className="text-muted-foreground mt-6 text-sm">
         When using LangChain/Mastra with their own RAG, set <code>VECTOR_STORE=none</code> and{' '}
         <code>enhancement: false</code> on chat — see{' '}
@@ -62,6 +123,10 @@ RAG_MAX_CONTEXT_TOKENS=1500`}
         . Persist volumes on{' '}
         <Link href="/docs/self-hosting" className="text-primary underline-offset-4 hover:underline">
           Self-Hosting
+        </Link>
+        . Provenance details including RAG usage:{' '}
+        <Link href="/docs/trust-explainability" className="text-primary underline-offset-4 hover:underline">
+          Trust &amp; explainability
         </Link>
         .
       </p>

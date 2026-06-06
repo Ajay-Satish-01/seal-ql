@@ -18,7 +18,7 @@ from seal import (
 # Fixtures / Helpers
 # ============================================================
 
-_HEALTH_RESPONSE = {"status": "ok"}
+_HEALTH_RESPONSE = {"status": "ok", "trust_explainability_enabled": False}
 _SCHEMA_RESPONSE = {"dialect": "postgres", "tables": []}
 _QUERY_RESPONSE = {
     "sql": "SELECT 1 AS id LIMIT 10000",
@@ -306,7 +306,9 @@ class TestModels:
             "results": [{"name": "Alice"}, {"name": "Bob"}],
             "chart": {
                 "chart_type": "bar",
-                "vega_lite_spec": {"$schema": "https://vega.github.io/schema/vega-lite/v5.json"},
+                "vega_lite_spec": {
+                    "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+                },
                 "metadata": {},
             },
             "metadata": {"row_count": 2},

@@ -6,7 +6,7 @@ import { SITE } from '@/lib/constants';
 
 export default function ContributingPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Contributing"
         description="Develop from source — for maintainers and contributors, not required for integration."

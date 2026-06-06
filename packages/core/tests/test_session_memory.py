@@ -5,9 +5,34 @@ from __future__ import annotations
 import time
 
 import pytest
+from seal_core.chat.explainability import ChatMessageExplainability
 from seal_core.chat.models import ChatMessage
 from seal_core.chat.session import InMemorySessionStore
 from seal_core.settings import clear_settings_cache
+
+
+@pytest.mark.asyncio
+async def test_append_persists_assistant_explainability() -> None:
+    store = InMemorySessionStore()
+    sid = await store.create_session()
+    explainability = ChatMessageExplainability(
+        sql="SELECT 1",
+        sources=["orders"],
+        metadata={"used_sql": True, "row_count": 1},
+        results=[{"n": 1}],
+    )
+    await store.append(sid, ChatMessage(role="user", content="Count orders"))
+    await store.append(
+        sid,
+        ChatMessage(role="assistant", content="One row.", explainability=explainability),
+    )
+
+    state = await store.get_session(sid)
+    assert state is not None
+    assistant = state.messages[1]
+    assert assistant.explainability is not None
+    assert assistant.explainability.sql == "SELECT 1"
+    assert assistant.explainability.sources == ["orders"]
 
 
 @pytest.mark.asyncio

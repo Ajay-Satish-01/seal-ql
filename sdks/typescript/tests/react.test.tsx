@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import React from 'react';
 import { VegaChart } from '../src/react.js';
-import type { ChartSpec } from '../src/types.js';
+import { VEGA_LITE_SCHEMA, type ChartSpec } from '../src/types.js';
 
 // Mock vega-embed so it doesn't actually try to render in jsdom
 const mockFinalize = vi.fn();
@@ -39,7 +39,7 @@ describe('VegaChart', () => {
     const spec: ChartSpec = {
       chart_type: 'bar',
       vega_lite_spec: {
-        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+        $schema: VEGA_LITE_SCHEMA,
         mark: 'bar',
       },
       metadata: {},
@@ -55,7 +55,7 @@ describe('VegaChart', () => {
     const spec: ChartSpec = {
       chart_type: 'bar',
       vega_lite_spec: {
-        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+        $schema: VEGA_LITE_SCHEMA,
         mark: 'bar',
       },
       metadata: {},
@@ -73,7 +73,7 @@ describe('VegaChart', () => {
     const spec: ChartSpec = {
       chart_type: 'bar',
       vega_lite_spec: {
-        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+        $schema: VEGA_LITE_SCHEMA,
         mark: 'bar',
       },
       metadata: {},

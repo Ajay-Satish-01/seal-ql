@@ -2,6 +2,8 @@
 
 import { ChartPanel } from '@/components/dashboard/chart-panel';
 import { MetadataPanel } from '@/components/dashboard/metadata-panel';
+import { shouldShowTrustPanel } from '@seal/trust-explainability';
+import { TrustPanel } from '@/components/dashboard/trust-panel';
 import { PageShell } from '@/components/dashboard/page-shell';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,9 +15,10 @@ import type { ChartSpec } from 'seal';
 import { useState, useTransition } from 'react';
 
 export default function QueryPage() {
-  const { apiUrl, apiKey, databaseId } = useConnection();
+  const { apiUrl, apiKey, databaseId, trustExplainabilityEnabled } = useConnection();
   const [query, setQuery] = useState('How many orders per month?');
   const [sql, setSql] = useState<string | null>(null);
+  const [sources, setSources] = useState<string[]>([]);
   const [results, setResults] = useState<Record<string, unknown>[]>([]);
   const [chart, setChart] = useState<ChartSpec | null>(null);
   const [metadata, setMetadata] = useState<QueryMetadata | null>(null);
@@ -31,6 +34,7 @@ export default function QueryPage() {
       try {
         const res = await postQuery(apiUrl, text, apiKey.trim(), databaseId);
         setSql(res.sql);
+        setSources(res.sources ?? []);
         setResults(res.results);
         setChart(res.chart);
         setMetadata(res.metadata ?? null);
@@ -42,6 +46,14 @@ export default function QueryPage() {
       }
     });
   }
+
+  const showTrustPanel = shouldShowTrustPanel(trustExplainabilityEnabled, {
+    sql,
+    sources,
+    metadata,
+  });
+
+  const hasResults = results.length > 0 || chart != null;
 
   return (
     <PageShell
@@ -67,24 +79,38 @@ export default function QueryPage() {
         </Button>
       </Card>
 
-      <MetadataPanel metadata={metadata} title="Query metadata" />
-
-      {sql && (
-        <Card className="console-panel p-4">
-          <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-            SQL
-          </p>
-          <pre className="overflow-x-auto font-mono text-xs">{sql}</pre>
-        </Card>
-      )}
-
-      {(results.length > 0 || chart) && (
+      {hasResults ? (
         <Card className="console-panel p-4">
           <p className="text-muted-foreground mb-3 text-xs font-medium tracking-wide uppercase">
             Results
           </p>
           <ChartPanel chart={chart} results={results} />
         </Card>
+      ) : null}
+
+      {showTrustPanel ? (
+        <TrustPanel
+          className="console-panel"
+          title="Query trust & explainability"
+          sql={sql}
+          sources={sources}
+          metadata={metadata}
+          subtitle="Provenance, scope, and execution details for this query."
+        />
+      ) : (
+        <>
+          {sql ? (
+            <Card className="console-panel space-y-2 p-4">
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Generated SQL
+              </p>
+              <pre className="border-border/50 bg-muted/25 max-h-72 overflow-auto rounded-lg border p-3 font-mono text-xs leading-relaxed">
+                {sql}
+              </pre>
+            </Card>
+          ) : null}
+          <MetadataPanel metadata={metadata} title="Query metadata" />
+        </>
       )}
     </PageShell>
   );

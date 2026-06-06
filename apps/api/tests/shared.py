@@ -4,9 +4,18 @@ from __future__ import annotations
 
 import os
 
+from seal_core.settings import clear_settings_cache
+
 # Non-placeholder key for in-process TestClient tests (conftest autouse).
 TEST_API_KEY = "seal-pytest-api-key-0123456789abcdef0123456789abcdef"
 AUTH_HEADERS = {"X-API-Key": TEST_API_KEY}
+
+
+def enable_trust_explainability(monkeypatch) -> None:
+    """Opt in to trust/explainability response fields for API contract tests."""
+    monkeypatch.setenv("SEAL_TRUST_EXPLAINABILITY_ENABLED", "true")
+    clear_settings_cache()
+
 
 # Compose / CI default (.env.example). Running API container uses this, not TEST_API_KEY.
 LIVE_API_KEY = "seal-ci-test-api-key-0123456789abcdef0123456789abcdef"

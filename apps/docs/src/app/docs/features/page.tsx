@@ -6,7 +6,7 @@ import { DocLink } from '@/components/docs/doc-link';
 
 export default function FeaturesPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Features"
         description="Everything Seal provides for production NL analytics — from introspection to charts."
@@ -82,6 +82,31 @@ export default function FeaturesPage() {
           <li>Rejects dynamic <code>LIMIT</code>; injects/clamps outer <code>LIMIT</code></li>
           <li>Dialect-aware (<code>postgres</code> / <code>duckdb</code>) in <code>packages/sql</code></li>
         </ul>
+
+        <h2 id="trust-explainability">Trust &amp; explainability</h2>
+        <p>
+          Every query and chat turn can expose full provenance: the generated SQL, referenced tables
+          and columns, catalog matches with business descriptions, guardrails scope decisions, SQL
+          repair history, and execution metrics. Controlled by a single flag — default off so
+          production deployments don&apos;t leak schema details.
+        </p>
+        <ul>
+          <li>
+            <code>SEAL_TRUST_EXPLAINABILITY_ENABLED=true</code> to expose all fields
+          </li>
+          <li>
+            Dashboard shows tabbed panel: SQL, Sources, Provenance, Scope, Metadata
+          </li>
+          <li>
+            Persisted per-turn in session history with <code>CHAT_SESSION_STORE=postgres</code>
+          </li>
+          <li>
+            Trust gating strips fields at the API layer — same pipeline, safe defaults
+          </li>
+        </ul>
+        <p>
+          <Link href="/docs/trust-explainability">Trust &amp; explainability</Link>
+        </p>
 
         <h2 id="embedding">Embedding as a capability layer</h2>
         <p>

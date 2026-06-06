@@ -8,14 +8,14 @@ dependencies = [
     "pydantic-settings>=2.6.0",
     "duckdb>=1.1.0",
     "asyncpg>=0.30.0",
-    "litellm>=1.50.0",
+    "litellm>=1.83.7,<2",
     "instructor>=1.7.0",
     "pyyaml>=6.0.0",
 ]
 
 [project.optional-dependencies]
 # Linux/Docker only — chromadb/onnxruntime wheels are unreliable on macOS in CI lock resolution.
-chroma = ["chromadb>=0.5.23,<0.6; sys_platform == 'linux'"]
+chroma = ["chromadb>=0.6,<0.7; sys_platform == 'linux'"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24.0",

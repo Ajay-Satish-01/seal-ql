@@ -137,3 +137,18 @@ def test_build_chat_metadata_includes_enhancement_and_scope() -> None:
     assert payload["enhancement"]["enabled"] is True
     assert payload["enhancement"]["applied"] == ["multi_turn"]
     assert payload["scope"]["in_scope"] is True
+
+
+def test_execution_metadata_includes_provenance_fields() -> None:
+    result = _exec_result()
+    result.tables_used = ["orders"]
+    result.columns_used = ["orders.id"]
+    meta = ExecutionMetadata.from_execute_result(
+        database_id="default",
+        exec_result=result,
+        used_sql=True,
+        catalog_matches=[{"name": "orders", "schema": "public", "description": "Sales"}],
+    )
+    assert meta.tables_used == ["orders"]
+    assert meta.columns_used == ["orders.id"]
+    assert meta.catalog_matches[0].name == "orders"

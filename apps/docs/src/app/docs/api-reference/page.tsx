@@ -18,7 +18,7 @@ export default function ApiReferencePage() {
   const catalog = endpoints.find((e) => e.path === '/v1/catalog');
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="API Reference"
         description={`REST API v${version} — generated from the committed OpenAPI spec.`}

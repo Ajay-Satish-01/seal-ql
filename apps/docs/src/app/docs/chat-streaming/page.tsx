@@ -15,7 +15,7 @@ export default function ChatStreamingPage() {
   const base = SITE.defaultBaseUrl;
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Chat streaming"
         description="Stream only the final natural-language answer; SQL and charts arrive in seal.meta first."

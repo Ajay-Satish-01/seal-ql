@@ -11,6 +11,8 @@ import type { components } from './generated/openapi.js';
 
 type Schemas = components['schemas'];
 
+export { VEGA_LITE_SCHEMA } from './constants.js';
+
 /** API chart type enum from OpenAPI. */
 export type ChartType = Schemas['ChartType'];
 

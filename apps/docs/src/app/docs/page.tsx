@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   ArrowRight,
   Database,
+  Eye,
   Shield,
   Zap,
   BarChart,
@@ -92,6 +93,12 @@ const CAPABILITY_CARDS = [
     href: '/docs/authentication',
   },
   {
+    icon: Eye,
+    title: 'Trust & explainability',
+    desc: 'Full provenance: SQL, catalog matches, scope decisions, repair history, and execution metrics per turn.',
+    href: '/docs/trust-explainability',
+  },
+  {
     icon: Puzzle,
     title: 'Embedding Seal',
     desc: 'Run Seal behind your app or agent — responsibilities, deployment patterns, three boundaries.',
@@ -107,7 +114,7 @@ const CAPABILITY_CARDS = [
 
 export default function DocsPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="What is Seal?"
         description="An open-source AI SQL gateway: natural language → validated SQL → results and Vega-Lite charts."

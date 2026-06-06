@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Seal } from '../src/client.js';
 import { QueryError, ServerError, SealConnectionError } from '../src/errors.js';
+import { VEGA_LITE_SCHEMA } from '../src/types.js';
 
 // ============================================================
 // Helpers
@@ -77,7 +78,7 @@ describe('Seal', () => {
         chart: {
           chart_type: 'bar',
           vega_lite_spec: {
-            $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+            $schema: VEGA_LITE_SCHEMA,
           },
           metadata: {},
         },

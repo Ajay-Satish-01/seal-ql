@@ -1,5 +1,6 @@
 """Tests for the ChartEngine orchestrator."""
 
+from seal_charts import VEGA_LITE_SCHEMA
 from seal_charts.engine import ChartEngine
 from seal_core.planner.models import ChartType, QueryPlan
 from seal_sql.result import ColumnMetadata, QueryResult
@@ -27,7 +28,7 @@ def test_engine_generates_valid_vega_spec():
 
     assert spec.chart_type == ChartType.LINE
     assert spec.metadata["requested_chart_type"] == ChartType.LINE
-    assert spec.vega_lite_spec["$schema"] == "https://vega.github.io/schema/vega-lite/v5.json"
+    assert spec.vega_lite_spec["$schema"] == VEGA_LITE_SCHEMA
     assert spec.vega_lite_spec["title"] == "Sales Trend"
     assert spec.vega_lite_spec["mark"]["type"] == "line"
     assert spec.vega_lite_spec["encoding"]["x"]["field"] == "date"

@@ -551,6 +551,17 @@ class Settings(BaseSettings):
             "instead of only logging a warning."
         ),
     )
+    trust_explainability_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "SEAL_TRUST_EXPLAINABILITY_ENABLED",
+            "TRUST_EXPLAINABILITY_ENABLED",
+        ),
+        description=(
+            "When true, expose trust/explainability fields (SQL provenance, sources, "
+            "scope, repair count) in API and SSE responses. Default false for production."
+        ),
+    )
     chat_session_ttl_seconds: int = Field(
         default=3600,
         description="In-memory session TTL (seconds). Ignored when CHAT_SESSION_STORE=postgres.",
@@ -706,6 +717,7 @@ def settings_env_names() -> list[str]:
         "api_key": "SEAL_API_KEY",
         "disable_public_docs": "SEAL_DISABLE_DOCS",
         "dev_mode": "SEAL_DEV_MODE",
+        "trust_explainability_enabled": "SEAL_TRUST_EXPLAINABILITY_ENABLED",
     }
     names = {
         alias_overrides.get(field_name, field_name.upper()) for field_name in Settings.model_fields

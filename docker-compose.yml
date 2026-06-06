@@ -14,6 +14,7 @@ services:
         required: false
     ports:
       - "${API_PORT:-8000}:8000"
+    # Pass-through defaults below mirror seal_core.settings; full list in .env.example (also loaded via env_file).
     environment:
       - "DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/seal}"
       - "DUCKDB_PATH=${DUCKDB_PATH:-:memory:}"
@@ -41,10 +42,13 @@ services:
       - "CATALOG_AUTO_SYNC=${CATALOG_AUTO_SYNC:-true}"
       - "VECTOR_STORE=${VECTOR_STORE:-none}"
       - "CHAT_ENHANCEMENT_ENABLED=${CHAT_ENHANCEMENT_ENABLED:-true}"
+      - "SEAL_TRUST_EXPLAINABILITY_ENABLED=${SEAL_TRUST_EXPLAINABILITY_ENABLED:-false}"
       - "CHROMA_PERSIST_PATH=${CHROMA_PERSIST_PATH:-/app/data/chroma}"
       - "EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-3-small}"
     volumes:
       - ./.env.example:/app/.env.example:ro
+      - ./docker-compose.yml:/app/docker-compose.yml:ro
+      - ./apps/docs/public/compose/docker-compose.example.yml:/app/apps/docs/public/compose/docker-compose.example.yml:ro
       - ./Makefile:/app/Makefile:ro
       - ./pyproject.toml:/app/pyproject.toml
       - ./uv.lock:/app/uv.lock

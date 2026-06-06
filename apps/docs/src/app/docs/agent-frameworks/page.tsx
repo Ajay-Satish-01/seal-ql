@@ -8,7 +8,7 @@ export default function AgentFrameworksPage() {
   const base = SITE.defaultBaseUrl;
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Agent frameworks"
         description="Register Seal as HTTP tools for Mastra, LangChain, or custom agents — optional when using built-in chat."

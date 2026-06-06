@@ -15,8 +15,14 @@ Top-level `sql`, `columns`, `results`, `chart`, and nested `metadata`:
 | `execution_time_ms` | Wall time for execution |
 | `truncated` | Result capped by policy |
 | `warnings` | SQL boundary warnings |
-| `repair_attempts` | Planner repair iterations used |
+| `repair_attempts` | Planner repair iterations used (when trust explainability is enabled) |
 | `used_sql` | Always `true` on success |
+| `tables_used` | Tables referenced in executed SQL (when trust explainability is enabled) |
+| `columns_used` | Columns referenced as `table.column` (when trust explainability is enabled) |
+| `catalog_matches` | Catalog entries selected for planner context (when enabled) |
+| `scope` | Guardrails scope decision on query (when enabled) |
+
+Top-level `sources` (context tables selected for planning) is included on query responses when trust explainability is enabled.
 
 ## Chat JSON (`POST /v1/chat`, `stream=false`)
 
@@ -59,6 +65,18 @@ The first event is `event: seal.meta`. Its `data:` line is a **flat** JSON objec
 - `refusal` / `sql_error` / `suggested_queries` when applicable
 
 OpenAPI models this as `ChatStreamMeta`; wire format is SSE-framed (`event:` / `data:`), not a raw JSON body.
+
+## Trust / explainability toggle
+
+Set `SEAL_TRUST_EXPLAINABILITY_ENABLED=true` to expose trust fields in API and SSE responses. **Default is `false`** (secure-by-default).
+
+When disabled:
+
+- Query: `metadata` omits `repair_attempts`, `scope`, `tables_used`, `columns_used`, and `catalog_matches`; top-level `sources` is empty.
+- Chat JSON: omits the same metadata keys plus top-level `sql`, `results`, `columns`, and `sources`.
+- SSE `seal.meta`: same stripping as chat JSON on flat fields.
+
+When enabled, clients receive full provenance for auditing and manual SQL re-runs.
 
 ## Validation
 

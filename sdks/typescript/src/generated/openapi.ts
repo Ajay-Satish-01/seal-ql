@@ -306,6 +306,21 @@ export interface components {
             /** Tables */
             readonly tables?: readonly components["schemas"]["CatalogDescriptionItem"][];
         };
+        /**
+         * CatalogMatchItem
+         * @description Catalog entry included in planner context.
+         */
+        readonly CatalogMatchItem: {
+            /** Name */
+            readonly name: string;
+            /**
+             * Schema
+             * @default public
+             */
+            readonly schema: string;
+            /** Description */
+            readonly description?: string | null;
+        };
         /** CatalogResponse */
         readonly CatalogResponse: {
             /** Version */
@@ -338,7 +353,7 @@ export interface components {
          *
          *     Attributes:
          *         chart_type: The determined type of chart (line, bar, table, etc.).
-         *         vega_lite_spec: A JSON-serializable dictionary containing a valid Vega-Lite v5 spec.
+         *         vega_lite_spec: A JSON-serializable dictionary containing a valid Vega-Lite spec.
          *             If chart_type is 'table' or 'metric_card', this will be empty (as they are
          *             rendered natively by the UI, not via Vega-Lite).
          *         metadata: Additional metadata for rendering (e.g., suggested titles, formatting hints).
@@ -410,9 +425,24 @@ export interface components {
              * @default false
              */
             readonly used_sql: boolean;
-            readonly enhancement?: components["schemas"]["EnhancementInfo"];
+            /**
+             * Tables Used
+             * @description Tables referenced in executed SQL (SQLGlot validation).
+             */
+            readonly tables_used?: readonly string[];
+            /**
+             * Columns Used
+             * @description Columns referenced in executed SQL as table.column.
+             */
+            readonly columns_used?: readonly string[];
+            /**
+             * Catalog Matches
+             * @description Catalog entries selected for planner context.
+             */
+            readonly catalog_matches?: readonly components["schemas"]["CatalogMatchItem"][];
             /** @description Guardrails scope decision when classified. */
             readonly scope?: components["schemas"]["ScopeMetadata"] | null;
+            readonly enhancement?: components["schemas"]["EnhancementInfo"];
             /**
              * Refusal
              * @description True when the turn was refused.
@@ -716,6 +746,11 @@ export interface components {
              * @description The health status of the API.
              */
             readonly status: string;
+            /**
+             * Trust Explainability Enabled
+             * @description Whether trust/explainability fields are exposed on query and chat responses.
+             */
+            readonly trust_explainability_enabled: boolean;
         };
         /**
          * HypertableInfo
@@ -784,6 +819,23 @@ export interface components {
              * @default false
              */
             readonly used_sql: boolean;
+            /**
+             * Tables Used
+             * @description Tables referenced in executed SQL (SQLGlot validation).
+             */
+            readonly tables_used?: readonly string[];
+            /**
+             * Columns Used
+             * @description Columns referenced in executed SQL as table.column.
+             */
+            readonly columns_used?: readonly string[];
+            /**
+             * Catalog Matches
+             * @description Catalog entries selected for planner context.
+             */
+            readonly catalog_matches?: readonly components["schemas"]["CatalogMatchItem"][];
+            /** @description Guardrails scope decision when trust explainability is enabled. */
+            readonly scope?: components["schemas"]["ScopeMetadata"] | null;
         };
         /**
          * QueryRequest
@@ -826,6 +878,11 @@ export interface components {
             }[];
             /** @description The Vega-Lite chart specification, if applicable. */
             readonly chart?: components["schemas"]["ChartSpec"] | null;
+            /**
+             * Sources
+             * @description Context tables selected for planning (when trust explainability is enabled).
+             */
+            readonly sources?: readonly string[];
             /**
              * Metadata
              * @description Execution metadata (time, row count, limits, etc.).
@@ -921,6 +978,28 @@ export interface components {
              */
             readonly has_more: boolean;
         };
+        /**
+         * SessionMessageExplainabilitySchema
+         * @description Persisted trust / execution snapshot for one assistant turn.
+         */
+        readonly SessionMessageExplainabilitySchema: {
+            /** Sql */
+            readonly sql?: string | null;
+            /** Sources */
+            readonly sources?: readonly string[];
+            /** Metadata */
+            readonly metadata?: {
+                readonly [key: string]: unknown;
+            } | null;
+            /** Chart */
+            readonly chart?: {
+                readonly [key: string]: unknown;
+            } | null;
+            /** Results */
+            readonly results?: readonly {
+                readonly [key: string]: unknown;
+            }[];
+        };
         /** SessionMessageSchema */
         readonly SessionMessageSchema: {
             /** Role */
@@ -932,6 +1011,8 @@ export interface components {
              * @description ISO-8601 when available (postgres).
              */
             readonly created_at?: string | null;
+            /** @description SQL, metadata, and chart context when stored for assistant messages. */
+            readonly explainability?: components["schemas"]["SessionMessageExplainabilitySchema"] | null;
         };
         /** SessionSummarySchema */
         readonly SessionSummarySchema: {
@@ -1125,12 +1206,27 @@ export interface components {
              * @default false
              */
             readonly used_sql: boolean;
-            readonly enhancement?: components["schemas"]["EnhancementInfo"];
+            /**
+             * Tables Used
+             * @description Tables referenced in executed SQL (SQLGlot validation).
+             */
+            readonly tables_used?: readonly string[];
+            /**
+             * Columns Used
+             * @description Columns referenced in executed SQL as table.column.
+             */
+            readonly columns_used?: readonly string[];
+            /**
+             * Catalog Matches
+             * @description Catalog entries selected for planner context.
+             */
+            readonly catalog_matches?: readonly components["schemas"]["CatalogMatchItem"][];
             /**
              * @description Guardrails scope decision when classified.
              * @default null
              */
             readonly scope: components["schemas"]["ScopeMetadata"] | null;
+            readonly enhancement?: components["schemas"]["EnhancementInfo"];
             /**
              * Refusal
              * @description True when the turn was refused.

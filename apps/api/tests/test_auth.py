@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 from seal_core.settings import Settings, clear_settings_cache, get_settings
 from tests.factory import build_client
-from tests.shared import TEST_API_KEY
+from tests.shared import TEST_API_KEY, enable_trust_explainability
 
 if TYPE_CHECKING:
     from _pytest.monkeypatch import MonkeyPatch
@@ -90,7 +90,20 @@ def auth_client(monkeypatch: MonkeyPatch) -> Generator[TestClient, None, None]:
 def test_health_is_public(auth_client: TestClient) -> None:
     response = auth_client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {
+        "status": "ok",
+        "trust_explainability_enabled": False,
+    }
+
+
+def test_health_reflects_trust_toggle_when_enabled(auth_client: TestClient, monkeypatch) -> None:
+    enable_trust_explainability(monkeypatch)
+    response = auth_client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "trust_explainability_enabled": True,
+    }
 
 
 def test_schema_requires_api_key(auth_client: TestClient) -> None:

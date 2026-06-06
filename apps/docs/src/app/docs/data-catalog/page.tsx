@@ -14,7 +14,7 @@ export default function DataCatalogPage() {
   const base = SITE.defaultBaseUrl;
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Data catalog"
         description="Auto-generated YAML with optional business descriptions — used globally by chat and query."
@@ -56,16 +56,100 @@ make sync-catalog          # writes config/catalog.yaml
         .
       </p>
 
+      <h2 className="font-heading mt-8 text-xl font-semibold">Catalog YAML structure</h2>
+      <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+        The generated YAML contains one entry per table/view with columns, types, and optional
+        descriptions. The planner and enhancement chain use these descriptions to ground SQL
+        generation.
+      </p>
+      <CodeBlock
+        language="yaml"
+        code={`tables:
+  - schema_name: public
+    table_name: orders
+    table_description: "Customer purchase orders with timestamps and amounts"
+    columns:
+      - column_name: id
+        data_type: integer
+        is_nullable: false
+      - column_name: customer_id
+        data_type: integer
+        is_nullable: false
+      - column_name: amount
+        data_type: numeric
+        is_nullable: true
+      - column_name: created_at
+        data_type: timestamp with time zone
+        is_nullable: false
+    primary_key: [id]
+    foreign_keys:
+      - column: customer_id
+        references_table: customers
+        references_column: id`}
+      />
+
       <h2 className="font-heading mt-8 text-xl font-semibold">API</h2>
+      <h3 className="text-foreground mt-4 text-lg font-medium">List catalog</h3>
       <CodeBlock language="bash" code={curlWithAuth(base, 'GET', '/v1/catalog')} />
+      <p className="text-muted-foreground mt-2 text-sm">Example response (abbreviated):</p>
+      <CodeBlock
+        language="json"
+        code={`{
+  "tables": [
+    {
+      "schema_name": "public",
+      "table_name": "orders",
+      "table_description": "Customer purchase orders with timestamps and amounts",
+      "columns": [
+        { "column_name": "id", "data_type": "integer", "is_nullable": false },
+        { "column_name": "amount", "data_type": "numeric", "is_nullable": true }
+      ]
+    }
+  ]
+}`}
+      />
+
+      <h3 className="text-foreground mt-4 text-lg font-medium">Sync catalog from schema</h3>
       <CodeBlock
         language="bash"
         code={curlWithAuth(base, 'POST', '/v1/catalog/sync')}
       />
 
+      <h3 className="text-foreground mt-4 text-lg font-medium">Update descriptions</h3>
+      <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+        Descriptions are stored in workspace (Postgres) and survive catalog syncs. Use the
+        dashboard editor or this API:
+      </p>
+      <CodeBlock
+        language="bash"
+        code={curlWithAuth(base, 'PATCH', '/v1/catalog/descriptions', {
+          descriptions: {
+            'public.orders': 'Customer purchase orders with timestamps, amounts, and shipping status',
+            'public.customers': 'Registered customer accounts with contact information',
+          },
+        })}
+      />
+      <p className="text-muted-foreground mt-2 text-sm">
+        Format: <code>{'{'}schema.table_name: description{'}'}</code>. Existing descriptions for
+        unlisted tables are preserved.
+      </p>
+
       <h2 className="font-heading mt-8 text-xl font-semibold">SDK</h2>
       <CodeBlock language="python" code={pythonCatalogSnippet(base)} />
       <CodeBlock language="typescript" code={tsCatalogSnippet(base)} />
+
+      <h2 className="font-heading mt-8 text-xl font-semibold">How descriptions improve answers</h2>
+      <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+        Without descriptions, the planner sees only column names and types. Adding a description
+        like <em>&quot;Customer purchase orders with timestamps and amounts&quot;</em> helps the
+        LLM understand that <code>orders</code> is the right table for revenue questions. Better
+        descriptions lead to more accurate SQL and fewer repair attempts. When{' '}
+        <Link href="/docs/trust-explainability" className="text-primary underline-offset-4 hover:underline">
+          trust explainability
+        </Link>{' '}
+        is enabled, <code>catalog_matches</code> in the response shows which descriptions were
+        matched.
+      </p>
 
       <p className="text-muted-foreground mt-6 text-sm">
         Used automatically by <Link href="/docs/chat-qa" className="text-primary underline-offset-4 hover:underline">Chat</Link> and{' '}

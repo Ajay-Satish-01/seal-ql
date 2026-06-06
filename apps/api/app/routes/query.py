@@ -1,13 +1,19 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from seal_charts.engine import ChartEngine
 from seal_core.catalog.registry import DataCatalogRegistry
+from seal_core.chat.retriever import ContextRetriever
 from seal_core.database.config import planner_resources_for_database
 from seal_core.database.registry import DatabaseRegistry
+from seal_core.guardrails.models import ScopeMetadata
 from seal_core.guardrails.scope import build_query_out_of_scope_detail, classify_scope
 from seal_core.pipeline.execute import execute_natural_language_query
 from seal_core.pipeline.models import ExecutionMetadata
+from seal_core.pipeline.provenance import build_catalog_matches
+from seal_core.pipeline.trust import apply_trust_gating_to_query_response
 from seal_core.pipeline.validate_metadata import (
     InvalidQueryMetadataError,
     enforce_query_metadata,
@@ -31,6 +37,7 @@ from app.security import require_api_key
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+_context_retriever = ContextRetriever()
 
 
 @router.post("/query", response_model=QueryResponse, responses=QUERY_ENDPOINT_RESPONSES)
@@ -60,6 +67,13 @@ async def execute_query(
             semantic_registry=semantic_registry,
         )
 
+        table_names = _context_retriever.select_tables(
+            request.query,
+            schema,
+            catalog,
+            full_schema=True,
+        )
+
         exec_result = await execute_natural_language_query(
             question=request.query,
             schema=schema,
@@ -67,6 +81,7 @@ async def execute_query(
             executor=bundle.executor,
             semantic_registry=semantic,
             data_catalog=catalog,
+            table_names=None,
         )
 
         result = QueryResult(
@@ -79,20 +94,26 @@ async def execute_query(
         )
         chart_spec = ChartEngine.generate(exec_result.plan, result)
 
+        catalog_matches = build_catalog_matches(table_names, schema, catalog)
         metadata = ExecutionMetadata.from_execute_result(
             database_id=request.database_id,
             exec_result=exec_result,
             used_sql=True,
+            catalog_matches=catalog_matches,
         ).model_dump()
+        metadata["scope"] = ScopeMetadata.from_result(scope).model_dump(exclude_none=True)
         enforce_query_metadata(metadata)
 
-        return QueryResponse(
+        response_model = QueryResponse(
             sql=exec_result.sql,
             columns=exec_result.columns,
             results=exec_result.rows,
             chart=chart_spec,
+            sources=table_names,
             metadata=metadata,
         )
+        response_payload = apply_trust_gating_to_query_response(response_model.model_dump())
+        return JSONResponse(content=jsonable_encoder(response_payload))
     except HTTPException:
         raise
     except InvalidQueryMetadataError as e:

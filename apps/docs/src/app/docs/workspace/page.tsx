@@ -32,7 +32,7 @@ export default function WorkspacePage() {
   const base = SITE.defaultBaseUrl;
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Workspace settings"
         description="Persist operator configuration — guardrails, limits, LLM model, and catalog descriptions — with clear precedence and apply semantics."

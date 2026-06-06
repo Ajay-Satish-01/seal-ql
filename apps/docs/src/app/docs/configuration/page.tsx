@@ -17,7 +17,7 @@ import {
 
 export default function ConfigurationPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Configuration reference"
         description="How environment variables shape API behavior, what each setting controls, and what you should see when it is working."

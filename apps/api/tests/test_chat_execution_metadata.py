@@ -17,7 +17,7 @@ from seal_core.planner.models import ChartType, QueryPlan
 from seal_sql.result import ColumnMetadata
 from tests.factory import build_client
 from tests.mocks import MockIntrospector, MockPlanner
-from tests.shared import AUTH_HEADERS
+from tests.shared import AUTH_HEADERS, enable_trust_explainability
 
 
 def _chat_service_with_sql() -> ChatService:
@@ -62,7 +62,54 @@ def _exec_result() -> ExecuteQueryResult:
     )
 
 
+def test_chat_json_metadata_hides_trust_fields_by_default(monkeypatch) -> None:
+    service = _chat_service_with_sql()
+    exec_result = _exec_result()
+
+    with (
+        patch(
+            "seal_core.chat.service.classify_scope",
+            new=AsyncMock(
+                return_value=ScopeResult(in_scope=True, reason="in_scope", source="heuristic")
+            ),
+        ),
+        patch.object(
+            service,
+            "_chat_decision",
+            new=AsyncMock(return_value=ChatDecision(needs_data=True, confidence="high")),
+        ),
+        patch.object(
+            service,
+            "_execute_data_path",
+            new=AsyncMock(return_value=(exec_result, None, {"used_sql": True})),
+        ),
+        patch.object(service, "_answer_system", new=AsyncMock(return_value="SYS")),
+        patch.object(
+            service._client.chat.completions,
+            "create",
+            new=AsyncMock(return_value=ChatAnswer(message="Ten orders.")),
+        ),
+    ):
+        client: TestClient = build_client(monkeypatch)
+        client.app.dependency_overrides[get_chat_service] = lambda: service
+        r = client.post(
+            "/v1/chat",
+            json={"message": "How many orders?"},
+            headers=AUTH_HEADERS,
+        )
+
+    assert r.status_code == 200
+    meta = r.json()["metadata"]
+    assert meta["used_sql"] is True
+    assert "repair_attempts" not in meta
+    assert "scope" not in meta
+    body = r.json()
+    assert body["sql"] is None
+    assert body["columns"] is None
+
+
 def test_chat_json_metadata_when_sql_runs(monkeypatch) -> None:
+    enable_trust_explainability(monkeypatch)
     service = _chat_service_with_sql()
     exec_result = _exec_result()
 
@@ -153,6 +200,7 @@ def test_chat_json_sql_error_metadata(monkeypatch) -> None:
 
 
 def test_chat_stream_meta_includes_execution_fields(monkeypatch) -> None:
+    enable_trust_explainability(monkeypatch)
     service = _chat_service_with_sql()
     exec_result = _exec_result()
 
@@ -238,7 +286,7 @@ def test_chat_stream_sql_error_meta(monkeypatch) -> None:
     payload = json.loads(meta_line[6:])
     assert payload["sql_error"] is True
     assert payload["used_sql"] is False
-    assert payload["sql"] is None
+    assert payload.get("sql") is None
 
 
 async def _mock_streaming_completion(**_kwargs):

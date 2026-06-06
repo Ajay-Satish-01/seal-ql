@@ -6,7 +6,7 @@ import { DocsProse } from '@/components/docs/docs-prose';
 
 export default function HowItWorksPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="How Seal works"
         description="End-to-end flow from HTTP request to guardrails, LLM calls, validated SQL, and answers — for query and chat."

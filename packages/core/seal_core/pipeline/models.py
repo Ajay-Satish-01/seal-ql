@@ -38,6 +38,16 @@ class EnhancementMetadata(BaseModel):
     )
 
 
+class CatalogMatchItem(BaseModel):
+    """Catalog entry included in planner context."""
+
+    name: str
+    schema_name: str = Field("public", alias="schema")
+    description: str | None = None
+
+    model_config = {"populate_by_name": True}
+
+
 class ExecutionMetadata(BaseModel):
     """Execution fields shared by /v1/query and /v1/chat.
 
@@ -52,6 +62,18 @@ class ExecutionMetadata(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     repair_attempts: int = 0
     used_sql: bool = False
+    tables_used: list[str] = Field(
+        default_factory=list,
+        description="Tables referenced in executed SQL (SQLGlot validation).",
+    )
+    columns_used: list[str] = Field(
+        default_factory=list,
+        description="Columns referenced in executed SQL as table.column.",
+    )
+    catalog_matches: list[CatalogMatchItem] = Field(
+        default_factory=list,
+        description="Catalog entries selected for planner context.",
+    )
 
     @classmethod
     def from_execute_result(
@@ -60,9 +82,17 @@ class ExecutionMetadata(BaseModel):
         database_id: str,
         exec_result: ExecuteQueryResult | None,
         used_sql: bool,
+        catalog_matches: list[CatalogMatchItem] | list[dict[str, Any]] | None = None,
     ) -> ExecutionMetadata:
         if exec_result is None:
             return cls(database_id=database_id, used_sql=used_sql)
+        matches: list[CatalogMatchItem] = []
+        if catalog_matches:
+            for item in catalog_matches:
+                if isinstance(item, CatalogMatchItem):
+                    matches.append(item)
+                else:
+                    matches.append(CatalogMatchItem.model_validate(item))
         return cls(
             database_id=database_id,
             row_count=exec_result.row_count,
@@ -71,6 +101,9 @@ class ExecutionMetadata(BaseModel):
             warnings=list(exec_result.warnings),
             repair_attempts=exec_result.repair_attempts,
             used_sql=used_sql,
+            tables_used=list(exec_result.tables_used),
+            columns_used=list(exec_result.columns_used),
+            catalog_matches=matches,
         )
 
 
@@ -122,13 +155,18 @@ def build_chat_metadata(
     vector_rag_available: bool,
     orchestrator_available: bool,
     enhancement_requested: bool = False,
+    catalog_matches: list[CatalogMatchItem] | list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Merge execution + enhancement (+ optional scope/refusal) for chat JSON/SSE."""
     payload: dict[str, Any] = ExecutionMetadata.from_execute_result(
         database_id=database_id,
         exec_result=exec_result,
         used_sql=used_sql,
+        catalog_matches=catalog_matches,
     ).model_dump()
+    for key in ("tables_used", "columns_used", "catalog_matches"):
+        if not payload.get(key):
+            payload.pop(key, None)
     enh = build_enhancement_metadata(
         enabled=enhancement_enabled,
         applied=applied,
@@ -171,6 +209,7 @@ def build_stream_meta_event(
     vector_rag_available: bool,
     orchestrator_available: bool,
     enhancement_requested: bool = False,
+    catalog_matches: list[CatalogMatchItem] | list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Payload for SSE ``seal.meta`` aligned with chat JSON metadata execution fields."""
     event: dict[str, Any] = {
@@ -196,6 +235,7 @@ def build_stream_meta_event(
             vector_rag_available=vector_rag_available,
             enhancement_requested=enhancement_requested,
             orchestrator_available=orchestrator_available,
+            catalog_matches=catalog_matches,
         )
     )
     return event

@@ -1,10 +1,16 @@
+import { resolveTrustExplainabilityEnabled } from '@seal/trust-explainability';
 import { formatApiError } from '@/lib/api-error';
 import type { QueryMetadata } from '@/lib/execution-metadata';
 import { authHeaders, normalizeBaseUrl } from '@/lib/connection';
 import type { ChartSpec } from 'seal';
 
 export type ConnectionProbeResult =
-  | { ok: true; tableCount: number; databases: DatabaseInfo[] }
+  | {
+      ok: true;
+      tableCount: number;
+      databases: DatabaseInfo[];
+      trustExplainabilityEnabled: boolean;
+    }
   | { ok: false; message: string };
 
 export interface DatabaseInfo {
@@ -45,6 +51,18 @@ export async function probeApiConnection(
       return { ok: false, message: formatApiError(health.status, detail) };
     }
 
+    let trustExplainabilityEnabled = resolveTrustExplainabilityEnabled();
+    try {
+      const healthBody = (await health.json()) as {
+        trust_explainability_enabled?: boolean;
+      };
+      trustExplainabilityEnabled = resolveTrustExplainabilityEnabled({
+        trust_explainability_enabled: healthBody.trust_explainability_enabled,
+      });
+    } catch {
+      // Older/custom health endpoints may return plain text.
+    }
+
     const catalog = await fetch(`${url}/v1/catalog`, {
       headers: authHeaders(apiKey.trim()),
       signal,
@@ -66,7 +84,7 @@ export async function probeApiConnection(
       // Older API without /v1/databases — still connected.
     }
 
-    return { ok: true, tableCount, databases };
+    return { ok: true, tableCount, databases, trustExplainabilityEnabled };
   } catch (error) {
     if ((error as Error).name === 'AbortError') {
       return { ok: false, message: 'Connection check cancelled' };
@@ -81,6 +99,7 @@ export interface QueryResponse {
   columns: Array<{ name: string; type: string }>;
   results: Record<string, unknown>[];
   chart: ChartSpec | null;
+  sources?: string[];
   metadata?: QueryMetadata;
 }
 

@@ -13,7 +13,7 @@ import {
 
 export default function PythonSDKPage() {
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Python SDK"
         description="Integrate Seal from Python applications."

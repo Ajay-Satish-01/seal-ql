@@ -14,7 +14,7 @@ from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
 from seal_core.guardrails.models import ScopeResult
 from tests.factory import build_client
 from tests.mocks import MockIntrospector, MockPlanner
-from tests.shared import AUTH_HEADERS
+from tests.shared import AUTH_HEADERS, enable_trust_explainability
 
 
 def _chat_service() -> ChatService:
@@ -40,6 +40,7 @@ def _chat_service() -> ChatService:
 
 
 def test_chat_stream_refusal_seal_meta(monkeypatch) -> None:
+    enable_trust_explainability(monkeypatch)
     service = _chat_service()
 
     with (

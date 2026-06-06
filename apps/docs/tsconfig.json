@@ -24,7 +24,8 @@
       "@seal/metadata-contract": ["../../shared/metadata-contract.ts"],
       "@seal/metadata-summary": ["../../shared/metadata-summary.ts"],
       "@seal/chat-sse-events": ["../../shared/chat-sse-events.ts"],
-      "@seal/api-error": ["../../shared/api-error.ts"]
+      "@seal/api-error": ["../../shared/api-error.ts"],
+      "@seal/trust-explainability": ["../../shared/trust-explainability.ts"]
     }
   },
   "include": [

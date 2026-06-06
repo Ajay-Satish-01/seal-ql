@@ -3,13 +3,26 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
-from tests.shared import AUTH_HEADERS
+from tests.shared import AUTH_HEADERS, enable_trust_explainability
 
 
 def test_health(api_client: TestClient) -> None:
     response = api_client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {
+        "status": "ok",
+        "trust_explainability_enabled": False,
+    }
+
+
+def test_health_reflects_trust_toggle(api_client: TestClient, monkeypatch) -> None:
+    enable_trust_explainability(monkeypatch)
+    response = api_client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "trust_explainability_enabled": True,
+    }
 
 
 def test_schema(api_client: TestClient) -> None:
@@ -38,4 +51,4 @@ def test_query_returns_execution_metadata(api_client: TestClient) -> None:
     assert isinstance(meta["execution_time_ms"], (int, float))
     assert meta["truncated"] is False
     assert isinstance(meta["warnings"], list)
-    assert isinstance(meta["repair_attempts"], int)
+    assert "repair_attempts" not in meta

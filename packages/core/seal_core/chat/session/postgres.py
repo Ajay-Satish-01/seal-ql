@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import time
 import uuid
@@ -10,11 +11,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from seal_core.chat.explainability import ChatMessageExplainability
 from seal_core.chat.models import ChatMessage
 from seal_core.chat.session.base import BaseSessionStore
 from seal_core.chat.session.ids import parse_session_id
 from seal_core.chat.session.listing import SessionListPage
 from seal_core.chat.session.models import SessionState, SessionSummary
+from seal_core.serialization import json_default
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,26 @@ def _ts_to_float(value: datetime) -> float:
     if value.tzinfo is None:
         return value.replace(tzinfo=UTC).timestamp()
     return value.timestamp()
+
+
+def _explainability_to_json(message: ChatMessage) -> str | None:
+    if message.explainability is None:
+        return None
+    return json.dumps(message.explainability.model_dump(), default=json_default)
+
+
+def _parse_explainability(raw: Any) -> ChatMessageExplainability | None:
+    if raw is None:
+        return None
+    try:
+        if isinstance(raw, str):
+            raw = json.loads(raw)
+        if not isinstance(raw, dict):
+            return None
+        return ChatMessageExplainability.model_validate(raw)
+    except (json.JSONDecodeError, ValueError, TypeError) as exc:
+        logger.debug("Skipping malformed explainability payload: %s", exc)
+        return None
 
 
 class PostgresSessionStore(BaseSessionStore):
@@ -94,14 +117,21 @@ class PostgresSessionStore(BaseSessionStore):
             return None
         msg_rows = await conn.fetch(
             """
-            SELECT role, content, created_at
+            SELECT role, content, explainability, created_at
             FROM seal_app.chat_messages
             WHERE session_id = $1::uuid
             ORDER BY created_at ASC, id ASC
             """,
             session_id,
         )
-        messages = [ChatMessage(role=r["role"], content=r["content"]) for r in msg_rows]
+        messages = [
+            ChatMessage(
+                role=r["role"],
+                content=r["content"],
+                explainability=_parse_explainability(r["explainability"]),
+            )
+            for r in msg_rows
+        ]
         message_timestamps = [_ts_to_float(r["created_at"]) for r in msg_rows]
         return SessionState(
             messages=messages,
@@ -148,12 +178,15 @@ class PostgresSessionStore(BaseSessionStore):
 
             await conn.execute(
                 """
-                INSERT INTO seal_app.chat_messages (session_id, role, content, created_at)
-                VALUES ($1::uuid, $2, $3, $4)
+                INSERT INTO seal_app.chat_messages (
+                    session_id, role, content, explainability, created_at
+                )
+                VALUES ($1::uuid, $2, $3, $4::jsonb, $5)
                 """,
                 sid,
                 message.role,
                 message.content,
+                _explainability_to_json(message),
                 now,
             )
 

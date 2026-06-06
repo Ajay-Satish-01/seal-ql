@@ -18,7 +18,7 @@ export default function SelfHostingPage() {
   const composeYaml = getComposeExample();
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHeader
         title="Self-Hosting with Docker"
         description={
