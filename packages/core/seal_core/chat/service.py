@@ -12,9 +12,14 @@ from seal_charts.engine import ChartEngine
 
 from seal_core.chat.errors import SessionDatabaseMismatchError
 from seal_core.chat.explainability import ChatMessageExplainability
-from seal_core.chat.models import ChatAnswer, ChatDecision, ChatMessage
-from seal_core.chat.prompts import CHAT_ANSWER_SYSTEM, CHAT_DECISION_SYSTEM
+from seal_core.chat.models import ChatAnswer, ChatAnswerEnrichment, ChatDecision, ChatMessage
+from seal_core.chat.prompts import (
+    CHAT_ANSWER_ENRICHMENT_SYSTEM,
+    CHAT_ANSWER_SYSTEM,
+    CHAT_DECISION_SYSTEM,
+)
 from seal_core.chat.retriever import ContextRetriever
+from seal_core.chat.sse import format_openai_sse_delta
 from seal_core.database.config import DEFAULT_DATABASE_ID, planner_resources_for_database
 from seal_core.database.registry import UnknownDatabaseError
 from seal_core.enhancement.context import EnhancementContext
@@ -35,6 +40,24 @@ from seal_core.pipeline.validate_metadata import (
     enforce_nested_chat_metadata,
     enforce_stream_meta_validation,
 )
+from seal_core.reasoning.clarification_response import (
+    clarification_message,
+    merge_large_schema_clarification,
+    should_probe_schema_for_clarification,
+)
+from seal_core.reasoning.config import resolve_reasoning_config
+from seal_core.reasoning.merge import merge_answer_reasoning, merge_reasoning_metadata
+from seal_core.reasoning.models import (
+    DatabaseCapabilities,
+    ReasoningContext,
+    ReasoningMetadata,
+    ReasoningPhase,
+    append_reasoning_to_message,
+    normalize_reasoning_clarification,
+    reasoning_suffix_delta,
+    should_return_clarification,
+)
+from seal_core.reasoning.orchestrator import build_default_orchestrator
 from seal_core.serialization import safe_json_dumps
 from seal_core.settings import get_settings
 
@@ -45,6 +68,7 @@ if TYPE_CHECKING:
     from seal_core.database.registry import DatabaseRegistry
     from seal_core.enhancement.orchestrator import EnhancementOrchestrator
     from seal_core.planner.planner import QueryPlanner
+    from seal_core.reasoning.orchestrator import ReasoningOrchestrator as ReasoningOrchestratorType
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +105,8 @@ class InScopeTurnData:
     chart: Any | None
     meta: dict[str, Any]
     system: str
+    reasoning: ReasoningMetadata | None = None
+    clarification_only: bool = False
 
 
 @dataclass
@@ -132,6 +158,7 @@ class ChatService:
         orchestrator: EnhancementOrchestrator | None,
         catalog: Any | None,
         semantic_registry: Any | None,
+        reasoning_orchestrator: ReasoningOrchestratorType | None = None,
     ) -> None:
         self._planner = planner
         self._registry = registry
@@ -139,6 +166,7 @@ class ChatService:
         self._orchestrator = orchestrator
         self._catalog = catalog
         self._semantic = semantic_registry
+        self._reasoning = reasoning_orchestrator or build_default_orchestrator()
         self._client = get_async_client()
         self._model = get_model()
         self._api_base = get_api_base()
@@ -206,6 +234,18 @@ class ChatService:
         ctx.last_explainability = self._explainability_snapshot_from_turn(ctx, turn)
         yield self._format_meta_event(ctx, turn)
 
+        if turn.clarification_only and turn.reasoning is not None:
+            clarification = clarification_message(turn.reasoning)
+            yield format_openai_sse_delta(clarification)
+            await self._persist_turn_messages(
+                ctx,
+                user_message=message,
+                assistant_message=clarification,
+                pin_database=False,
+            )
+            yield "data: [DONE]\n\n"
+            return
+
         llm_messages = self._build_answer_messages(ctx, turn.exec_result, turn.system)
 
         full_text: list[str] = []
@@ -222,22 +262,25 @@ class ChatService:
                 delta = chunk.choices[0].delta.content or ""
                 if delta:
                     full_text.append(delta)
-                    payload = {
-                        "object": "chat.completion.chunk",
-                        "choices": [
-                            {
-                                "index": 0,
-                                "delta": {"content": delta},
-                                "finish_reason": None,
-                            }
-                        ],
-                    }
-                    yield f"data: {safe_json_dumps(payload)}\n\n"
+                    yield format_openai_sse_delta(delta)
 
             completed = True
         finally:
             if completed:
-                assistant = "".join(full_text)
+                streamed = "".join(full_text)
+                assistant, final_reasoning = await self._produce_answer(
+                    ctx,
+                    turn,
+                    streamed_message=streamed,
+                )
+                turn.reasoning = final_reasoning
+                ctx.last_explainability = self._explainability_snapshot_from_turn(ctx, turn)
+
+                suffix = reasoning_suffix_delta(streamed, final_reasoning)
+                if suffix:
+                    yield format_openai_sse_delta(suffix)
+
+                yield self._format_meta_event(ctx, turn)
                 await self._persist_turn_messages(
                     ctx,
                     user_message=message,
@@ -333,6 +376,7 @@ class ChatService:
             applied=list(ctx.metadata.get("applied", [])),
             scope=ctx.metadata.get("scope"),
             sql_error=bool(turn.meta.get("sql_error")),
+            reasoning=turn.reasoning,
             catalog_matches=self._catalog_matches_for_context(ctx),
             **self._enhancement_metadata_kwargs(ctx),
         )
@@ -422,10 +466,173 @@ class ChatService:
             metadata=dict(ctx.metadata),
         )
 
+    def _database_capabilities(self, database_id: str) -> DatabaseCapabilities:
+        bundle = self._registry.get(database_id)
+        return DatabaseCapabilities.from_bundle(
+            database_id=database_id,
+            dialect=bundle.dialect,
+        )
+
+    def _schema_table_count(self, ctx: TurnContext) -> int | None:
+        if ctx.schema is not None and hasattr(ctx.schema, "tables"):
+            return len(ctx.schema.tables)
+        return None
+
+    def _reasoning_context(
+        self,
+        ctx: TurnContext,
+        *,
+        exec_result: ExecuteQueryResult | None,
+        phase: ReasoningPhase,
+    ) -> ReasoningContext:
+        return ReasoningContext(
+            route="chat",
+            user_message=ctx.user_message,
+            database_capabilities=self._database_capabilities(ctx.database_id),
+            phase=phase,
+            messages=tuple(ctx.messages[:-1]) if ctx.messages else None,
+            exec_result=exec_result,
+            schema_table_count=self._schema_table_count(ctx),
+        )
+
+    async def _apply_schema_clarification(
+        self,
+        ctx: TurnContext,
+        pre_reasoning: ReasoningMetadata,
+        pre_ctx: ReasoningContext,
+    ) -> ReasoningMetadata:
+        reasoning_cfg = resolve_reasoning_config("chat")
+        if not reasoning_cfg.clarification_enabled:
+            return pre_reasoning
+        if not should_probe_schema_for_clarification(ctx.user_message):
+            return pre_reasoning
+        await self._ensure_schema(ctx)
+        table_count = self._schema_table_count(ctx)
+        if table_count is None:
+            return pre_reasoning
+        return await merge_large_schema_clarification(
+            self._reasoning,
+            pre_reasoning,
+            pre_ctx,
+            schema_table_count=table_count,
+        )
+
+    def _reasoning_from_decision(self, decision: ChatDecision) -> ReasoningMetadata:
+        """Merge LLM decision fields; heuristics in pre-phase take precedence via merge order."""
+        return ReasoningMetadata(
+            inferred_context=list(decision.inferred_context),
+            clarifying_questions=list(decision.clarifying_questions),
+            clarification_required=decision.clarification_required,
+            layers_applied=["chat_decision_llm"],
+        )
+
+    def _reasoning_from_answer(
+        self,
+        answer: ChatAnswer | ChatAnswerEnrichment,
+    ) -> ReasoningMetadata:
+        return ReasoningMetadata(
+            analysis_followups=list(answer.analysis_followups),
+            research_notes=list(answer.research_notes),
+            layers_applied=["chat_answer_llm"],
+        )
+
+    async def _produce_answer(
+        self,
+        ctx: TurnContext,
+        turn: InScopeTurnData,
+        *,
+        streamed_message: str | None = None,
+    ) -> tuple[str, ReasoningMetadata]:
+        """Produce final assistant text and merged reasoning (JSON + stream parity)."""
+        llm_messages = self._build_answer_messages(ctx, turn.exec_result, turn.system)
+
+        if streamed_message is not None:
+            enrichment_messages = [
+                {"role": "system", "content": CHAT_ANSWER_ENRICHMENT_SYSTEM},
+                *llm_messages[1:],
+                {"role": "assistant", "content": streamed_message},
+            ]
+            enrichment = await self._client.chat.completions.create(
+                model=self._model,
+                messages=enrichment_messages,
+                response_model=ChatAnswerEnrichment,
+                api_base=self._api_base,
+                api_key=self._api_key,
+                max_retries=get_settings().llm_max_retries,
+            )
+            reasoning = merge_answer_reasoning(
+                turn.reasoning,
+                self._reasoning_from_answer(enrichment),  # type: ignore[arg-type]
+            )
+            message = append_reasoning_to_message(streamed_message, reasoning)
+            return message, reasoning
+
+        answer = await self._client.chat.completions.create(
+            model=self._model,
+            messages=llm_messages,
+            response_model=ChatAnswer,
+            api_base=self._api_base,
+            api_key=self._api_key,
+            max_retries=get_settings().llm_max_retries,
+        )
+        reasoning = merge_answer_reasoning(
+            turn.reasoning,
+            self._reasoning_from_answer(answer),  # type: ignore[arg-type]
+        )
+        message = append_reasoning_to_message(
+            answer.message,  # type: ignore[union-attr]
+            reasoning,
+        )
+        return message, reasoning
+
     async def _in_scope_turn_pipeline(
         self, ctx: TurnContext, *, include_charts: bool
     ) -> InScopeTurnData:
+        await self._ensure_schema_for_enhancement(ctx)
+        pre_ctx = self._reasoning_context(
+            ctx,
+            exec_result=None,
+            phase=ReasoningPhase.PRE_EXECUTION,
+        )
+        pre_reasoning = normalize_reasoning_clarification(await self._reasoning.run_pre(pre_ctx))
+        if should_return_clarification(pre_reasoning):
+            return InScopeTurnData(
+                exec_result=None,
+                chart=None,
+                meta={},
+                system="",
+                reasoning=pre_reasoning,
+                clarification_only=True,
+            )
+
+        pre_reasoning = await self._apply_schema_clarification(ctx, pre_reasoning, pre_ctx)
+        if should_return_clarification(pre_reasoning):
+            return InScopeTurnData(
+                exec_result=None,
+                chart=None,
+                meta={},
+                system="",
+                reasoning=pre_reasoning,
+                clarification_only=True,
+            )
+
         decision = await self._chat_decision(ctx)
+        merged_pre = normalize_reasoning_clarification(
+            merge_reasoning_metadata(
+                pre_reasoning,
+                self._reasoning_from_decision(decision),
+            )
+        )
+        if should_return_clarification(merged_pre):
+            return InScopeTurnData(
+                exec_result=None,
+                chart=None,
+                meta={},
+                system="",
+                reasoning=merged_pre,
+                clarification_only=True,
+            )
+
         if decision.needs_data:
             exec_result, chart, meta = await self._execute_data_path(
                 ctx, include_charts and decision.needs_data
@@ -434,12 +641,21 @@ class ChatService:
             exec_result, chart, meta = None, None, {}
             await self._ensure_schema_for_enhancement(ctx)
 
+        post_ctx = self._reasoning_context(
+            ctx,
+            exec_result=exec_result,
+            phase=ReasoningPhase.POST_EXECUTION,
+        )
+        post_reasoning = await self._reasoning.run_post(post_ctx)
+        reasoning = merge_reasoning_metadata(merged_pre, post_reasoning)
+
         system = await self._answer_system(ctx, meta)
         return InScopeTurnData(
             exec_result=exec_result,
             chart=chart,
             meta=meta,
             system=system,
+            reasoning=reasoning,
         )
 
     def _format_meta_event(self, ctx: TurnContext, turn: InScopeTurnData) -> str:
@@ -464,6 +680,7 @@ class ChatService:
             chart=turn.chart.model_dump() if turn.chart is not None else None,
             scope=ctx.metadata.get("scope"),
             sql_error=bool(turn.meta.get("sql_error")),
+            reasoning=turn.reasoning,
             catalog_matches=self._catalog_matches_for_context(ctx),
             **self._enhancement_metadata_kwargs(ctx),
         )
@@ -483,17 +700,10 @@ class ChatService:
             return await self._refusal_turn(ctx, scope)
 
         turn = await self._in_scope_turn_pipeline(ctx, include_charts=include_charts)
-        ctx.metadata["answer_system"] = turn.system
-        llm_messages = self._build_answer_messages(ctx, turn.exec_result, turn.system)
+        if turn.clarification_only and turn.reasoning is not None:
+            return self._clarification_result(ctx, turn)
 
-        answer = await self._client.chat.completions.create(
-            model=self._model,
-            messages=llm_messages,
-            response_model=ChatAnswer,
-            api_base=self._api_base,
-            api_key=self._api_key,
-            max_retries=get_settings().llm_max_retries,
-        )
+        message, reasoning = await self._produce_answer(ctx, turn)
 
         preview = None
         columns: list[dict[str, Any]] | None = None
@@ -511,6 +721,7 @@ class ChatService:
             applied=list(ctx.metadata.get("applied", [])),
             scope=ctx.metadata.get("scope"),
             sql_error=bool(turn.meta.get("sql_error")),
+            reasoning=reasoning,
             catalog_matches=self._catalog_matches_for_context(ctx),
             **self._enhancement_metadata_kwargs(ctx),
         )
@@ -518,17 +729,42 @@ class ChatService:
             metadata,
             sql=turn.exec_result.sql if turn.exec_result else None,
         )
-        ctx.last_explainability = self._explainability_snapshot_from_turn(ctx, turn)
+        turn.reasoning = reasoning
+        ctx.last_explainability = self._explainability_snapshot_from_metadata(metadata)
 
         return _apply_trust_to_chat_result(
             ChatResult(
                 session_id=ctx.session_id,
-                message=answer.message,  # type: ignore[union-attr]
+                message=message,
                 sources=list(ctx.metadata.get("sources", [])),
                 sql=turn.exec_result.sql if turn.exec_result else None,
                 results=preview,
                 columns=columns,
                 chart=turn.chart,
+                metadata=metadata,
+            )
+        )
+
+    def _clarification_result(self, ctx: TurnContext, turn: InScopeTurnData) -> ChatResult:
+        reasoning = normalize_reasoning_clarification(turn.reasoning or ReasoningMetadata())
+        message = clarification_message(reasoning)
+        metadata = build_chat_metadata(
+            database_id=ctx.database_id,
+            exec_result=None,
+            used_sql=False,
+            enhancement_enabled=ctx.enhancement_enabled,
+            applied=list(ctx.metadata.get("applied", [])),
+            scope=ctx.metadata.get("scope"),
+            reasoning=reasoning,
+            catalog_matches=self._catalog_matches_for_context(ctx),
+            **self._enhancement_metadata_kwargs(ctx),
+        )
+        enforce_nested_chat_metadata(metadata, sql=None)
+        ctx.last_explainability = self._explainability_snapshot_from_metadata(metadata)
+        return _apply_trust_to_chat_result(
+            ChatResult(
+                session_id=ctx.session_id,
+                message=message,
                 metadata=metadata,
             )
         )

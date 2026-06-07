@@ -13,5 +13,6 @@
   "scope",
   "refusal",
   "sql_error",
-  "suggested_queries"
+  "suggested_queries",
+  "reasoning"
 ]

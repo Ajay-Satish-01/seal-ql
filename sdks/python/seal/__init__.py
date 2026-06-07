@@ -29,11 +29,16 @@ from seal.models import (
     CatalogResponse,
     ChartSpec,
     ChartType,
+    ChatMetadata,
     ChatResponse,
     ColumnMetadata,
     DatabaseSchema,
+    EnhancementMetadata,
     HealthResponse,
+    QueryMetadata,
     QueryResponse,
+    ReasoningMetadata,
+    ScopeMetadata,
 )
 
 __all__ = [
@@ -42,12 +47,17 @@ __all__ = [
     "AsyncSeal",
     # Models
     "QueryResponse",
+    "QueryMetadata",
     "ColumnMetadata",
     "ChartSpec",
     "ChartType",
     "HealthResponse",
     "DatabaseSchema",
     "ChatResponse",
+    "ChatMetadata",
+    "EnhancementMetadata",
+    "ScopeMetadata",
+    "ReasoningMetadata",
     "CatalogResponse",
     "ChatStreamEvent",
     # Exceptions

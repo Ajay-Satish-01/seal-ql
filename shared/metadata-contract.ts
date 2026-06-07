@@ -29,6 +29,16 @@ export interface ScopeMetadata {
   source: ScopeSource;
 }
 
+export interface ReasoningMetadata {
+  inferred_context?: string[];
+  analysis_followups?: string[];
+  research_notes?: string[];
+  clarifying_questions?: string[];
+  clarification_required?: boolean;
+  layers_applied?: string[];
+  layers_unavailable?: Record<string, string>;
+}
+
 export interface CatalogMatchItem {
   name: string;
   schema?: string;
@@ -48,6 +58,7 @@ export interface ExecutionMetadata {
   columns_used?: string[];
   catalog_matches?: CatalogMatchItem[];
   enhancement?: EnhancementMetadata;
+  reasoning?: ReasoningMetadata;
 }
 
 export interface ChatMetadata extends ExecutionMetadata {

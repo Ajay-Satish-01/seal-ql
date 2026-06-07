@@ -152,3 +152,23 @@ def test_execution_metadata_includes_provenance_fields() -> None:
     assert meta.tables_used == ["orders"]
     assert meta.columns_used == ["orders.id"]
     assert meta.catalog_matches[0].name == "orders"
+
+
+def test_build_chat_metadata_includes_reasoning() -> None:
+    from seal_core.reasoning.models import ReasoningMetadata
+
+    payload = build_chat_metadata(
+        database_id="default",
+        exec_result=None,
+        used_sql=False,
+        enhancement_enabled=True,
+        reasoning=ReasoningMetadata(
+            clarification_required=True,
+            clarifying_questions=["What time range?"],
+            layers_applied=["clarification"],
+        ),
+        vector_rag_available=True,
+        orchestrator_available=True,
+    )
+    assert payload["reasoning"]["clarification_required"] is True
+    assert payload["reasoning"]["clarifying_questions"] == ["What time range?"]

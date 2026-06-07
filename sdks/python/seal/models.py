@@ -81,6 +81,18 @@ class ScopeMetadata(BaseModel):
     source: ScopeSource
 
 
+class ReasoningMetadata(BaseModel):
+    """Layered reasoning summary on query and chat metadata."""
+
+    inferred_context: list[str] = Field(default_factory=list)
+    analysis_followups: list[str] = Field(default_factory=list)
+    research_notes: list[str] = Field(default_factory=list)
+    clarifying_questions: list[str] = Field(default_factory=list)
+    clarification_required: bool = False
+    layers_applied: list[str] = Field(default_factory=list)
+    layers_unavailable: dict[str, str] = Field(default_factory=dict)
+
+
 class ChatMetadata(ExecutionMetadata):
     """Metadata on POST /v1/chat JSON responses."""
 
@@ -88,16 +100,30 @@ class ChatMetadata(ExecutionMetadata):
     scope: ScopeMetadata | None = None
     refusal: bool | None = None
     sql_error: bool | None = None
+    reasoning: ReasoningMetadata | None = None
+
+
+class QueryMetadata(ExecutionMetadata):
+    """Execution metadata returned on /v1/query responses.
+
+    Extends ``ExecutionMetadata`` with scope and reasoning fields that the API
+    includes when the corresponding features are enabled.
+    """
+
+    scope: ScopeMetadata | None = None
+    reasoning: ReasoningMetadata | None = None
 
 
 class QueryResponse(BaseModel):
     """The complete response from a /v1/query call."""
 
-    sql: str
+    message: str | None = None
+    sql: str = ""
     columns: list[ColumnMetadata]
     results: list[dict[str, Any]]
     chart: ChartSpec | None = None
-    metadata: ExecutionMetadata | dict[str, Any] = Field(default_factory=ExecutionMetadata)
+    metadata: QueryMetadata | dict[str, Any] = Field(default_factory=QueryMetadata)
+    sources: list[str] = Field(default_factory=list)
 
 
 class HealthResponse(BaseModel):

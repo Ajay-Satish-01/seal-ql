@@ -25,3 +25,4 @@
 {"question": "Group completed orders by month in 2024 using date_trunc", "should_fail": false}
 {"question": "Show product performance profit from the product_performance materialized view", "should_fail": false}
 {"question": "Count events per hour using time_bucket on the events table", "should_fail": false}
+{"question": "Show monthly order count trends for 2024", "should_fail": false}

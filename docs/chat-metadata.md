@@ -21,8 +21,25 @@ Top-level `sql`, `columns`, `results`, `chart`, and nested `metadata`:
 | `columns_used` | Columns referenced as `table.column` (when trust explainability is enabled) |
 | `catalog_matches` | Catalog entries selected for planner context (when enabled) |
 | `scope` | Guardrails scope decision on query (when enabled) |
+| `reasoning` | Layered reasoning summary (follow-ups, research notes, clarifications) |
+
+Top-level `message` carries assistant-visible reasoning or clarification text when present.
 
 Top-level `sources` (context tables selected for planning) is included on query responses when trust explainability is enabled.
+
+### `metadata.reasoning`
+
+| Field | Description |
+|-------|-------------|
+| `inferred_context` | Concise bullets from prior chat turns (chat only) |
+| `analysis_followups` | Suggested deeper analytical angles |
+| `research_notes` | Data-backed observations tied to results or schema |
+| `clarifying_questions` | Targeted requirement-gathering questions |
+| `clarification_required` | `true` when the request lacks sufficient detail |
+| `layers_applied` | Reasoning layer names that contributed |
+| `layers_unavailable` | Layer name → short skip/failure reason |
+
+Controlled by `REASONING_*` env vars and workspace settings (`reasoning_enabled`, `reasoning_chat_enabled`, `reasoning_query_enabled`, `reasoning_clarification_enabled`).
 
 ## Chat JSON (`POST /v1/chat`, `stream=false`)
 
@@ -38,6 +55,7 @@ Same execution fields live under **`metadata`**, plus chat-specific keys:
 | `metadata.refusal` | `true` on guardrails refusal |
 | `metadata.suggested_queries` | Up to 3 example in-scope data questions on refusal (heuristic or refusal LLM) |
 | `metadata.sql_error` | `true` when the data path failed (no `sql`, `used_sql=false`) |
+| `metadata.reasoning` | Layered reasoning summary (see table above) |
 
 `metadata.scope` fields:
 
@@ -63,6 +81,9 @@ The first event is `event: seal.meta`. Its `data:` line is a **flat** JSON objec
 - Stream fields: `session_id`, `sources`, `sql`, `results`, `columns`, `chart`, `scope`
 - Same execution and `enhancement` fields as JSON chat, at the top level
 - `refusal` / `sql_error` / `suggested_queries` when applicable
+- `reasoning` when layered reasoning is enabled (execution fields first; answer follow-ups may arrive later)
+
+After the answer stream completes, the API may emit a **second** `event: seal.meta` with updated `reasoning` (answer-LLM follow-ups and research notes). Clients should merge each `seal.meta` event (the dashboard and SDKs treat later events as updates to the same turn).
 
 OpenAPI models this as `ChatStreamMeta`; wire format is SSE-framed (`event:` / `data:`), not a raw JSON body.
 

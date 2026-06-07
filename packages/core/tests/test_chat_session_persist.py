@@ -60,6 +60,8 @@ async def test_stream_incomplete_does_not_persist_messages() -> None:
                     chart=None,
                     meta={},
                     system="SYS",
+                    reasoning=None,
+                    clarification_only=False,
                 )
             ),
         ),

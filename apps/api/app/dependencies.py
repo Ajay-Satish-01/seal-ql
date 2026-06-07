@@ -6,6 +6,7 @@ from seal_core.chat.service import ChatService
 from seal_core.chat.session.base import BaseSessionStore
 from seal_core.database.registry import DatabaseRegistry
 from seal_core.planner.planner import QueryPlanner
+from seal_core.reasoning.orchestrator import ReasoningOrchestrator
 from seal_core.schema.introspector import SchemaIntrospector
 from seal_core.workspace.store import WorkspaceStore
 from seal_sql.executor import QueryExecutor
@@ -54,3 +55,8 @@ def get_session_store(request: Request) -> BaseSessionStore:
 def get_workspace_store(request: Request) -> WorkspaceStore:
     """Get the application's workspace settings store."""
     return request.app.state.workspace_store
+
+
+def get_reasoning_orchestrator(request: Request) -> ReasoningOrchestrator:
+    """Get the application's global reasoning orchestrator."""
+    return request.app.state.reasoning_orchestrator

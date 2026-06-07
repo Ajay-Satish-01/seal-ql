@@ -34,7 +34,7 @@ _LLM_BUFFER_SECONDS = 120.0
 _EVAL_CASE_KEYS = frozenset({"question", "should_fail"})
 
 # Sync guard: evals/tests/test_default_eval_set_case_count asserts the JSONL matches these.
-EVAL_SET_EXPECTED_TOTAL = 27
+EVAL_SET_EXPECTED_TOTAL = 28
 EVAL_SET_EXPECTED_SHOULD_FAIL = 5
 
 

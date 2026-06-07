@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from seal_core.database.config import DEFAULT_DATABASE_ID, is_default_database_id
 from seal_core.guardrails.models import ScopeMetadata
+from seal_core.reasoning.models import ReasoningMetadata
 
 if TYPE_CHECKING:
     from seal_core.pipeline.execute import ExecuteQueryResult
@@ -152,6 +153,7 @@ def build_chat_metadata(
     refusal: bool = False,
     sql_error: bool = False,
     suggested_queries: list[str] | None = None,
+    reasoning: ReasoningMetadata | dict[str, Any] | None = None,
     vector_rag_available: bool,
     orchestrator_available: bool,
     enhancement_requested: bool = False,
@@ -186,6 +188,12 @@ def build_chat_metadata(
         payload["suggested_queries"] = suggested_queries[:3]
     if sql_error:
         payload["sql_error"] = True
+    if reasoning is not None:
+        payload["reasoning"] = (
+            reasoning.model_dump(exclude_none=True)
+            if isinstance(reasoning, ReasoningMetadata)
+            else reasoning
+        )
     return payload
 
 
@@ -206,6 +214,7 @@ def build_stream_meta_event(
     refusal: bool = False,
     sql_error: bool = False,
     suggested_queries: list[str] | None = None,
+    reasoning: ReasoningMetadata | dict[str, Any] | None = None,
     vector_rag_available: bool,
     orchestrator_available: bool,
     enhancement_requested: bool = False,
@@ -232,6 +241,7 @@ def build_stream_meta_event(
             refusal=refusal,
             sql_error=sql_error,
             suggested_queries=suggested_queries,
+            reasoning=reasoning,
             vector_rag_available=vector_rag_available,
             enhancement_requested=enhancement_requested,
             orchestrator_available=orchestrator_available,

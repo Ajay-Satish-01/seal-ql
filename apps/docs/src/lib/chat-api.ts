@@ -3,7 +3,13 @@ import type { ChatMetadata, ChatStreamMeta, ColumnDescriptor } from '@/lib/execu
 import { flushSseRemainder, splitSseBuffer, type SseParseResult } from '@/lib/sse-parse';
 import { mapChatSseEvent, type ChatStreamEvent } from '@seal/chat-sse-events';
 
-export type { ChatMetadata, ChatStreamMeta, ColumnDescriptor, EnhancementMetadata } from '@/lib/execution-metadata';
+export type {
+  ChatMetadata,
+  ChatStreamMeta,
+  ColumnDescriptor,
+  EnhancementMetadata,
+  ReasoningMetadata,
+} from '@/lib/execution-metadata';
 
 export type { ChatStreamEvent };
 

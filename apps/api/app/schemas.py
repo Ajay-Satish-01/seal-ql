@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, model_validator
 from seal_charts.models import ChartSpec
 from seal_core.guardrails.models import ScopeMetadata
 from seal_core.pipeline.models import CatalogMatchItem, EnhancementMetadata, ExecutionMetadata
+from seal_core.reasoning.models import ReasoningMetadata
 from seal_core.settings import get_settings
 from seal_sql.result import ColumnMetadata
 
@@ -56,11 +57,19 @@ class CatalogMatch(CatalogMatchItem):
     """Re-exports core ``CatalogMatchItem`` for OpenAPI."""
 
 
+class ReasoningInfo(ReasoningMetadata):
+    """Re-exports core ``ReasoningMetadata`` for OpenAPI."""
+
+
 class QueryMetadata(ExecutionMetadata):
     """Execution metadata returned on successful /v1/query responses."""
 
     scope: ScopeMetadata | None = Field(
         None, description="Guardrails scope decision when trust explainability is enabled."
+    )
+    reasoning: ReasoningInfo | None = Field(
+        None,
+        description="Layered reasoning summary (follow-ups, research notes, clarifications).",
     )
 
 
@@ -88,7 +97,11 @@ class ChatMetadata(QueryMetadata):
 class QueryResponse(BaseModel):
     """The complete response containing SQL, data, and visualization."""
 
-    sql: str = Field(..., description="The generated and executed SQL query.")
+    message: str | None = Field(
+        None,
+        description="Assistant-visible reasoning summary or clarification prompt.",
+    )
+    sql: str = Field(default="", description="The generated and executed SQL query.")
     columns: list[ColumnMetadata] = Field(..., description="Metadata for the returned columns.")
     results: list[dict[str, Any]] = Field(..., description="The query result rows.")
     chart: ChartSpec | None = Field(

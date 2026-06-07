@@ -8,6 +8,7 @@ from seal_core.pipeline.trust import (
     apply_trust_gating_to_metadata,
     apply_trust_gating_to_query_response,
     apply_trust_gating_to_stream_meta,
+    strip_trust_reasoning,
 )
 from seal_core.settings import clear_settings_cache
 
@@ -102,3 +103,14 @@ def test_apply_trust_gating_to_stream_meta(monkeypatch: pytest.MonkeyPatch) -> N
     assert "sql" not in gated
     assert "sources" not in gated
     assert "tables_used" not in gated
+
+
+def test_strip_trust_reasoning_removes_schema_references() -> None:
+    reasoning = {
+        "research_notes": [
+            "Used orders and customers tables for this answer.",
+            "Query returned 4 row(s) in 3.1 ms.",
+        ]
+    }
+    gated = strip_trust_reasoning(reasoning)
+    assert gated["research_notes"] == ["Query returned 4 row(s) in 3.1 ms."]

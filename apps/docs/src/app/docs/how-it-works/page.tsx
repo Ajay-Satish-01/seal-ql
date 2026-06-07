@@ -147,6 +147,29 @@ export default function HowItWorksPage() {
           generation applies.
         </p>
 
+        <h2>Layered reasoning (chat + query)</h2>
+        <p>
+          <code>ReasoningOrchestrator</code> adds optional product-intelligence layers controlled by{' '}
+          <code>REASONING_*</code> env vars (see{' '}
+          <Link href="/docs/configuration#reasoning">Configuration → Layered reasoning</Link> and{' '}
+          <Link href="/docs/reasoning">Layered reasoning</Link> for the full guide). Outputs
+          appear in assistant text and <code>metadata.reasoning</code> (flat on SSE{' '}
+          <code>seal.meta</code>).
+        </p>
+        <ul>
+          <li>
+            <strong>Pre-execution</strong> — clarifying questions when input is ambiguous; chat-only
+            inferred context from prior turns.
+          </li>
+          <li>
+            <strong>Post-execution</strong> — analytical follow-ups and data-backed research notes.
+          </li>
+          <li>
+            When <code>clarification_required</code> is true, chat returns early without SQL; query
+            returns <code>message</code> with empty <code>sql</code>.
+          </li>
+        </ul>
+
         <h2>Prompt enhancement (chat only)</h2>
         <p>
           When <code>CHAT_ENHANCEMENT_ENABLED=true</code> and the request is in scope,{' '}

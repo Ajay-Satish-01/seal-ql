@@ -21,7 +21,7 @@ def test_query_strict_metadata_validation_returns_500(api_client: TestClient, mo
         with patch("app.routes.query.ExecutionMetadata.from_execute_result", return_value=bad):
             response = api_client.post(
                 "/v1/query",
-                json={"query": "test query"},
+                json={"query": "How many orders were placed last month?"},
                 headers=AUTH_HEADERS,
             )
         assert response.status_code == 500

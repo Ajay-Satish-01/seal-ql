@@ -2,6 +2,7 @@
 
 import { ChartPanel } from '@/components/dashboard/chart-panel';
 import { MetadataPanel } from '@/components/dashboard/metadata-panel';
+import { ReasoningPanel } from '@/components/dashboard/reasoning-panel';
 import { shouldShowTrustPanel } from '@seal/trust-explainability';
 import { TrustPanel } from '@/components/dashboard/trust-panel';
 import { PageShell } from '@/components/dashboard/page-shell';
@@ -22,6 +23,7 @@ export default function QueryPage() {
   const [results, setResults] = useState<Record<string, unknown>[]>([]);
   const [chart, setChart] = useState<ChartSpec | null>(null);
   const [metadata, setMetadata] = useState<QueryMetadata | null>(null);
+  const [assistantMessage, setAssistantMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function runQuery() {
@@ -33,14 +35,19 @@ export default function QueryPage() {
     startTransition(async () => {
       try {
         const res = await postQuery(apiUrl, text, apiKey.trim(), databaseId);
-        setSql(res.sql);
+        setSql(res.sql || null);
         setSources(res.sources ?? []);
         setResults(res.results);
         setChart(res.chart);
         setMetadata(res.metadata ?? null);
+        setAssistantMessage(res.message ?? null);
         const metaDb =
           typeof res.metadata?.database_id === 'string' ? res.metadata.database_id : databaseId;
-        notifySuccess(`Query returned ${res.results.length} row(s) on "${metaDb}"`);
+        if (res.metadata?.reasoning?.clarification_required) {
+          notifyInfo('More detail needed — see clarifying questions below');
+        } else {
+          notifySuccess(`Query returned ${res.results.length} row(s) on "${metaDb}"`);
+        }
       } catch (e) {
         notifyErrorFrom(e, 'Query failed');
       }
@@ -54,6 +61,7 @@ export default function QueryPage() {
   });
 
   const hasResults = results.length > 0 || chart != null;
+  const hasAssistantMessage = Boolean(assistantMessage?.trim());
 
   return (
     <PageShell
@@ -78,6 +86,21 @@ export default function QueryPage() {
           {isPending ? 'Running…' : 'Run query'}
         </Button>
       </Card>
+
+      {metadata?.reasoning ? (
+        <ReasoningPanel reasoning={metadata.reasoning} className="console-panel" />
+      ) : null}
+
+      {hasAssistantMessage ? (
+        <Card className="console-panel space-y-2 p-4">
+          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            Reasoning summary
+          </p>
+          <pre className="border-border/50 bg-muted/25 max-h-72 overflow-auto rounded-lg border p-3 text-sm leading-relaxed whitespace-pre-wrap">
+            {assistantMessage}
+          </pre>
+        </Card>
+      ) : null}
 
       {hasResults ? (
         <Card className="console-panel p-4">

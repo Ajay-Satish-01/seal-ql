@@ -40,6 +40,8 @@ export type {
   ColumnMetadata,
   EnhancementInfo,
   EnhancementMetadata,
+  ReasoningInfo,
+  ReasoningMetadata,
   SealOptions,
   DatabaseSchema,
   HealthResponse,

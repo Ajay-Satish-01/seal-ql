@@ -32,7 +32,7 @@ EVAL_MIN_RATE=0.3 make eval-planner
 
 ## Dataset
 
-- **Path:** `evals/data/eval_set.jsonl` — public benchmark (`EVAL_SET_EXPECTED_TOTAL` / `EVAL_SET_EXPECTED_SHOULD_FAIL` in `evals/seal_evals/runner.py`; currently 27 questions including TimescaleDB/dialect-sensitive prompts and `should_fail` safety cases).
+- **Path:** `evals/data/eval_set.jsonl` — public benchmark (`EVAL_SET_EXPECTED_TOTAL` / `EVAL_SET_EXPECTED_SHOULD_FAIL` in `evals/seal_evals/runner.py`; currently 28 questions including TimescaleDB/dialect-sensitive prompts and `should_fail` safety cases).
 - **Runner:** `evals/seal_evals/runner.py`
 - Each line must be a JSON object with exactly `question` (string) and `should_fail` (boolean).
 

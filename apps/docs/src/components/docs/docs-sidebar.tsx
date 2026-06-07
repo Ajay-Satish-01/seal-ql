@@ -42,6 +42,7 @@ const sidebarGroups = [
     title: 'Chat & Query',
     links: [
       { title: 'Chat & Q&A', href: '/docs/chat-qa' },
+      { title: 'Layered reasoning', href: '/docs/reasoning' },
       { title: 'Trust & explainability', href: '/docs/trust-explainability' },
       { title: 'Execution metadata', href: '/docs/execution-metadata' },
       { title: 'SSE streaming', href: '/docs/chat-streaming' },

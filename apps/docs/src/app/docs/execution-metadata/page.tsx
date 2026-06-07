@@ -4,12 +4,14 @@ import { DocLink } from '@/components/docs/doc-link';
 import { MetadataFieldList } from '@/components/docs/metadata-field-list';
 import { MetadataJsonBlock } from '@/components/docs/metadata-json-block';
 import {
+  CHAT_METADATA_CLARIFICATION_JSON,
   CHAT_METADATA_REFUSAL_JSON,
   CHAT_METADATA_SQL_JSON,
   CHAT_STREAM_META_JSON,
   CHAT_METADATA_EXTRA_FIELDS,
   QUERY_EXECUTION_FIELDS,
   QUERY_METADATA_JSON,
+  REASONING_FIELDS,
 } from '@/lib/execution-metadata';
 
 export default function ExecutionMetadataPage() {
@@ -36,6 +38,15 @@ export default function ExecutionMetadataPage() {
       <MetadataFieldList fields={QUERY_EXECUTION_FIELDS} />
       <MetadataJsonBlock code={QUERY_METADATA_JSON} className="mt-4" />
 
+      <h3 className="font-heading mt-6 text-lg font-semibold">metadata.reasoning</h3>
+      <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+        Optional on query and chat when layered reasoning is enabled. Query may also return a
+        top-level <code>message</code> with assistant-visible reasoning or clarification text.
+        When <code>clarification_required</code> is true, query responses use <code>used_sql: false</code>{' '}
+        and omit executed SQL.
+      </p>
+      <MetadataFieldList fields={REASONING_FIELDS} />
+
       <h2 className="font-heading mt-8 text-xl font-semibold">Chat JSON — stream=false</h2>
       <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
         When SQL runs, <code>metadata</code> includes the execution block plus chat-specific keys:
@@ -43,6 +54,11 @@ export default function ExecutionMetadataPage() {
       <MetadataFieldList fields={CHAT_METADATA_EXTRA_FIELDS} />
       <MetadataJsonBlock title="Example (SQL ran)" code={CHAT_METADATA_SQL_JSON} className="mt-6" />
       <MetadataJsonBlock title="Example (refusal)" code={CHAT_METADATA_REFUSAL_JSON} className="mt-6" />
+      <MetadataJsonBlock
+        title="Example (clarification required)"
+        code={CHAT_METADATA_CLARIFICATION_JSON}
+        className="mt-6"
+      />
 
       <h2 className="font-heading mt-8 text-xl font-semibold">Chat SSE — seal.meta</h2>
       <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
@@ -104,6 +120,10 @@ export default function ExecutionMetadataPage() {
         <li>
           <DocLink href="/docs/prompt-enhancement">Prompt enhancement</DocLink> —{' '}
           <code>metadata.enhancement.*</code>
+        </li>
+        <li>
+          <DocLink href="/docs/reasoning">Layered reasoning</DocLink> —{' '}
+          <code>metadata.reasoning.*</code> (clarification, follow-ups, research notes)
         </li>
         <li>
           <DocLink href="/docs/guardrails">Guardrails</DocLink> —{' '}

@@ -27,6 +27,7 @@ Markdown in this directory describes **how Seal works** for contributors and int
 | [zero-trust-sql.md](zero-trust-sql.md) | SQLGlot validator, sanitizer, LIMIT policy | `/docs/zero-trust-sql` |
 | [chat-enhancement.md](chat-enhancement.md) | Enhancer chain, `SEAL_ENHANCERS` | `/docs/prompt-enhancement` |
 | [chat-metadata.md](chat-metadata.md) | `ExecutionMetadata`, JSON vs SSE `seal.meta` | `/docs/execution-metadata` |
+| [reasoning-layers.md](reasoning-layers.md) | Layered reasoning, custom layers, new DB onboarding | `/docs/configuration` (env) + contributor doc |
 
 ## Configuration & data
 

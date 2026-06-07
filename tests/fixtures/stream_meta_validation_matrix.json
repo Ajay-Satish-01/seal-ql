@@ -107,6 +107,25 @@
       }
     },
     {
+      "id": "valid_reasoning_block",
+      "should_pass": true,
+      "payload": {
+        "session_id": "s-reasoning",
+        "used_sql": false,
+        "database_id": "default",
+        "row_count": 0,
+        "execution_time_ms": 0,
+        "truncated": false,
+        "warnings": [],
+        "enhancement": { "enabled": true, "applied": [] },
+        "reasoning": {
+          "clarification_required": true,
+          "clarifying_questions": ["What time range?"],
+          "layers_applied": ["clarification"]
+        }
+      }
+    },
+    {
       "id": "invalid_vector_skipped_reason",
       "should_pass": false,
       "payload": {

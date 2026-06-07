@@ -1,6 +1,7 @@
 'use client';
 
 import { ChartPanel } from '@/components/dashboard/chart-panel';
+import { ReasoningPanel } from '@/components/dashboard/reasoning-panel';
 import {
   ExplainabilityTrigger,
   shouldRenderExplainabilityTrigger,
@@ -146,6 +147,7 @@ const AssistantMessage = memo(function AssistantMessage({
       ) : streaming ? (
         <p className="text-muted-foreground text-sm">Streaming…</p>
       ) : null}
+      <ReasoningPanel reasoning={explainability.metadata?.reasoning} />
       {explainability.chart ? (
         <ChartPanel chart={explainability.chart} results={explainability.results} />
       ) : null}

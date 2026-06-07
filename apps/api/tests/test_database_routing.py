@@ -104,7 +104,7 @@ def test_query_routes_to_named_database_executor(monkeypatch) -> None:
 
     response = client.post(
         "/v1/query",
-        json={"query": "show orders", "database_id": "analytics"},
+        json={"query": "How many orders were placed last month?", "database_id": "analytics"},
         headers=AUTH_HEADERS,
     )
     assert response.status_code == 200

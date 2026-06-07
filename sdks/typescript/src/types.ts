@@ -28,6 +28,8 @@ export type QueryOutOfScopeErrorResponse = Schemas['QueryOutOfScopeErrorResponse
 /** OpenAPI name `EnhancementInfo` — same shape as core `EnhancementMetadata`. */
 export type EnhancementMetadata = Schemas['EnhancementInfo'];
 export type EnhancementInfo = Schemas['EnhancementInfo'];
+export type ReasoningMetadata = Schemas['ReasoningInfo'];
+export type ReasoningInfo = Schemas['ReasoningInfo'];
 
 export type ChatMetadata = Schemas['ChatMetadata'];
 export type ChatRequest = Schemas['ChatRequest'];

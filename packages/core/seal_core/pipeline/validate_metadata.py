@@ -137,6 +137,38 @@ def validate_explainability_fields(meta: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_reasoning_block(reasoning: Any) -> list[str]:
+    """Validate optional ``reasoning`` metadata object."""
+    errors: list[str] = []
+    if reasoning is None:
+        return errors
+    if not isinstance(reasoning, dict):
+        errors.append("reasoning must be an object")
+        return errors
+    if "clarification_required" in reasoning and not isinstance(
+        reasoning["clarification_required"], bool
+    ):
+        errors.append("reasoning.clarification_required must be a boolean")
+    for key in (
+        "inferred_context",
+        "analysis_followups",
+        "research_notes",
+        "clarifying_questions",
+        "layers_applied",
+    ):
+        value = reasoning.get(key)
+        if value is None:
+            continue
+        if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+            errors.append(f"reasoning.{key} must be an array of strings")
+        elif len(value) > 5 and key != "layers_applied":
+            errors.append(f"reasoning.{key} must have at most 5 items")
+    layers_unavailable = reasoning.get("layers_unavailable")
+    if layers_unavailable is not None and not isinstance(layers_unavailable, dict):
+        errors.append("reasoning.layers_unavailable must be an object")
+    return errors
+
+
 def validate_suggested_queries(value: Any) -> list[str]:
     """Validate optional ``suggested_queries`` on refusal metadata."""
     errors: list[str] = []
@@ -192,12 +224,21 @@ def _validate_boolean_flags(meta: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _reasoning_requires_clarification(meta: dict[str, Any]) -> bool:
+    reasoning = meta.get("reasoning")
+    return isinstance(reasoning, dict) and reasoning.get("clarification_required") is True
+
+
 def validate_query_metadata(meta: dict[str, Any]) -> list[str]:
     """Validate ``QueryResponse.metadata`` on successful query."""
     errors: list[str] = []
     errors.extend(_validate_boolean_flags(meta))
-    errors.extend(validate_execution_fields(meta, require_when_sql=True))
-    if meta.get("used_sql") is not True:
+    clarification = _reasoning_requires_clarification(meta)
+    errors.extend(validate_execution_fields(meta, require_when_sql=not clarification))
+    if clarification:
+        if meta.get("used_sql") is not False:
+            errors.append("used_sql must be false when clarification is required")
+    elif meta.get("used_sql") is not True:
         errors.append("used_sql must be true on successful query")
     errors.extend(validate_explainability_fields(meta))
     if "scope" in meta:
@@ -208,6 +249,8 @@ def validate_query_metadata(meta: dict[str, Any]) -> list[str]:
             required=False,
         )
     )
+    if "reasoning" in meta:
+        errors.extend(validate_reasoning_block(meta.get("reasoning")))
     return errors
 
 
@@ -236,6 +279,8 @@ def validate_nested_chat_metadata(meta: dict[str, Any], *, sql_at_top_level: boo
         errors.extend(validate_scope_block(meta.get("scope")))
     if "suggested_queries" in meta:
         errors.extend(validate_suggested_queries(meta.get("suggested_queries")))
+    if "reasoning" in meta:
+        errors.extend(validate_reasoning_block(meta.get("reasoning")))
     errors.extend(validate_explainability_fields(meta))
     return errors
 
@@ -317,5 +362,7 @@ def validate_stream_meta_event(event: dict[str, Any]) -> list[str]:
         errors.extend(validate_scope_block(event.get("scope")))
     if "suggested_queries" in event:
         errors.extend(validate_suggested_queries(event.get("suggested_queries")))
+    if "reasoning" in event:
+        errors.extend(validate_reasoning_block(event.get("reasoning")))
     errors.extend(validate_explainability_fields(event))
     return errors

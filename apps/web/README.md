@@ -6,8 +6,8 @@ Operational console for a running Seal API. Uses the TypeScript SDK against a li
 
 | Page         | Purpose                                                                                                                                                         |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Query**    | `POST /v1/query` with `database_id` — NL → SQL, results, Vega-Lite chart                                                                                        |
-| **Chat**     | `POST /v1/chat` with SSE streaming; **Metadata** panel from flat `seal.meta` (badges via `shared/metadata-summary.ts`, including refusal + `suggested_queries`) |
+| **Query**    | `POST /v1/query` with `database_id` — NL → SQL, results, Vega-Lite chart, optional `message` + `metadata.reasoning`                                               |
+| **Chat**     | `POST /v1/chat` with SSE streaming; **Reasoning** panel + metadata badges (`metadata.reasoning`, refusal + `suggested_queries`)                                 |
 | **Schema**   | `GET /v1/schema?database_id=…` — live DDL for the selected backend                                                                                              |
 | **Catalog**  | `GET /v1/catalog`, description overrides via `PATCH /v1/catalog/descriptions` (default DB only; banner when another id is selected)                             |
 | **Settings** | `GET` / `PATCH /v1/workspace/settings` (guardrails, enhancement, limits)                                                                                        |

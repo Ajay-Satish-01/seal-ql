@@ -442,6 +442,8 @@ export interface components {
             readonly catalog_matches?: readonly components["schemas"]["CatalogMatchItem"][];
             /** @description Guardrails scope decision when classified. */
             readonly scope?: components["schemas"]["ScopeMetadata"] | null;
+            /** @description Layered reasoning summary (follow-ups, research notes, clarifications). */
+            readonly reasoning?: components["schemas"]["ReasoningInfo"] | null;
             readonly enhancement?: components["schemas"]["EnhancementInfo"];
             /**
              * Refusal
@@ -836,6 +838,8 @@ export interface components {
             readonly catalog_matches?: readonly components["schemas"]["CatalogMatchItem"][];
             /** @description Guardrails scope decision when trust explainability is enabled. */
             readonly scope?: components["schemas"]["ScopeMetadata"] | null;
+            /** @description Layered reasoning summary (follow-ups, research notes, clarifications). */
+            readonly reasoning?: components["schemas"]["ReasoningInfo"] | null;
         };
         /**
          * QueryRequest
@@ -860,8 +864,14 @@ export interface components {
          */
         readonly QueryResponse: {
             /**
+             * Message
+             * @description Assistant-visible reasoning summary or clarification prompt.
+             */
+            readonly message?: string | null;
+            /**
              * Sql
              * @description The generated and executed SQL query.
+             * @default
              */
             readonly sql: string;
             /**
@@ -889,6 +899,50 @@ export interface components {
              */
             readonly metadata?: components["schemas"]["QueryMetadata"] | {
                 readonly [key: string]: unknown;
+            };
+        };
+        /**
+         * ReasoningInfo
+         * @description Re-exports core ``ReasoningMetadata`` for OpenAPI.
+         */
+        readonly ReasoningInfo: {
+            /**
+             * Inferred Context
+             * @description Concise inferences from prior session state (chat only).
+             */
+            readonly inferred_context?: readonly string[];
+            /**
+             * Analysis Followups
+             * @description Suggested analytical follow-up questions or angles.
+             */
+            readonly analysis_followups?: readonly string[];
+            /**
+             * Research Notes
+             * @description Data-backed observations or research framing notes.
+             */
+            readonly research_notes?: readonly string[];
+            /**
+             * Clarifying Questions
+             * @description Targeted questions to gather missing requirements.
+             */
+            readonly clarifying_questions?: readonly string[];
+            /**
+             * Clarification Required
+             * @description True when the request lacks sufficient context for a confident answer.
+             * @default false
+             */
+            readonly clarification_required: boolean;
+            /**
+             * Layers Applied
+             * @description Reasoning layer names that contributed to this payload.
+             */
+            readonly layers_applied?: readonly string[];
+            /**
+             * Layers Unavailable
+             * @description Layer name to short reason when a layer was skipped or failed.
+             */
+            readonly layers_unavailable?: {
+                readonly [key: string]: string;
             };
         };
         /**
@@ -1226,6 +1280,11 @@ export interface components {
              * @default null
              */
             readonly scope: components["schemas"]["ScopeMetadata"] | null;
+            /**
+             * @description Layered reasoning summary (follow-ups, research notes, clarifications).
+             * @default null
+             */
+            readonly reasoning: components["schemas"]["ReasoningInfo"] | null;
             readonly enhancement?: components["schemas"]["EnhancementInfo"];
             /**
              * Refusal
