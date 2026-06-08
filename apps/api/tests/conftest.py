@@ -24,6 +24,8 @@ def _configure_test_env(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None
     monkeypatch.setenv("VECTOR_STORE", "none")
     monkeypatch.setenv("CATALOG_AUTO_SYNC", "false")
     monkeypatch.setenv("CHAT_ENHANCEMENT_ENABLED", "false")
+    monkeypatch.setenv("CHAT_SESSION_STORE", "memory")
+    monkeypatch.delenv("CHAT_SESSION_DATABASE_URL", raising=False)
     monkeypatch.setenv("GUARDRAILS_ENABLED", "false")
     monkeypatch.setenv("SEAL_TRUST_EXPLAINABILITY_ENABLED", "false")
     monkeypatch.setenv("SEAL_DATABASES_PATH", "/nonexistent/seal-databases.yaml")

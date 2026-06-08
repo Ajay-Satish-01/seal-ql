@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-from seal_core.reasoning.clarification_response import should_probe_schema_for_clarification
 from seal_core.reasoning.config import resolve_reasoning_config
 from seal_core.reasoning.layers import ClarificationLayer, InferredContextLayer
 from seal_core.reasoning.merge import merge_reasoning_metadata
@@ -85,6 +84,7 @@ async def test_orchestrator_pre_phase_merges_layers() -> None:
     reasoning = await orchestrator.run_pre(ctx)
     assert isinstance(reasoning.layers_applied, list)
     assert reasoning.clarification_required is True
+    assert not any("table or area" in q.lower() for q in reasoning.clarifying_questions)
 
 
 def test_format_reasoning_message_includes_sections() -> None:
@@ -249,6 +249,32 @@ async def test_research_notes_hide_tables_when_trust_off(monkeypatch: pytest.Mon
 
 
 @pytest.mark.asyncio
+async def test_orchestrator_run_post_skipped_for_chat_route() -> None:
+    orchestrator = build_default_orchestrator()
+    ctx = ReasoningContext(
+        route="chat",
+        user_message="How many orders?",
+        database_capabilities=DatabaseCapabilities.from_bundle(
+            database_id="default",
+            dialect="postgres",
+        ),
+        phase=ReasoningPhase.POST_EXECUTION,
+    )
+    reasoning = await orchestrator.run_post(ctx)
+    assert reasoning.layers_applied == []
+
+
+def test_normalize_reasoning_clarification_logs_default_injection(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    import logging
+
+    caplog.set_level(logging.WARNING)
+    normalize_reasoning_clarification(ReasoningMetadata(clarification_required=True))
+    assert any("injecting default question" in r.message for r in caplog.records)
+
+
+@pytest.mark.asyncio
 async def test_orchestrator_disabled_when_reasoning_off(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("REASONING_ENABLED", "false")
     clear_settings_cache()
@@ -298,23 +324,8 @@ async def test_custom_layer_registration() -> None:
     assert reasoning.research_notes == ["route=query"]
 
 
-def test_should_probe_schema_for_clarification_is_selective() -> None:
-    assert should_probe_schema_for_clarification("overview") is True
-    assert should_probe_schema_for_clarification("How many orders last month?") is False
-    assert (
-        should_probe_schema_for_clarification(
-            "show me events", schema_table_names=("events", "users")
-        )
-        is False
-    )
-    assert (
-        should_probe_schema_for_clarification("give me an overview", schema_table_names=("events",))
-        is True
-    )
-
-
 def test_has_table_hint_matches_schema_names() -> None:
-    from seal_core.reasoning._constants import has_table_hint
+    from seal_core.intent.hints import has_table_hint
 
     assert has_table_hint("show me orders", table_names=("orders", "customers")) is True
     assert has_table_hint("customers breakdown", table_names=("orders", "customers")) is True

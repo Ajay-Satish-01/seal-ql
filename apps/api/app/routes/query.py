@@ -5,6 +5,11 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from seal_charts.engine import ChartEngine
 from seal_core.catalog.registry import DataCatalogRegistry
+from seal_core.catalog.table_names import (
+    catalog_table_names,
+    merge_table_name_hints,
+    schema_table_names_from_schema,
+)
 from seal_core.chat.retriever import ContextRetriever
 from seal_core.database.config import planner_resources_for_database
 from seal_core.database.registry import DatabaseRegistry
@@ -25,8 +30,6 @@ from seal_core.planner.planner import QueryPlanner
 from seal_core.reasoning.clarification_response import (
     clarification_message,
     clarification_metadata_reasoning,
-    merge_large_schema_clarification,
-    should_probe_schema_for_clarification,
 )
 from seal_core.reasoning.merge import merge_reasoning_metadata
 from seal_core.reasoning.models import (
@@ -100,8 +103,13 @@ async def execute_query(
     """Translates natural language to SQL, executes it, and returns chart specs."""
     try:
         bundle = get_database_bundle(registry, request.database_id)
+        catalog_names = catalog_table_names(data_catalog)
 
-        scope = await classify_scope(request.query, channel="query")
+        scope = await classify_scope(
+            request.query,
+            channel="query",
+            schema_table_names=catalog_names,
+        )
         if not scope.in_scope:
             raise HTTPException(
                 status_code=400,
@@ -113,35 +121,22 @@ async def execute_query(
             database_id=request.database_id,
             dialect=bundle.dialect,
         )
+
+        schema = await bundle.introspector.introspect()
+        schema_table_names = schema_table_names_from_schema(schema)
+        table_name_hints = merge_table_name_hints(catalog_names, schema_table_names)
+
         pre_ctx = ReasoningContext(
             route="query",
             user_message=request.query,
             database_capabilities=capabilities,
             phase=ReasoningPhase.PRE_EXECUTION,
-            schema_table_count=None,
+            schema_table_count=len(schema.tables) if hasattr(schema, "tables") else None,
+            schema_table_names=table_name_hints,
         )
         pre_reasoning = normalize_reasoning_clarification(
             await reasoning_orchestrator.run_pre(pre_ctx)
         )
-        if should_return_clarification(pre_reasoning):
-            return _clarification_response(
-                request=request,
-                scope=scope_meta,
-                reasoning=pre_reasoning,
-            )
-
-        schema = await bundle.introspector.introspect()
-        schema_table_names = tuple(t.name for t in schema.tables if hasattr(t, "name"))
-        if should_probe_schema_for_clarification(
-            request.query, schema_table_names=schema_table_names
-        ):
-            pre_reasoning = await merge_large_schema_clarification(
-                reasoning_orchestrator,
-                pre_reasoning,
-                pre_ctx,
-                schema_table_count=len(schema.tables),
-                schema_table_names=schema_table_names,
-            )
         if should_return_clarification(pre_reasoning):
             return _clarification_response(
                 request=request,
@@ -205,8 +200,13 @@ async def execute_query(
         )
         reasoning = merge_reasoning_metadata(pre_reasoning, post_reasoning, planner_note)
         assistant_message = format_reasoning_message(reasoning, include_inferred=False)
-        if not assistant_message.strip():
-            assistant_message = exec_result.plan.explanation
+        if (
+            not assistant_message.strip()
+            and is_trust_explainability_enabled()
+            and planner_explanation
+            and planner_explanation != "No explanation provided."
+        ):
+            assistant_message = planner_explanation
 
         catalog_matches = build_catalog_matches(table_names, schema, catalog)
         metadata = ExecutionMetadata.from_execute_result(

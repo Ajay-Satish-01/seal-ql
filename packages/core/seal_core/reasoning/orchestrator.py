@@ -136,6 +136,11 @@ class ReasoningOrchestrator:
 
     async def run_post(self, ctx: ReasoningContext) -> ReasoningMetadata:
         """Post-execution reasoning (follow-ups, research notes)."""
+        config = self._resolve_config(ctx.route)
+        if not config.enabled:
+            return ReasoningMetadata()
+        if not config.analysis_followups_enabled and not config.research_notes_enabled:
+            return ReasoningMetadata()
         return await self.run_phase(ctx, ReasoningPhase.POST_EXECUTION)
 
     async def run_clarification_only(self, ctx: ReasoningContext) -> ReasoningMetadata:

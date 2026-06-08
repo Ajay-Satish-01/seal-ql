@@ -57,6 +57,28 @@ def test_query_returns_reasoning_metadata(api_client: TestClient) -> None:
     assert isinstance(reasoning.get("layers_applied"), list)
 
 
+def test_query_table_name_skips_false_clarification(api_app, api_client: TestClient) -> None:
+    """Short catalog table names must not trigger metric-only clarification."""
+    from app.dependencies import get_data_catalog
+    from seal_core.catalog.models import CatalogEntry, DataCatalog
+    from tests.mocks import MockDataCatalog
+
+    catalog = MockDataCatalog()
+    catalog._catalog = DataCatalog(tables=[CatalogEntry(name="orders", schema_name="public")])
+    api_app.dependency_overrides[get_data_catalog] = lambda: catalog
+
+    response = api_client.post(
+        "/v1/query",
+        json={"query": "orders"},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["sql"]
+    reasoning = data["metadata"].get("reasoning") or {}
+    assert not reasoning.get("clarification_required")
+
+
 def test_query_clarification_when_ambiguous(api_client: TestClient) -> None:
     response = api_client.post(
         "/v1/query",

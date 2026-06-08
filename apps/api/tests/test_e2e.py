@@ -2,67 +2,36 @@
 
 from __future__ import annotations
 
-import os
-import socket
-from collections.abc import Generator
-from urllib.parse import urlparse
-
+import httpx
 import pytest
-from app.main import app
-from fastapi.testclient import TestClient
-from seal_core.settings import get_settings
 from tests.e2e_llm_helpers import (
     assert_chat_json_body,
     assert_query_json_body,
+    post_chat_json,
     skip_if_llm_unavailable,
 )
-from tests.shared import TEST_API_KEY
+from tests.shared import live_api_headers
+
+pytest_plugins = ["tests.live_http_fixtures"]
 
 
-def is_docker_running() -> bool:
-    """Check if we can connect to the target database via Settings."""
-    try:
-        settings = get_settings()
-        parsed = urlparse(settings.database_url)
-        host = parsed.hostname or "localhost"
-        port = parsed.port or 5432
-        socket.create_connection((host, port), timeout=1)
-        return True
-    except OSError:
-        return False
-
-
-def api_headers() -> dict[str, str]:
-    return {"X-API-Key": os.environ.get("SEAL_API_KEY", TEST_API_KEY)}
-
-
-@pytest.fixture
-def live_client() -> Generator[TestClient, None, None]:
-    if not is_docker_running():
-        pytest.skip("Docker stack is not running. Please run 'make up'.")
-    # Do not re-raise 5xx from LLM/provider errors; tests skip vs fail explicitly below.
-    with TestClient(app, raise_server_exceptions=False) as client:
-        health = client.get("/health")
-        if health.status_code != 200:
-            pytest.skip(f"API health check failed: {health.text}")
-        yield client
-
-
-def test_e2e_health(live_client: TestClient) -> None:
-    r = live_client.get("/health")
+def test_e2e_health(live_http: httpx.Client) -> None:
+    r = live_http.get("/health")
     assert r.status_code == 200
     assert r.json()["status"] == "ok"
 
 
-def test_e2e_get_catalog(live_client: TestClient) -> None:
-    r = live_client.get("/v1/catalog", headers=api_headers())
+def test_e2e_get_catalog(live_http: httpx.Client) -> None:
+    headers = live_api_headers()
+    r = live_http.get("/v1/catalog", headers=headers)
     assert r.status_code != 401, r.text
     assert r.status_code == 200
     assert isinstance(r.json().get("tables"), list)
 
 
-def test_e2e_workspace_settings(live_client: TestClient) -> None:
-    r = live_client.get("/v1/workspace/settings", headers=api_headers())
+def test_e2e_workspace_settings(live_http: httpx.Client) -> None:
+    headers = live_api_headers()
+    r = live_http.get("/v1/workspace/settings", headers=headers)
     assert r.status_code != 401, r.text
     assert r.status_code == 200
     body = r.json()
@@ -70,21 +39,21 @@ def test_e2e_workspace_settings(live_client: TestClient) -> None:
     assert "schema" in body
 
 
-def test_e2e_catalog_descriptions_survive_sync(live_client: TestClient) -> None:
+def test_e2e_catalog_descriptions_survive_sync(
+    live_http: httpx.Client,
+    catalog_table_name: str,
+) -> None:
     """PATCH description → Postgres/file store → POST sync → GET catalog keeps text."""
-    headers = api_headers()
-    catalog = live_client.get("/v1/catalog", headers=headers)
+    headers = live_api_headers()
+    catalog = live_http.get("/v1/catalog", headers=headers)
     assert catalog.status_code == 200
-    tables = catalog.json().get("tables", [])
-    if not any(t.get("name") == "orders" for t in tables):
-        pytest.skip("Seed data table public.orders not in catalog")
 
-    patch = live_client.patch(
+    patch = live_http.patch(
         "/v1/catalog/descriptions",
         json={
             "tables": [
                 {
-                    "name": "orders",
+                    "name": catalog_table_name,
                     "schema": "public",
                     "table_description": "E2E catalog override",
                 }
@@ -94,28 +63,24 @@ def test_e2e_catalog_descriptions_survive_sync(live_client: TestClient) -> None:
     )
     assert patch.status_code == 200, patch.text
 
-    sync = live_client.post("/v1/catalog/sync", headers=headers)
+    sync = live_http.post("/v1/catalog/sync", headers=headers)
     assert sync.status_code == 200, sync.text
 
-    after = live_client.get("/v1/catalog", headers=headers)
+    after = live_http.get("/v1/catalog", headers=headers)
     assert after.status_code == 200
-    orders = next(t for t in after.json()["tables"] if t.get("name") == "orders")
-    assert orders.get("table_description") == "E2E catalog override"
+    table = next(t for t in after.json()["tables"] if t.get("name") == catalog_table_name)
+    assert table.get("table_description") == "E2E catalog override"
 
 
-def test_e2e_chat_json(live_client: TestClient) -> None:
-    headers = api_headers()
+def test_e2e_chat_json(live_http_llm: httpx.Client) -> None:
+    headers = live_api_headers()
     try:
-        r = live_client.post(
-            "/v1/chat",
-            json={
-                "message": "List one table name only.",
-                "include_charts": False,
-                "stream": False,
-            },
+        r = post_chat_json(
+            live_http_llm,
+            message="List one table name only.",
             headers=headers,
         )
-    except Exception as exc:
+    except httpx.RequestError as exc:
         skip_if_llm_unavailable(exc=exc)
         raise
 
@@ -127,16 +92,16 @@ def test_e2e_chat_json(live_client: TestClient) -> None:
     assert_chat_json_body(r.json())
 
 
-def test_e2e_live_query(live_client: TestClient) -> None:
-    """Natural language query against seeded products table."""
-    headers = api_headers()
+def test_e2e_live_query(live_http_llm: httpx.Client, catalog_table_name: str) -> None:
+    """Natural language query against a catalog table."""
+    headers = live_api_headers()
     try:
-        response = live_client.post(
+        response = live_http_llm.post(
             "/v1/query",
-            json={"query": "Show me 2 products"},
+            json={"query": f"Show me 2 rows from {catalog_table_name}"},
             headers=headers,
         )
-    except Exception as exc:
+    except httpx.RequestError as exc:
         skip_if_llm_unavailable(exc=exc)
         raise
 

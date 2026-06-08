@@ -17,6 +17,12 @@ Responses expose reasoning in **both** assistant-visible text and structured `me
 
 When `clarification_required` is true and `clarifying_questions` is non-empty, routes return clarifying prompts **before** running SQL (chat early branch; query returns `message` with empty `sql`).
 
+Clarification policy (chat decision LLM + heuristics):
+
+- Infer tables, columns, and metrics from schema/catalog — never ask the user which table or schema area to use.
+- Prefer executing with reasonable defaults (e.g. all available history, primary numeric measure) over blocking on thin ambiguity.
+- Ask clarifying questions only for genuine, user-specific business choices that cannot be inferred from schema or prior turns.
+
 ## Architecture
 
 ```text

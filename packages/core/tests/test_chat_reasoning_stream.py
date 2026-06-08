@@ -125,6 +125,70 @@ async def test_chat_clarification_does_not_pin_database() -> None:
 
 
 @pytest.mark.asyncio
+async def test_chat_llm_history_strips_appended_reasoning_suffixes() -> None:
+    """Decision/answer LLM prompts must not include prior-turn reasoning blocks."""
+    from seal_core.chat.models import ChatMessage
+    from seal_core.intent.conversation import content_for_llm_history
+
+    service = _service()
+    prior_answer = "Ten orders total.\n\n**Suggested follow-ups**\n- Compare by region"
+    ctx_messages = [
+        ChatMessage(role="user", content="How many orders last month?"),
+        ChatMessage(role="assistant", content=prior_answer),
+        ChatMessage(role="user", content="Break down by region"),
+    ]
+    stripped = content_for_llm_history(ctx_messages[1].content)
+    assert stripped == "Ten orders total."
+    assert "Suggested follow-ups" not in stripped
+
+    exec_result = _exec_result()
+    with (
+        patch(
+            "seal_core.chat.service.classify_scope",
+            new=AsyncMock(
+                return_value=ScopeResult(in_scope=True, reason="in_scope", source="heuristic")
+            ),
+        ),
+        patch.object(
+            service,
+            "_chat_decision",
+            new=AsyncMock(return_value=ChatDecision(needs_data=True, confidence="high")),
+        ),
+        patch.object(
+            service,
+            "_execute_data_path",
+            new=AsyncMock(return_value=(exec_result, None, {"used_sql": True})),
+        ),
+        patch.object(service, "_answer_system", new=AsyncMock(return_value="SYS")),
+        patch.object(
+            service._client.chat.completions,
+            "create",
+            new=AsyncMock(return_value=ChatAnswer(message="By region.", analysis_followups=[])),
+        ),
+    ):
+        turn_ctx = type(
+            "TurnContext",
+            (),
+            {
+                "messages": ctx_messages,
+                "user_message": "Break down by region",
+                "schema": None,
+                "database_id": "default",
+                "metadata": {},
+                "enhancement_enabled": False,
+                "enhancement_requested": False,
+                "turn_id": "t",
+                "session_id": "s",
+            },
+        )()
+        llm_messages = service._build_answer_messages(turn_ctx, exec_result, "SYS")
+    assistant_contents = [m["content"] for m in llm_messages if m["role"] == "assistant"]
+    assert assistant_contents
+    assert "Suggested follow-ups" not in assistant_contents[0]
+    assert assistant_contents[0] == "Ten orders total."
+
+
+@pytest.mark.asyncio
 async def test_chat_specific_query_does_not_probe_schema_for_clarification() -> None:
     service = _service()
     exec_result = _exec_result()

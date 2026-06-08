@@ -5,9 +5,11 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from seal_core.chat.models import ChatMessage
 from seal_core.guardrails.heuristics import (
     check_scope_heuristics,
     heuristic_in_scope,
+    heuristic_in_scope_with_context,
     message_exceeds_max_chars,
 )
 from seal_core.guardrails.models import ScopeDecision
@@ -24,9 +26,16 @@ def test_heuristic_data_keywords_in_scope() -> None:
     assert heuristic_in_scope("Show me total count by month") is True
 
 
-def test_heuristic_vague_analytics_prompts_in_scope() -> None:
-    assert heuristic_in_scope("give me an overview") is True
-    assert heuristic_in_scope("show insights") is True
+def test_heuristic_generic_analytics_defer_without_action_signal() -> None:
+    assert heuristic_in_scope("give me an overview") is None
+    assert heuristic_in_scope("show insights") is None
+    assert heuristic_in_scope("dashboard") is None
+
+
+def test_heuristic_generic_analytics_in_scope_with_action_signal() -> None:
+    assert heuristic_in_scope("show me an overview of monthly sales") is True
+    assert heuristic_in_scope("show me product insights") is True
+    assert heuristic_in_scope("query the sales dashboard") is True
 
 
 def test_heuristic_off_topic_out_of_scope() -> None:
@@ -50,6 +59,51 @@ async def test_classify_scope_heuristic_off_topic_category(
 
 def test_heuristic_ambiguous_defers() -> None:
     assert heuristic_in_scope("hello there friend") is None
+
+
+def test_heuristic_clarification_follow_up_defers_without_data_signal() -> None:
+    messages = [
+        ChatMessage(role="user", content="Which entities perform best by volume?"),
+        ChatMessage(role="assistant", content="**A few details would help**\n- What time range?"),
+        ChatMessage(role="user", content="west"),
+    ]
+    assert heuristic_in_scope("west") is None
+    assert heuristic_in_scope_with_context("west", prior_messages=messages) is None
+
+
+def test_heuristic_clarification_follow_up_in_scope_with_schema_entity() -> None:
+    messages = [
+        ChatMessage(role="user", content="Which entities rank highest by volume?"),
+        ChatMessage(role="assistant", content="**A few details would help**\n- What time range?"),
+        ChatMessage(role="user", content="alpha"),
+    ]
+    assert (
+        heuristic_in_scope_with_context(
+            "alpha",
+            prior_messages=messages,
+            schema_table_names=("alpha", "beta"),
+        )
+        is True
+    )
+
+
+def test_heuristic_clarification_follow_up_in_scope_when_resolved_has_data_signal() -> None:
+    messages = [
+        ChatMessage(role="user", content="count rows by entity"),
+        ChatMessage(role="assistant", content="**A few details would help**\n- What time range?"),
+        ChatMessage(role="user", content="alpha"),
+    ]
+    assert heuristic_in_scope_with_context("alpha", prior_messages=messages) is True
+
+
+def test_heuristic_schema_entity_name_in_scope() -> None:
+    assert (
+        heuristic_in_scope_with_context(
+            "alpha",
+            schema_table_names=("alpha", "beta"),
+        )
+        is True
+    )
 
 
 def test_check_scope_heuristics_alias() -> None:
@@ -101,6 +155,57 @@ async def test_classify_scope_heuristic_fast_path(monkeypatch: pytest.MonkeyPatc
     result = await classify_scope("SELECT count(*) FROM orders", channel="query")
     assert result.in_scope is True
     assert result.source == "heuristic"
+    clear_settings_cache()
+
+
+@pytest.mark.asyncio
+async def test_classify_scope_heuristic_schema_entity_fast_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GUARDRAILS_ENABLED", "true")
+    clear_settings_cache()
+
+    messages = [
+        ChatMessage(role="user", content="count rows by entity"),
+        ChatMessage(role="assistant", content="**A few details would help**\n- What time range?"),
+        ChatMessage(role="user", content="alpha"),
+    ]
+
+    result = await classify_scope(
+        "alpha",
+        channel="chat",
+        prior_messages=messages,
+        schema_table_names=("alpha", "beta"),
+    )
+
+    assert result.in_scope is True
+    assert result.source == "heuristic"
+    clear_settings_cache()
+
+
+@pytest.mark.asyncio
+async def test_classify_scope_llm_wraps_ambiguous_follow_up(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GUARDRAILS_ENABLED", "true")
+    clear_settings_cache()
+
+    messages = [
+        ChatMessage(role="user", content="give me an overview"),
+        ChatMessage(role="assistant", content="**A few details would help**\n- What time range?"),
+        ChatMessage(role="user", content="west"),
+    ]
+
+    mock_client = MagicMock()
+    mock_create = AsyncMock(return_value=ScopeDecision(in_scope=True, reason="clarification reply"))
+    mock_client.chat.completions.create = mock_create
+
+    with patch("seal_core.guardrails.scope.get_async_client", return_value=mock_client):
+        await classify_scope("west", channel="chat", prior_messages=messages)
+
+    user_content = mock_create.await_args.kwargs["messages"][1]["content"]
+    assert "Conversation context:" in user_content
+    assert "west" in user_content
     clear_settings_cache()
 
 

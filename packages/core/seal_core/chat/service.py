@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 import litellm
 from seal_charts.engine import ChartEngine
 
+from seal_core.catalog.table_names import catalog_table_names, merge_table_name_hints
 from seal_core.chat.errors import SessionDatabaseMismatchError
 from seal_core.chat.explainability import ChatMessageExplainability
 from seal_core.chat.models import ChatAnswer, ChatAnswerEnrichment, ChatDecision, ChatMessage
@@ -27,6 +28,7 @@ from seal_core.guardrails.models import ScopeMetadata, ScopeResult
 from seal_core.guardrails.prompts import LIMIT_REFUSAL_MESSAGE, REFUSAL_SYSTEM
 from seal_core.guardrails.scope import classify_scope
 from seal_core.guardrails.suggestions import merge_suggestions, suggest_queries
+from seal_core.intent import content_for_llm_history, effective_user_message
 from seal_core.llm.client import get_api_base, get_api_key, get_async_client, get_model
 from seal_core.pipeline.execute import ExecuteQueryResult, execute_natural_language_query
 from seal_core.pipeline.models import build_chat_metadata, build_stream_meta_event
@@ -40,12 +42,7 @@ from seal_core.pipeline.validate_metadata import (
     enforce_nested_chat_metadata,
     enforce_stream_meta_validation,
 )
-from seal_core.reasoning.clarification_response import (
-    clarification_message,
-    merge_large_schema_clarification,
-    should_probe_schema_for_clarification,
-)
-from seal_core.reasoning.config import resolve_reasoning_config
+from seal_core.reasoning.clarification_response import clarification_message
 from seal_core.reasoning.merge import merge_answer_reasoning, merge_reasoning_metadata
 from seal_core.reasoning.models import (
     DatabaseCapabilities,
@@ -488,6 +485,18 @@ class ChatService:
             return tuple(t.name for t in ctx.schema.tables if hasattr(t, "name"))
         return ()
 
+    def _scope_table_names(self, ctx: TurnContext) -> tuple[str, ...]:
+        return merge_table_name_hints(
+            self._schema_table_names(ctx),
+            catalog_table_names(self._catalog),
+        )
+
+    def _resolved_user_message(self, ctx: TurnContext) -> str:
+        return effective_user_message(
+            user_message=ctx.user_message,
+            messages=ctx.messages,
+        )
+
     def _reasoning_context(
         self,
         ctx: TurnContext,
@@ -497,38 +506,13 @@ class ChatService:
     ) -> ReasoningContext:
         return ReasoningContext(
             route="chat",
-            user_message=ctx.user_message,
+            user_message=self._resolved_user_message(ctx),
             database_capabilities=self._database_capabilities(ctx.database_id),
             phase=phase,
-            messages=tuple(ctx.messages[:-1]) if ctx.messages else None,
+            messages=tuple(ctx.messages) if ctx.messages else None,
             exec_result=exec_result,
             schema_table_count=self._schema_table_count(ctx),
-            schema_table_names=self._schema_table_names(ctx),
-        )
-
-    async def _apply_schema_clarification(
-        self,
-        ctx: TurnContext,
-        pre_reasoning: ReasoningMetadata,
-        pre_ctx: ReasoningContext,
-    ) -> ReasoningMetadata:
-        reasoning_cfg = resolve_reasoning_config("chat")
-        if not reasoning_cfg.clarification_enabled:
-            return pre_reasoning
-        if not should_probe_schema_for_clarification(
-            ctx.user_message, schema_table_names=self._schema_table_names(ctx)
-        ):
-            return pre_reasoning
-        await self._ensure_schema(ctx)
-        table_count = self._schema_table_count(ctx)
-        if table_count is None:
-            return pre_reasoning
-        return await merge_large_schema_clarification(
-            self._reasoning,
-            pre_reasoning,
-            pre_ctx,
-            schema_table_count=table_count,
-            schema_table_names=self._schema_table_names(ctx),
+            schema_table_names=self._scope_table_names(ctx),
         )
 
     def _reasoning_from_decision(self, decision: ChatDecision) -> ReasoningMetadata:
@@ -609,17 +593,6 @@ class ChatService:
             phase=ReasoningPhase.PRE_EXECUTION,
         )
         pre_reasoning = normalize_reasoning_clarification(await self._reasoning.run_pre(pre_ctx))
-        if should_return_clarification(pre_reasoning):
-            return InScopeTurnData(
-                exec_result=None,
-                chart=None,
-                meta={},
-                system="",
-                reasoning=pre_reasoning,
-                clarification_only=True,
-            )
-
-        pre_reasoning = await self._apply_schema_clarification(ctx, pre_reasoning, pre_ctx)
         if should_return_clarification(pre_reasoning):
             return InScopeTurnData(
                 exec_result=None,
@@ -785,7 +758,12 @@ class ChatService:
         )
 
     async def _scope_gate(self, ctx: TurnContext):
-        scope = await classify_scope(ctx.user_message, channel="chat")
+        scope = await classify_scope(
+            ctx.user_message,
+            channel="chat",
+            prior_messages=tuple(ctx.messages) if ctx.messages else None,
+            schema_table_names=self._scope_table_names(ctx),
+        )
         ctx.metadata["scope"] = ScopeMetadata.from_result(scope).model_dump(exclude_none=True)
         return scope
 
@@ -880,7 +858,7 @@ class ChatService:
                 ctx,
                 stage="decision",
                 base_system_prompt=system,
-                user_message=ctx.user_message,
+                user_message=self._resolved_user_message(ctx),
             )
             system = await self._orchestrator.enhance_system_prompt(ect)
             ctx.metadata.update(ect.metadata)
@@ -898,7 +876,10 @@ class ChatService:
 
         messages: list[dict[str, str]] = [{"role": "system", "content": system}]
         for m in recent:
-            messages.append({"role": m.role, "content": m.content})
+            content = m.content
+            if m.role == "assistant":
+                content = content_for_llm_history(content)
+            messages.append({"role": m.role, "content": content})
         if not any(m["role"] == "user" for m in messages[1:]):
             last_content = ctx.messages[-1].content if ctx.messages else ""
             messages.append({"role": "user", "content": last_content})
@@ -917,7 +898,7 @@ class ChatService:
     ) -> tuple[ExecuteQueryResult | None, Any | None, dict[str, Any]]:
         await self._ensure_schema(ctx)
 
-        question = ctx.user_message
+        question = self._resolved_user_message(ctx)
         semantic_registry, data_catalog = self._planner_resources(ctx.database_id)
         table_names = self._retriever.select_tables(
             question,
@@ -968,7 +949,7 @@ class ChatService:
             ctx,
             stage="answer",
             base_system_prompt=base,
-            user_message=ctx.messages[-1].content if ctx.messages else "",
+            user_message=self._resolved_user_message(ctx),
         )
         system = await self._orchestrator.enhance_system_prompt(ect)
         ctx.metadata.update(ect.metadata)
@@ -983,7 +964,10 @@ class ChatService:
         settings = get_settings()
         messages: list[dict[str, str]] = [{"role": "system", "content": system}]
         for m in ctx.messages[-settings.chat_recent_messages :]:
-            messages.append({"role": m.role, "content": m.content})
+            content = m.content
+            if m.role == "assistant":
+                content = content_for_llm_history(content)
+            messages.append({"role": m.role, "content": content})
         if not any(m["role"] == "user" for m in messages[1:]):
             last_content = ctx.messages[-1].content if ctx.messages else ""
             messages.append({"role": "user", "content": last_content})

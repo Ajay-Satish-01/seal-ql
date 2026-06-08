@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, Field
+
+from seal_core.intent.conversation import content_for_llm_history
+from seal_core.intent.headers import REASONING_SECTION_HEADERS
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from seal_core.chat.models import ChatMessage
@@ -165,23 +171,9 @@ def merge_reasoning_results(
     )
 
 
-REASONING_SECTION_HEADERS: tuple[str, ...] = (
-    "**Context from our conversation**",
-    "**A few details would help**",
-    "**Clarifying questions**",
-    "**Research notes**",
-    "**Suggested follow-ups**",
-)
-
-
 def strip_reasoning_from_content(content: str) -> str:
     """Remove appended reasoning sections from persisted assistant text."""
-    cut_at = len(content)
-    for header in REASONING_SECTION_HEADERS:
-        idx = content.find(header)
-        if idx >= 0:
-            cut_at = min(cut_at, idx)
-    return content[:cut_at].strip()
+    return content_for_llm_history(content)
 
 
 def format_reasoning_message(
@@ -234,12 +226,16 @@ def append_reasoning_to_message(base_message: str, reasoning: ReasoningMetadata)
     return f"{base_message.rstrip()}\n\n{extra}"
 
 
-_DEFAULT_CLARIFYING_QUESTION = "What specific metric, entity, or time range should I use?"
+_DEFAULT_CLARIFYING_QUESTION = "What specific metric or time range should I use?"
 
 
 def normalize_reasoning_clarification(reasoning: ReasoningMetadata) -> ReasoningMetadata:
     """Ensure clarification_required always ships actionable questions."""
     if reasoning.clarification_required and not reasoning.clarifying_questions:
+        logger.warning(
+            "reasoning clarification_required=true without clarifying_questions; "
+            "injecting default question"
+        )
         return reasoning.model_copy(update={"clarifying_questions": [_DEFAULT_CLARIFYING_QUESTION]})
     return reasoning
 
