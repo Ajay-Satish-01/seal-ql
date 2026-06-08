@@ -5,7 +5,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from seal_core.chat.models import ChatAnswer, ChatDecision
+from seal_core.chat.models import ChatAnswer, ChatDecision, ChatMessage
 from seal_core.chat.service import ChatService
 from seal_core.chat.session import InMemorySessionStore
 from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
@@ -242,6 +242,44 @@ async def test_run_turn_no_sql_when_decision_skips_data() -> None:
     execute_mock.assert_not_called()
     assert result.metadata["used_sql"] is False
     assert "enhancement" in result.metadata
+
+
+@pytest.mark.asyncio
+async def test_chat_decision_uses_complete_recent_turns() -> None:
+    service = ChatService(
+        planner=MagicMock(),
+        registry=_registry(),
+        sessions=InMemorySessionStore(),
+        orchestrator=None,
+        catalog=None,
+        semantic_registry=None,
+    )
+    history = [
+        ChatMessage(role="user", content="u1"),
+        ChatMessage(role="assistant", content="a1"),
+        ChatMessage(role="user", content="u2"),
+        ChatMessage(role="assistant", content="a2"),
+        ChatMessage(role="user", content="u3"),
+        ChatMessage(role="assistant", content="a3"),
+        ChatMessage(role="user", content="u4"),
+        ChatMessage(role="assistant", content="a4"),
+    ]
+    ctx = await service._prepare_turn("current", None, history, False, "default")
+    create = AsyncMock(return_value=ChatDecision(needs_data=False, confidence="high"))
+
+    with patch.object(service._client.chat.completions, "create", new=create):
+        await service._chat_decision(ctx)
+
+    messages = create.await_args.kwargs["messages"]
+    assert [m["role"] for m in messages] == [
+        "system",
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "user",
+    ]
+    assert [m["content"] for m in messages[1:]] == ["u3", "a3", "u4", "a4", "current"]
 
 
 @pytest.mark.asyncio

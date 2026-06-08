@@ -41,6 +41,10 @@ _DATA_KEYWORDS: frozenset[str] = frozenset(
         "rows",
         "select",
         "data",
+        "overview",
+        "summary",
+        "insights",
+        "dashboard",
     }
 )
 
