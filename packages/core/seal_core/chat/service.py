@@ -191,8 +191,10 @@ class ChatService:
             database_id,
         )
         result = await self._run_turn(ctx, include_charts=include_charts)
-        should_pin = not result.metadata.get("refusal") and not result.metadata.get(
-            "clarification_only"
+        should_pin = (
+            not result.metadata.get("refusal")
+            and not result.metadata.get("clarification_only")
+            and not result.metadata.get("sql_error")
         )
         await self._persist_turn_messages(
             ctx,
@@ -288,7 +290,7 @@ class ChatService:
                     ctx,
                     user_message=message,
                     assistant_message=assistant,
-                    pin_database=True,
+                    pin_database=not turn.meta.get("sql_error"),
                 )
 
         yield "data: [DONE]\n\n"
@@ -884,8 +886,18 @@ class ChatService:
             ctx.metadata.update(ect.metadata)
 
         decision_history_turns = 3
+        recent: list[ChatMessage] = []
+        user_turns = 0
+        for m in reversed(ctx.messages):
+            recent.append(m)
+            if m.role == "user":
+                user_turns += 1
+                if user_turns >= decision_history_turns:
+                    break
+        recent.reverse()
+
         messages: list[dict[str, str]] = [{"role": "system", "content": system}]
-        for m in ctx.messages[-decision_history_turns:]:
+        for m in recent:
             messages.append({"role": m.role, "content": m.content})
         if not any(m["role"] == "user" for m in messages[1:]):
             last_content = ctx.messages[-1].content if ctx.messages else ""

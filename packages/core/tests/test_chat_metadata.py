@@ -156,6 +156,56 @@ async def test_run_turn_sql_error_metadata() -> None:
 
 
 @pytest.mark.asyncio
+async def test_handle_json_sql_error_does_not_pin_database() -> None:
+    """Failed SQL turns persist messages but must not pin the session database."""
+    store = InMemorySessionStore()
+    service = ChatService(
+        planner=MagicMock(),
+        registry=_registry(),
+        sessions=store,
+        orchestrator=None,
+        catalog=None,
+        semantic_registry=None,
+    )
+    with (
+        patch(
+            "seal_core.chat.service.classify_scope",
+            new=AsyncMock(
+                return_value=ScopeResult(in_scope=True, reason="in_scope", source="heuristic")
+            ),
+        ),
+        patch.object(
+            service,
+            "_chat_decision",
+            new=AsyncMock(return_value=ChatDecision(needs_data=True, confidence="high")),
+        ),
+        patch.object(
+            service,
+            "_execute_data_path",
+            new=AsyncMock(return_value=(None, None, {"sql_error": True})),
+        ),
+        patch.object(service, "_answer_system", new=AsyncMock(return_value="SYS")),
+        patch.object(
+            service._client.chat.completions,
+            "create",
+            new=AsyncMock(return_value=ChatAnswer(message="Could not query data.")),
+        ),
+    ):
+        result = await service.handle_json(
+            message="broken query",
+            session_id=None,
+            messages_override=None,
+            include_charts=False,
+            enhancement_enabled=False,
+        )
+
+    assert result.metadata["sql_error"] is True
+    state = await store.get_session(result.session_id)
+    assert state is not None
+    assert state.database_id is None
+
+
+@pytest.mark.asyncio
 async def test_run_turn_no_sql_when_decision_skips_data() -> None:
     service = ChatService(
         planner=MagicMock(),
