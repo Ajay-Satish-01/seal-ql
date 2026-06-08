@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from seal_core.settings import get_settings
@@ -33,15 +34,19 @@ def is_trust_explainability_enabled() -> bool:
     return get_settings().trust_explainability_enabled
 
 
+_TABLE_WORD = re.compile(r"\btables?\b")
+_COLUMN_WORD = re.compile(r"\bcolumns?\b")
+
+
 def _is_schema_sensitive_note(note: str) -> bool:
     lower = note.lower()
-    if note.startswith("Data sourced from:"):
+    if lower.startswith("data sourced from:"):
         return True
     if "schema exposes " in lower:
         return True
-    if " table" in lower or "table " in lower:
+    if _TABLE_WORD.search(lower):
         return True
-    return bool(" column" in lower or "column " in lower)
+    return bool(_COLUMN_WORD.search(lower))
 
 
 def strip_trust_reasoning(reasoning: dict[str, Any]) -> dict[str, Any]:

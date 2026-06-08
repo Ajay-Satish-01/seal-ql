@@ -5,10 +5,7 @@ from __future__ import annotations
 import logging
 import re
 
-from seal_core.reasoning._constants import (
-    TABLE_HINT_MARKERS,
-    has_specific_intent,
-)
+from seal_core.reasoning._constants import has_specific_intent, has_table_hint
 from seal_core.reasoning.config import ReasoningConfig, resolve_reasoning_config
 from seal_core.reasoning.models import (
     ReasoningContext,
@@ -105,17 +102,15 @@ def _needs_clarification_heuristic(ctx: ReasoningContext) -> tuple[bool, list[st
         and " by " not in lower
         and not _TOP_ENTITY_PATTERN.search(text)
     ):
-        questions.append(
-            "What dimension should I rank or group by (e.g. product, region, customer)?"
-        )
+        questions.append("What dimension should I rank or group by?")
 
     if (
         ctx.schema_table_count
         and ctx.schema_table_count > 8
         and not has_specific
-        and not any(marker in lower for marker in TABLE_HINT_MARKERS)
+        and not has_table_hint(lower, table_names=ctx.schema_table_names)
     ):
-        questions.append("Which business area should I prioritize given the available tables?")
+        questions.append("Which table or area should I focus on given the available schema?")
 
     deduped = list(dict.fromkeys(q for q in questions if q.strip()))
     return bool(deduped), deduped[:5]
@@ -214,9 +209,6 @@ class AnalysisFollowupsLayer:
                     )
             elif "count" in lower or "how many" in lower:
                 followups.append("Compare counts across time periods to see growth or decline.")
-
-            if "revenue" in lower or "sales" in lower:
-                followups.append("Analyze margin or average order value alongside total revenue.")
 
             if not followups:
                 followups.append("Explore outliers or top contributors for this question.")

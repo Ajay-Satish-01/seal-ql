@@ -218,7 +218,7 @@ def _requires_enhancement_block(meta: dict[str, Any]) -> bool:
 
 def _validate_boolean_flags(meta: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    for key in ("used_sql", "refusal", "sql_error", "truncated"):
+    for key in ("used_sql", "refusal", "sql_error", "truncated", "clarification_only"):
         if key in meta and not isinstance(meta[key], bool):
             errors.append(f"{key} must be a boolean")
     return errors

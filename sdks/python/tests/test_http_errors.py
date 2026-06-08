@@ -28,10 +28,10 @@ def test_raise_for_response_query_out_of_scope() -> None:
             {
                 "detail": "query_out_of_scope",
                 "reason": "off-topic",
-                "suggested_queries": ["Show order count by month"],
+                "suggested_queries": ["What tables are available?"],
             },
         )
-    assert exc_info.value.suggested_queries == ["Show order count by month"]
+    assert exc_info.value.suggested_queries == ["What tables are available?"]
 
 
 def test_detail_to_message_fastapi_422_list() -> None:

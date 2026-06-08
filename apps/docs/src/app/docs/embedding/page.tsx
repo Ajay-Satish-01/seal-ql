@@ -124,8 +124,8 @@ export default function EmbeddingPage() {
     "detail": "query_out_of_scope",
     "reason": "off-topic pattern",
     "suggested_queries": [
-      "Show order count by month",
-      "What tables are available?"
+      "What tables are available?",
+      "Show total row count by table"
     ]
   }
 }`}

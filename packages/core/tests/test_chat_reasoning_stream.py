@@ -93,6 +93,38 @@ async def test_chat_clarification_skips_decision_llm() -> None:
 
 
 @pytest.mark.asyncio
+async def test_chat_clarification_does_not_pin_database() -> None:
+    """handle_json must not pin the session database on clarification-only turns."""
+    store = InMemorySessionStore()
+    service = ChatService(
+        planner=MagicMock(),
+        registry=_registry(),
+        sessions=store,
+        orchestrator=None,
+        catalog=None,
+        semantic_registry=None,
+    )
+    with patch(
+        "seal_core.chat.service.classify_scope",
+        new=AsyncMock(
+            return_value=ScopeResult(in_scope=True, reason="in_scope", source="heuristic")
+        ),
+    ):
+        result = await service.handle_json(
+            message="show me trends",
+            session_id=None,
+            messages_override=None,
+            include_charts=False,
+            enhancement_enabled=False,
+        )
+
+    assert result.metadata.get("clarification_only") is True
+    state = await store.get_session(result.session_id)
+    assert state is not None
+    assert state.database_id is None
+
+
+@pytest.mark.asyncio
 async def test_chat_specific_query_does_not_probe_schema_for_clarification() -> None:
     service = _service()
     exec_result = _exec_result()

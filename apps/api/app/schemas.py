@@ -101,7 +101,13 @@ class QueryResponse(BaseModel):
         None,
         description="Assistant-visible reasoning summary or clarification prompt.",
     )
-    sql: str = Field(default="", description="The generated and executed SQL query.")
+    sql: str = Field(
+        default="",
+        description=(
+            "The generated SQL query, or an empty string when no SQL is generated "
+            "(e.g., clarification-only responses)."
+        ),
+    )
     columns: list[ColumnMetadata] = Field(..., description="Metadata for the returned columns.")
     results: list[dict[str, Any]] = Field(..., description="The query result rows.")
     chart: ChartSpec | None = Field(

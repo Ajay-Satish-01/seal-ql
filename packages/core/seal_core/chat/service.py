@@ -191,11 +191,14 @@ class ChatService:
             database_id,
         )
         result = await self._run_turn(ctx, include_charts=include_charts)
+        should_pin = not result.metadata.get("refusal") and not result.metadata.get(
+            "clarification_only"
+        )
         await self._persist_turn_messages(
             ctx,
             user_message=message,
             assistant_message=result.message,
-            pin_database=not result.metadata.get("refusal"),
+            pin_database=should_pin,
         )
         return result
 
@@ -478,6 +481,11 @@ class ChatService:
             return len(ctx.schema.tables)
         return None
 
+    def _schema_table_names(self, ctx: TurnContext) -> tuple[str, ...]:
+        if ctx.schema is not None and hasattr(ctx.schema, "tables"):
+            return tuple(t.name for t in ctx.schema.tables if hasattr(t, "name"))
+        return ()
+
     def _reasoning_context(
         self,
         ctx: TurnContext,
@@ -493,6 +501,7 @@ class ChatService:
             messages=tuple(ctx.messages[:-1]) if ctx.messages else None,
             exec_result=exec_result,
             schema_table_count=self._schema_table_count(ctx),
+            schema_table_names=self._schema_table_names(ctx),
         )
 
     async def _apply_schema_clarification(
@@ -504,7 +513,9 @@ class ChatService:
         reasoning_cfg = resolve_reasoning_config("chat")
         if not reasoning_cfg.clarification_enabled:
             return pre_reasoning
-        if not should_probe_schema_for_clarification(ctx.user_message):
+        if not should_probe_schema_for_clarification(
+            ctx.user_message, schema_table_names=self._schema_table_names(ctx)
+        ):
             return pre_reasoning
         await self._ensure_schema(ctx)
         table_count = self._schema_table_count(ctx)
@@ -515,6 +526,7 @@ class ChatService:
             pre_reasoning,
             pre_ctx,
             schema_table_count=table_count,
+            schema_table_names=self._schema_table_names(ctx),
         )
 
     def _reasoning_from_decision(self, decision: ChatDecision) -> ReasoningMetadata:
@@ -759,6 +771,7 @@ class ChatService:
             catalog_matches=self._catalog_matches_for_context(ctx),
             **self._enhancement_metadata_kwargs(ctx),
         )
+        metadata["clarification_only"] = True
         enforce_nested_chat_metadata(metadata, sql=None)
         ctx.last_explainability = self._explainability_snapshot_from_metadata(metadata)
         return _apply_trust_to_chat_result(
@@ -870,9 +883,13 @@ class ChatService:
             system = await self._orchestrator.enhance_system_prompt(ect)
             ctx.metadata.update(ect.metadata)
 
+        decision_history_turns = 3
         messages: list[dict[str, str]] = [{"role": "system", "content": system}]
-        user_msg = ctx.messages[-1].content if ctx.messages else ""
-        messages.append({"role": "user", "content": user_msg})
+        for m in ctx.messages[-decision_history_turns:]:
+            messages.append({"role": m.role, "content": m.content})
+        if not any(m["role"] == "user" for m in messages[1:]):
+            last_content = ctx.messages[-1].content if ctx.messages else ""
+            messages.append({"role": "user", "content": last_content})
 
         return await self._client.chat.completions.create(
             model=self._model,

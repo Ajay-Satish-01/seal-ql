@@ -870,7 +870,7 @@ export interface components {
             readonly message?: string | null;
             /**
              * Sql
-             * @description The generated and executed SQL query.
+             * @description The generated SQL query, or an empty string when no SQL is generated (e.g., clarification-only responses).
              * @default
              */
             readonly sql: string;
@@ -1527,8 +1527,8 @@ export interface operations {
                      *         "detail": "query_out_of_scope",
                      *         "reason": "off-topic pattern",
                      *         "suggested_queries": [
-                     *           "Show order count by month",
-                     *           "What tables are available?"
+                     *           "What tables are available?",
+                     *           "Show total row count by table"
                      *         ]
                      *       }
                      *     }

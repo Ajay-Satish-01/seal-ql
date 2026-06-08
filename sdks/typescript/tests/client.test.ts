@@ -123,7 +123,7 @@ describe('Seal', () => {
           detail: {
             detail: 'query_out_of_scope',
             reason: 'off-topic pattern',
-            suggested_queries: ['Show order count by month'],
+            suggested_queries: ['What tables are available?'],
           },
         },
         false,
@@ -131,7 +131,7 @@ describe('Seal', () => {
       await expect(client.query('write me a poem')).rejects.toMatchObject({
         name: 'QueryOutOfScopeError',
         reason: 'off-topic pattern',
-        suggestedQueries: ['Show order count by month'],
+        suggestedQueries: ['What tables are available?'],
       });
     });
 

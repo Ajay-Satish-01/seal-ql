@@ -131,12 +131,16 @@ async def execute_query(
             )
 
         schema = await bundle.introspector.introspect()
-        if should_probe_schema_for_clarification(request.query):
+        schema_table_names = tuple(t.name for t in schema.tables if hasattr(t, "name"))
+        if should_probe_schema_for_clarification(
+            request.query, schema_table_names=schema_table_names
+        ):
             pre_reasoning = await merge_large_schema_clarification(
                 reasoning_orchestrator,
                 pre_reasoning,
                 pre_ctx,
                 schema_table_count=len(schema.tables),
+                schema_table_names=schema_table_names,
             )
         if should_return_clarification(pre_reasoning):
             return _clarification_response(
@@ -185,6 +189,7 @@ async def execute_query(
             phase=ReasoningPhase.POST_EXECUTION,
             exec_result=exec_result,
             schema_table_count=len(schema.tables),
+            schema_table_names=schema_table_names,
         )
         post_reasoning = await reasoning_orchestrator.run_post(post_ctx)
         planner_explanation = exec_result.plan.explanation

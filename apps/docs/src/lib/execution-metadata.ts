@@ -179,7 +179,7 @@ export const CHAT_METADATA_REFUSAL_EXAMPLE: ChatMetadata = {
   },
   scope: SCOPE_OFF_TOPIC,
   refusal: true,
-  suggested_queries: ['Show order count by month', 'What tables are available?'],
+  suggested_queries: ['What tables are available?', 'Show total row count by table'],
 };
 
 const DEMO_SESSION_ID = 'demo-session-a1b2c3d4';

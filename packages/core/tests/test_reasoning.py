@@ -301,6 +301,26 @@ async def test_custom_layer_registration() -> None:
 def test_should_probe_schema_for_clarification_is_selective() -> None:
     assert should_probe_schema_for_clarification("overview") is True
     assert should_probe_schema_for_clarification("How many orders last month?") is False
+    assert (
+        should_probe_schema_for_clarification(
+            "show me events", schema_table_names=("events", "users")
+        )
+        is False
+    )
+    assert (
+        should_probe_schema_for_clarification("give me an overview", schema_table_names=("events",))
+        is True
+    )
+
+
+def test_has_table_hint_matches_schema_names() -> None:
+    from seal_core.reasoning._constants import has_table_hint
+
+    assert has_table_hint("show me orders", table_names=("orders", "customers")) is True
+    assert has_table_hint("customers breakdown", table_names=("orders", "customers")) is True
+    assert has_table_hint("show me trends", table_names=("orders", "customers")) is False
+    assert has_table_hint("show me trends", table_names=()) is False
+    assert has_table_hint("check the user_sessions", table_names=("user_sessions",)) is True
 
 
 @pytest.mark.asyncio

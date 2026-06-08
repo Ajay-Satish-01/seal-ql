@@ -85,7 +85,7 @@ Out-of-scope **query** requests return HTTP 400 with a structured FastAPI `detai
   "detail": {
     "detail": "query_out_of_scope",
     "reason": "off-topic pattern",
-    "suggested_queries": ["Show order count by month", "What tables are available?"]
+    "suggested_queries": ["What tables are available?", "Show total row count by table"]
   }
 }
 ```

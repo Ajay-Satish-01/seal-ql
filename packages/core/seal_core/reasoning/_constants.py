@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 SPECIFIC_INTENT_MARKERS: tuple[str, ...] = (
     "count",
     "how many",
@@ -17,25 +19,43 @@ SPECIFIC_INTENT_MARKERS: tuple[str, ...] = (
     "lowest",
     "breakdown",
     "group",
-    "per ",
-)
-
-TABLE_HINT_MARKERS: tuple[str, ...] = (
-    "order",
-    "customer",
-    "product",
-    "user",
-    "event",
+    "per",
 )
 
 LARGE_SCHEMA_THRESHOLD = 8
 
+_COMMON_SUFFIXES = r"(?:s|ed|ing|er)?"
+
+
+def _marker_pattern(marker: str) -> re.Pattern[str]:
+    stripped = marker.strip()
+    if " " in stripped:
+        return re.compile(rf"\b{re.escape(stripped)}\b")
+    if stripped == "per":
+        return re.compile(r"\bper(?:[-.])?\b")
+    return re.compile(rf"\b{re.escape(stripped)}{_COMMON_SUFFIXES}\b")
+
+
+SPECIFIC_INTENT_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
+    _marker_pattern(marker) for marker in SPECIFIC_INTENT_MARKERS
+)
+
 
 def has_specific_intent(lower: str) -> bool:
     """True when the lowercased message contains a concrete analytical verb/noun."""
-    return any(marker in lower for marker in SPECIFIC_INTENT_MARKERS)
+    return any(pattern.search(lower) for pattern in SPECIFIC_INTENT_PATTERNS)
 
 
-def has_table_hint(lower: str) -> bool:
-    """True when the lowercased message names a recognizable business entity."""
-    return any(marker in lower for marker in TABLE_HINT_MARKERS)
+def has_table_hint(lower: str, table_names: tuple[str, ...] | list[str] = ()) -> bool:
+    """True when the message references a known schema table name.
+
+    Uses actual table names from the introspected schema rather than
+    hardcoded business-entity keywords, so it works for any domain.
+    """
+    if not table_names:
+        return False
+    stems = [re.escape(n.lower().strip()) for n in table_names if n.strip()]
+    if not stems:
+        return False
+    combined = re.compile(rf"\b(?:{'|'.join(stems)}){_COMMON_SUFFIXES}\b")
+    return bool(combined.search(lower))

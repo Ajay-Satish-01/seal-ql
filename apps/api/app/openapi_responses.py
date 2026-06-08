@@ -51,8 +51,8 @@ QUERY_OUT_OF_SCOPE_RESPONSE: dict[int, dict[str, object]] = {
                         "detail": "query_out_of_scope",
                         "reason": "off-topic pattern",
                         "suggested_queries": [
-                            "Show order count by month",
                             "What tables are available?",
+                            "Show total row count by table",
                         ],
                     }
                 },

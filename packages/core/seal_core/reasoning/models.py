@@ -98,6 +98,7 @@ class ReasoningContext:
     messages: tuple[ChatMessage, ...] | None = None
     exec_result: ExecuteQueryResult | None = None
     schema_table_count: int | None = None
+    schema_table_names: tuple[str, ...] = ()
     prior_assistant_topics: tuple[str, ...] = ()
 
 

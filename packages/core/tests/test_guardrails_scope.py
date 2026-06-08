@@ -21,7 +21,7 @@ from seal_core.settings import clear_settings_cache
 
 
 def test_heuristic_data_keywords_in_scope() -> None:
-    assert heuristic_in_scope("Show me order count by month") is True
+    assert heuristic_in_scope("Show me total count by month") is True
 
 
 def test_heuristic_off_topic_out_of_scope() -> None:
