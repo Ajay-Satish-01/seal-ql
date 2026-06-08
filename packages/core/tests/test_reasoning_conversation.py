@@ -59,6 +59,19 @@ def test_effective_user_message_falls_back_to_latest_turn() -> None:
     assert effective_user_message(user_message="records", messages=None) == "records"
 
 
+def test_resolve_effective_user_message_finds_latest_user_when_last_is_assistant() -> None:
+    messages = [
+        ChatMessage(role="user", content="Show revenue by region"),
+        ChatMessage(role="assistant", content="Revenue was highest in the west."),
+    ]
+    assert resolve_effective_user_message(messages) == "Show revenue by region"
+
+
+def test_resolve_effective_user_message_returns_empty_without_user_turn() -> None:
+    messages = [ChatMessage(role="assistant", content="How can I help?")]
+    assert resolve_effective_user_message(messages) == ""
+
+
 def test_is_clarification_follow_up_skips_prior_user_turns() -> None:
     messages = [
         ChatMessage(role="user", content="earlier unrelated question"),

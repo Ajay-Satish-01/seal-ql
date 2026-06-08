@@ -69,7 +69,10 @@ def resolve_effective_user_message(messages: tuple[ChatMessage, ...] | list[Chat
     if not messages:
         return ""
     if messages[-1].role != "user":
-        return messages[-1].content.strip() if messages else ""
+        for msg in reversed(messages):
+            if msg.role == "user":
+                return msg.content.strip()
+        return ""
 
     collected: list[str] = []
     i = len(messages) - 1

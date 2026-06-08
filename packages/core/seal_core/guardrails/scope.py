@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from seal_core.guardrails.heuristics import heuristic_in_scope, heuristic_in_scope_with_context
+
+if TYPE_CHECKING:
+    from seal_core.chat.models import ChatMessage
 from seal_core.guardrails.models import (
     GuardrailsChannel,
     ScopeCategory,
@@ -52,7 +56,7 @@ async def classify_scope(
     text: str,
     *,
     channel: GuardrailsChannel,
-    prior_messages: tuple | list | None = None,
+    prior_messages: tuple[ChatMessage, ...] | list[ChatMessage] | None = None,
     schema_table_names: tuple[str, ...] | list[str] = (),
 ) -> ScopeResult:
     """Classify message scope for the query or chat API channel."""
@@ -140,7 +144,7 @@ async def is_in_scope(
     text: str,
     *,
     channel: GuardrailsChannel,
-    prior_messages: tuple | list | None = None,
+    prior_messages: tuple[ChatMessage, ...] | list[ChatMessage] | None = None,
     schema_table_names: tuple[str, ...] | list[str] = (),
 ) -> ScopeResult:
     return await classify_scope(
