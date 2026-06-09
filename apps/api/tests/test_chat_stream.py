@@ -1,7 +1,9 @@
+import litellm
 from app.dependencies import get_chat_service, get_database_registry
 from fastapi.testclient import TestClient
 from seal_core.chat.errors import SessionDatabaseMismatchError
 from seal_core.database.registry import DatabaseBundle
+from seal_core.llm.http_errors import llm_stream_error_sse
 from tests.factory import build_client
 from tests.mocks import (
     MockChatService,
@@ -76,3 +78,35 @@ def test_chat_stream_session_database_mismatch_returns_400(monkeypatch) -> None:
 
     assert response.status_code == 400
     assert response.json()["detail"]["code"] == "session_database_id_mismatch"
+
+
+def test_chat_stream_emits_seal_error_sse_on_stream_failure(monkeypatch) -> None:
+    class ErrorStreamChatService:
+        async def prepare_stream_turn(self, **_kwargs: object) -> object:
+            return object()
+
+        async def stream_turn(self, *_args: object, **_kwargs: object):
+            exc = litellm.RateLimitError(
+                message="Rate limit reached",
+                llm_provider="groq",
+                model="openai/gpt-oss-120b",
+            )
+            yield llm_stream_error_sse(exc)
+            yield "data: [DONE]\n\n"
+
+    client: TestClient = build_client(monkeypatch)
+    client.app.dependency_overrides[get_chat_service] = lambda: ErrorStreamChatService()
+
+    with client.stream(
+        "POST",
+        "/v1/chat",
+        json={"message": "Hi", "stream": True},
+        headers=AUTH_HEADERS,
+    ) as response:
+        assert response.status_code == 200
+        text = "".join(response.iter_text())
+
+    assert "event: seal.error" in text
+    assert '"code": "rate_limit"' in text
+    assert "Rate limited" in text
+    assert "data: [DONE]" in text

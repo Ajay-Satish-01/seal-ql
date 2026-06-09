@@ -105,10 +105,14 @@ async def execute_query(
         bundle = get_database_bundle(registry, request.database_id)
         catalog_names = catalog_table_names(data_catalog)
 
+        schema = await bundle.introspector.introspect()
+        schema_table_names = schema_table_names_from_schema(schema)
+        table_name_hints = merge_table_name_hints(catalog_names, schema_table_names)
+
         scope = await classify_scope(
             request.query,
             channel="query",
-            schema_table_names=catalog_names,
+            schema_table_names=table_name_hints,
         )
         if not scope.in_scope:
             raise HTTPException(
@@ -121,10 +125,6 @@ async def execute_query(
             database_id=request.database_id,
             dialect=bundle.dialect,
         )
-
-        schema = await bundle.introspector.introspect()
-        schema_table_names = schema_table_names_from_schema(schema)
-        table_name_hints = merge_table_name_hints(catalog_names, schema_table_names)
 
         pre_ctx = ReasoningContext(
             route="query",
@@ -184,7 +184,7 @@ async def execute_query(
             phase=ReasoningPhase.POST_EXECUTION,
             exec_result=exec_result,
             schema_table_count=len(schema.tables),
-            schema_table_names=schema_table_names,
+            schema_table_names=table_name_hints,
         )
         post_reasoning = await reasoning_orchestrator.run_post(post_ctx)
         planner_explanation = exec_result.plan.explanation

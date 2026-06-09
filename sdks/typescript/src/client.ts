@@ -224,7 +224,12 @@ export class Seal {
       raw: import('./sse.js').SseParseResult | null,
     ): Generator<ChatStreamEvent, void, unknown> {
       if (!raw) return;
-      if (raw.kind === 'meta' || raw.kind === 'delta' || raw.kind === 'done') {
+      if (
+        raw.kind === 'meta' ||
+        raw.kind === 'delta' ||
+        raw.kind === 'error' ||
+        raw.kind === 'done'
+      ) {
         const mapped = mapChatSseEvent(raw);
         if (mapped) yield mapped as ChatStreamEvent;
       }

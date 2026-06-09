@@ -5,8 +5,16 @@ from __future__ import annotations
 from typing import Any
 
 from seal.exceptions import QueryError, QueryOutOfScopeError, ServerError
+from seal.rate_limit import is_rate_limit_http, rate_limit_user_message
 
 _SESSION_DATABASE_ID_MISMATCH = "session_database_id_mismatch"
+
+RATE_LIMIT_USER_MESSAGE = rate_limit_user_message()
+
+
+def is_rate_limit_signal(status: int, text: str) -> bool:
+    """True when an HTTP status or message body indicates LLM rate limiting."""
+    return is_rate_limit_http(status, text)
 
 
 def _format_out_of_scope_message(*, reason: str, suggested_queries: list[str]) -> str:
@@ -72,8 +80,12 @@ def detail_to_message(detail: Any) -> str:
 def raise_for_response(response_status: int, detail: Any) -> None:
     """Raise an appropriate SDK exception for a non-2xx HTTP response."""
     if response_status >= 500:
+        message = detail_to_message(detail)
+        user_message = (
+            RATE_LIMIT_USER_MESSAGE if is_rate_limit_signal(response_status, message) else message
+        )
         raise ServerError(
-            f"Server error ({response_status}): {detail_to_message(detail)}",
+            f"Server error ({response_status}): {user_message}",
             status_code=response_status,
         )
 

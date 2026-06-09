@@ -122,6 +122,9 @@ with Seal("${url}", api_key="${DOC_API_KEY}") as client:
     for event in client.chat_stream("${m}", include_charts=True):
         if event["type"] == "meta":
             print(event["data"].get("sql"))
+        elif event["type"] == "stream_error":
+            print(event["message"])
+            break
         elif event["type"] == "delta":
             print(event["content"], end="", flush=True)`;
 }
@@ -187,7 +190,10 @@ const client = new Seal({
 
 for await (const event of client.chatStream('${m}', { includeCharts: true })) {
   if (event.type === 'meta') console.log(event.data.sql, event.data.chart);
-  if (event.type === 'delta') process.stdout.write(event.content);
+  else if (event.type === 'stream_error') {
+    console.error(event.message);
+    break;
+  } else if (event.type === 'delta') process.stdout.write(event.content);
 }`;
 }
 

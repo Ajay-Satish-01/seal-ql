@@ -46,9 +46,14 @@ if (result.metadata?.reasoning?.clarification_required) {
 for await (const event of client.chatStream('Summarize last quarter', { includeCharts: true })) {
   if (event.type === 'meta') console.log(event.data.sql);
   else if (event.type === 'meta_error') console.warn('Invalid seal.meta', event.data);
-  else if (event.type === 'delta') process.stdout.write(event.content);
+  else if (event.type === 'stream_error') {
+    console.error(event.message);
+    break;
+  } else if (event.type === 'delta') process.stdout.write(event.content);
 }
 ```
+
+`src/vendor/` is gitignored; `pnpm test` / `pnpm build` run `scripts/sync-sdk-meta-vendor.mjs` to copy `shared/api-error.ts`, `config/rate_limit_markers.json`, and generate `sdks/python/seal/rate_limit.py` from core. CI enforces marker sync via `make verify-rate-limit-sync`. Use `isRateLimitSignal` and `RATE_LIMIT_USER_MESSAGE` from the package root for HTTP 503 throttling messages.
 
 ### Guardrails errors
 

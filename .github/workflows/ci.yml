@@ -52,6 +52,9 @@ jobs:
       - name: Verify OpenAPI docs sync
         run: make verify-openapi-sync
 
+      - name: Verify rate-limit marker sync
+        run: make verify-rate-limit-sync
+
       - name: Validate demo fixtures
         run: uv run pytest tests/test_response_validation.py -v --tb=short
 

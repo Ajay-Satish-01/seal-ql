@@ -28,6 +28,14 @@ export {
   ServerError,
 } from './errors.js';
 export { VEGA_LITE_SCHEMA } from './constants.js';
+export {
+  RATE_LIMIT_MARKERS,
+  RATE_LIMIT_USER_MESSAGE,
+  formatApiError,
+  formatClientError,
+  isRateLimitSignal,
+  looksLikeRateLimitText,
+} from './vendor/api-error.js';
 export type {
   CatalogResponse,
   ChartType,

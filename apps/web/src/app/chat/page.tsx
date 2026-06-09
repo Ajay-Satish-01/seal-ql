@@ -349,6 +349,12 @@ function ChatPage() {
           } else if (event.type === 'meta_error') {
             applyPartialStreamMeta(event.partial);
             notifyInfo(`seal.meta validation: ${event.error}`);
+          } else if (event.type === 'stream_error') {
+            setPending(null);
+            setExplainabilityOpen(false);
+            setActiveExplainability(null);
+            notifyErrorFrom(new Error(event.message), event.message);
+            return;
           } else if (event.type === 'delta') {
             streamed += event.content;
             updatePending((prev) =>

@@ -51,6 +51,7 @@ export type SchemaColumn = NonNullable<TableSchema['columns']>[number];
 export type ChatStreamEvent =
   | { type: 'meta'; data: ChatStreamMeta }
   | { type: 'meta_error'; error: string; partial: Partial<ChatStreamMeta> }
+  | { type: 'stream_error'; code: string; message: string }
   | { type: 'delta'; content: string }
   | { type: 'done' };
 

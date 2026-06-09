@@ -1,3 +1,15 @@
+/**
+ * API error formatting for dashboard, docs, and SDK vendor copies.
+ * Rate-limit markers: config/rate_limit_markers.json (synced on SDK prebuild).
+ */
+import rateLimitConfig from '../config/rate_limit_markers.json';
+
+/** User-facing toast when the LLM provider throttles (HTTP 503 detail or rate-limit keywords). */
+export const RATE_LIMIT_USER_MESSAGE = rateLimitConfig.user_message;
+
+/** Substring markers for provider throttling (keep in sync via config/rate_limit_markers.json). */
+export const RATE_LIMIT_MARKERS: readonly string[] = rateLimitConfig.markers;
+
 /** Structured FastAPI error detail (session mismatch, guardrails, etc.). */
 export type ApiErrorDetailObject = {
   code?: string;
@@ -39,14 +51,44 @@ function formatStructuredDetail(obj: ApiErrorDetailObject): string | undefined {
   return undefined;
 }
 
+/** True when free-text indicates provider throttling. */
+export function looksLikeRateLimitText(text: string): boolean {
+  const lower = text.toLowerCase();
+  return RATE_LIMIT_MARKERS.some((marker) => lower.includes(marker));
+}
+
+/** True when an HTTP status or message body indicates LLM rate limiting. */
+export function isRateLimitSignal(status: number, text: string): boolean {
+  if (looksLikeRateLimitText(text)) return true;
+  // Seal maps provider throttling to HTTP 503 with a string detail (or empty body).
+  return status === 503 && !text.trim();
+}
+
+/** Map thrown client errors (including fetch failures) to a user-visible message. */
+export function formatClientError(error: unknown, fallback: string): string {
+  if (error instanceof Error) {
+    if (isRateLimitSignal(0, error.message)) return RATE_LIMIT_USER_MESSAGE;
+    if (error.message.trim()) return error.message;
+  }
+  return fallback;
+}
+
 /** Extract a human-readable message from Seal API error responses. */
 export function formatApiError(status: number, bodyText: string): string {
   const trimmed = bodyText.trim();
-  if (!trimmed) return `Request failed (${status})`;
+  if (!trimmed) {
+    return isRateLimitSignal(status, '') ? RATE_LIMIT_USER_MESSAGE : `Request failed (${status})`;
+  }
+
+  if (isRateLimitSignal(status, trimmed)) {
+    return RATE_LIMIT_USER_MESSAGE;
+  }
 
   try {
     const json = JSON.parse(trimmed) as { detail?: unknown };
-    if (typeof json.detail === 'string') return json.detail;
+    if (typeof json.detail === 'string') {
+      return isRateLimitSignal(status, json.detail) ? RATE_LIMIT_USER_MESSAGE : json.detail;
+    }
     if (json.detail && typeof json.detail === 'object' && !Array.isArray(json.detail)) {
       const formatted = formatStructuredDetail(json.detail as ApiErrorDetailObject);
       if (formatted) return formatted;

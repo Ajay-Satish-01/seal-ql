@@ -15,6 +15,7 @@ Async usage:
         result = await client.query("Show me monthly revenue")
 """
 
+from seal._http_errors import RATE_LIMIT_USER_MESSAGE, is_rate_limit_signal
 from seal._sse import ChatStreamEvent
 from seal.client import AsyncSeal, Seal
 from seal.exceptions import (
@@ -40,6 +41,7 @@ from seal.models import (
     ReasoningMetadata,
     ScopeMetadata,
 )
+from seal.rate_limit import looks_like_rate_limit_text, rate_limit_markers
 
 __all__ = [
     # Clients
@@ -60,6 +62,11 @@ __all__ = [
     "ReasoningMetadata",
     "CatalogResponse",
     "ChatStreamEvent",
+    # Rate limiting
+    "RATE_LIMIT_USER_MESSAGE",
+    "is_rate_limit_signal",
+    "looks_like_rate_limit_text",
+    "rate_limit_markers",
     # Exceptions
     "SealError",
     "SealConnectionError",

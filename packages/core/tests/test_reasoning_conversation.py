@@ -67,6 +67,24 @@ def test_resolve_effective_user_message_finds_latest_user_when_last_is_assistant
     assert resolve_effective_user_message(messages) == "Show revenue by region"
 
 
+def test_resolve_effective_user_message_merges_when_last_is_clarification() -> None:
+    messages = [
+        ChatMessage(role="user", content="Which entities rank highest by volume?"),
+        ChatMessage(
+            role="assistant",
+            content="**A few details would help**\n- What time range?",
+        ),
+        ChatMessage(role="user", content="all history"),
+        ChatMessage(
+            role="assistant",
+            content="**A few details would help**\n- Which metric?",
+        ),
+    ]
+    resolved = resolve_effective_user_message(messages)
+    assert "Which entities rank highest" in resolved
+    assert "all history" in resolved
+
+
 def test_resolve_effective_user_message_returns_empty_without_user_turn() -> None:
     messages = [ChatMessage(role="assistant", content="How can I help?")]
     assert resolve_effective_user_message(messages) == ""

@@ -122,6 +122,20 @@ class TestChatClient:
         assert events[0]["type"] == "meta_error"
         assert "error" in events[0]
 
+    def test_parse_sse_stream_error(self) -> None:
+        lines = [
+            "event: seal.error",
+            'data: {"code":"rate_limit","message":"Rate limited. Try again soon."}',
+            "",
+            "data: [DONE]",
+            "",
+        ]
+        events = list(parse_sse_stream(iter(lines)))
+        assert events[0]["type"] == "stream_error"
+        assert events[0]["code"] == "rate_limit"
+        assert "Rate limited" in events[0]["message"]
+        assert events[1]["type"] == "done"
+
     def test_parse_sse_meta_error_on_validation_failure(self) -> None:
         lines = [
             "event: seal.meta",

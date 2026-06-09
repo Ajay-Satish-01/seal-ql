@@ -125,6 +125,127 @@ async def test_chat_clarification_does_not_pin_database() -> None:
 
 
 @pytest.mark.asyncio
+async def test_stream_turn_emits_seal_error_on_rate_limit() -> None:
+    import litellm
+
+    service = _service()
+    ctx = await service.prepare_stream_turn(
+        message="How many orders last month?",
+        session_id=None,
+        messages_override=None,
+        enhancement_enabled=False,
+        database_id="default",
+    )
+    rate_error = litellm.RateLimitError(
+        message="Rate limit reached",
+        llm_provider="groq",
+        model="openai/gpt-oss-120b",
+    )
+    with patch(
+        "seal_core.chat.service.classify_scope",
+        new=AsyncMock(side_effect=rate_error),
+    ):
+        chunks: list[str] = []
+        async for chunk in service.stream_turn(
+            ctx,
+            message=ctx.user_message,
+            include_charts=False,
+        ):
+            chunks.append(chunk)
+
+    payload = "".join(chunks)
+    assert "event: seal.error" in payload
+    assert '"code": "rate_limit"' in payload
+    assert "Rate limited" in payload
+    assert "data: [DONE]" in payload
+
+
+@pytest.mark.asyncio
+async def test_stream_turn_rate_limit_after_partial_deltas_skips_persist() -> None:
+    import litellm
+    from seal_core.chat.service import InScopeTurnData
+    from seal_core.reasoning.models import ReasoningMetadata
+
+    store = InMemorySessionStore()
+    service = ChatService(
+        planner=MagicMock(),
+        registry=_registry(),
+        sessions=store,
+        orchestrator=None,
+        catalog=None,
+        semantic_registry=None,
+    )
+    ctx = await service.prepare_stream_turn(
+        message="How many orders last month?",
+        session_id=None,
+        messages_override=None,
+        enhancement_enabled=False,
+        database_id="default",
+    )
+    turn = InScopeTurnData(
+        exec_result=_exec_result(),
+        chart=None,
+        meta={"used_sql": True},
+        system="SYS",
+        reasoning=ReasoningMetadata(),
+    )
+    rate_error = litellm.RateLimitError(
+        message="Rate limit reached",
+        llm_provider="groq",
+        model="openai/gpt-oss-120b",
+    )
+
+    async def fake_acompletion(**_kwargs: object) -> object:
+        class _Delta:
+            content = "partial "
+
+        class _Choice:
+            delta = _Delta()
+
+        class _Chunk:
+            choices = [_Choice()]
+
+        yield _Chunk()
+
+    with (
+        patch(
+            "seal_core.chat.service.classify_scope",
+            new=AsyncMock(
+                return_value=ScopeResult(in_scope=True, reason="in_scope", source="heuristic")
+            ),
+        ),
+        patch.object(
+            service,
+            "_in_scope_turn_pipeline",
+            new=AsyncMock(return_value=turn),
+        ),
+        patch(
+            "seal_core.chat.service.litellm.acompletion",
+            new=AsyncMock(return_value=fake_acompletion()),
+        ),
+        patch.object(
+            service,
+            "_produce_answer",
+            new=AsyncMock(side_effect=rate_error),
+        ),
+    ):
+        chunks: list[str] = []
+        async for chunk in service.stream_turn(
+            ctx,
+            message=ctx.user_message,
+            include_charts=False,
+        ):
+            chunks.append(chunk)
+
+    payload = "".join(chunks)
+    assert "partial " in payload
+    assert "event: seal.error" in payload
+    state = await store.get_session(ctx.session_id)
+    assert state is not None
+    assert not any(m.role == "assistant" for m in state.messages)
+
+
+@pytest.mark.asyncio
 async def test_chat_llm_history_strips_appended_reasoning_suffixes() -> None:
     """Decision/answer LLM prompts must not include prior-turn reasoning blocks."""
     from seal_core.chat.models import ChatMessage

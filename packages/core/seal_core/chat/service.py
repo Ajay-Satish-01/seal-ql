@@ -30,6 +30,7 @@ from seal_core.guardrails.scope import classify_scope
 from seal_core.guardrails.suggestions import merge_suggestions, suggest_queries
 from seal_core.intent import content_for_llm_history, effective_user_message
 from seal_core.llm.client import get_api_base, get_api_key, get_async_client, get_model
+from seal_core.llm.http_errors import llm_http_error, llm_stream_error_sse
 from seal_core.pipeline.execute import ExecuteQueryResult, execute_natural_language_query
 from seal_core.pipeline.models import build_chat_metadata, build_stream_meta_event
 from seal_core.pipeline.provenance import build_catalog_matches
@@ -220,6 +221,29 @@ class ChatService:
         )
 
     async def stream_turn(
+        self,
+        ctx: TurnContext,
+        *,
+        message: str,
+        include_charts: bool,
+    ) -> AsyncIterator[str]:
+        try:
+            async for chunk in self._stream_turn_impl(
+                ctx,
+                message=message,
+                include_charts=include_charts,
+            ):
+                yield chunk
+        except Exception as exc:
+            mapped = llm_http_error(exc)
+            if mapped is None:
+                logger.exception("Chat stream failed")
+            else:
+                logger.warning("Chat stream failed: %s", exc)
+            yield llm_stream_error_sse(exc, mapped=mapped)
+            yield "data: [DONE]\n\n"
+
+    async def _stream_turn_impl(
         self,
         ctx: TurnContext,
         *,

@@ -64,32 +64,43 @@ def effective_user_message(
     return user_message.strip()
 
 
+def _collect_clarification_thread_users(
+    messages: tuple[ChatMessage, ...] | list[ChatMessage],
+) -> list[str]:
+    """User turns merged backward through clarification-only assistant prompts."""
+    collected: list[str] = []
+    i = len(messages) - 1
+    while i >= 0:
+        msg = messages[i]
+        if msg.role == "assistant" and is_assistant_clarification(msg.content):
+            i -= 1
+        elif msg.role == "user":
+            part = msg.content.strip()
+            if part:
+                collected.insert(0, part)
+            i -= 1
+        else:
+            break
+    return collected
+
+
+def _join_user_parts(parts: list[str]) -> str:
+    if not parts:
+        return ""
+    if len(parts) == 1:
+        return parts[0]
+    return " | ".join(parts)
+
+
 def resolve_effective_user_message(messages: tuple[ChatMessage, ...] | list[ChatMessage]) -> str:
     """Merge user turns in an active clarification thread into one intent string."""
     if not messages:
         return ""
     if messages[-1].role != "user":
+        if messages[-1].role == "assistant" and is_assistant_clarification(messages[-1].content):
+            return _join_user_parts(_collect_clarification_thread_users(messages))
         for msg in reversed(messages):
             if msg.role == "user":
                 return msg.content.strip()
         return ""
-
-    collected: list[str] = []
-    i = len(messages) - 1
-    while i >= 0:
-        msg = messages[i]
-        if msg.role == "user":
-            part = msg.content.strip()
-            if part:
-                collected.insert(0, part)
-            i -= 1
-        elif msg.role == "assistant" and is_assistant_clarification(msg.content):
-            i -= 1
-        else:
-            break
-
-    if not collected:
-        return ""
-    if len(collected) == 1:
-        return collected[0]
-    return " | ".join(collected)
+    return _join_user_parts(_collect_clarification_thread_users(messages))

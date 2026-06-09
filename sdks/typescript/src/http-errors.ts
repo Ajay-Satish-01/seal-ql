@@ -3,6 +3,7 @@
  */
 
 import { QueryError, QueryOutOfScopeError, ServerError } from './errors.js';
+import { isRateLimitSignal, RATE_LIMIT_USER_MESSAGE } from './vendor/api-error.js';
 
 const MAX_SUGGESTION_CHARS = 200;
 
@@ -69,7 +70,9 @@ export function raiseForResponse(status: number, body: { detail?: unknown }): ne
   const detail = body.detail ?? 'Request failed';
 
   if (status >= 500) {
-    throw new ServerError(`Server error (${status}): ${detailToMessage(detail)}`, status);
+    const message = detailToMessage(detail);
+    const userMessage = isRateLimitSignal(status, message) ? RATE_LIMIT_USER_MESSAGE : message;
+    throw new ServerError(`Server error (${status}): ${userMessage}`, status);
   }
 
   if (

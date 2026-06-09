@@ -54,6 +54,18 @@ export function ChatStreamDemoPanel({ demo }: ChatStreamDemoPanelProps) {
           {demo.answerText}
         </div>
       </div>
+
+      {demo.streamError ? (
+        <div className="border-destructive/40 bg-destructive/5 rounded-md border p-4">
+          <p className="text-foreground mb-1 text-sm font-semibold">
+            event: seal.error → stream_error
+          </p>
+          <p className="text-muted-foreground font-mono text-xs">
+            code: {demo.streamError.code}
+          </p>
+          <p className="text-destructive mt-2 text-sm">{demo.streamError.message}</p>
+        </div>
+      ) : null}
     </div>
   );
 }

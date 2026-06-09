@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 import pytest
-from seal._http_errors import detail_to_message, raise_for_response
-from seal.exceptions import QueryError, QueryOutOfScopeError
+from seal._http_errors import (
+    RATE_LIMIT_USER_MESSAGE,
+    detail_to_message,
+    is_rate_limit_signal,
+    raise_for_response,
+)
+from seal.exceptions import QueryError, QueryOutOfScopeError, ServerError
 
 
 def test_detail_to_message_session_database_mismatch() -> None:
@@ -42,6 +47,19 @@ def test_detail_to_message_fastapi_422_list() -> None:
         ]
     )
     assert msg == "Field required; Too long"
+
+
+def test_is_rate_limit_signal_matches_keywords_and_empty_503() -> None:
+    assert is_rate_limit_signal(503, "")
+    assert is_rate_limit_signal(502, "rate limit exceeded")
+    assert is_rate_limit_signal(502, "tokens per minute limit hit")
+    assert not is_rate_limit_signal(503, "database unavailable")
+
+
+def test_raise_for_response_rate_limit_503() -> None:
+    with pytest.raises(ServerError, match="Rate limited") as exc_info:
+        raise_for_response(503, RATE_LIMIT_USER_MESSAGE)
+    assert exc_info.value.status_code == 503
 
 
 def test_raise_for_response_structured_chat_error_uses_message() -> None:
