@@ -23,6 +23,23 @@ def format_boundary_errors(errors: list[str]) -> str:
     return "; ".join(errors)
 
 
+_BOUNDARY_ERROR_MARKERS = (
+    "Unknown column:",
+    "Unknown table:",
+    "Ambiguous column:",
+    "SQL boundary failed",
+    "SQL Sanitization failed:",
+    "SQL parse error:",
+    "Empty or unparseable SQL.",
+    "Only a single SQL statement is allowed.",
+)
+
+
+def is_boundary_error_message(message: str) -> bool:
+    """True when a raised exception message came from the SQL boundary layer."""
+    return any(marker in message for marker in _BOUNDARY_ERROR_MARKERS)
+
+
 @dataclass(frozen=True)
 class SqlBoundaryResult:
     """Combined outcome of validator + sanitizer."""

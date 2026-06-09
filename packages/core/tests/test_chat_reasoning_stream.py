@@ -467,7 +467,9 @@ async def test_stream_emits_final_reasoning_meta_and_suffix() -> None:
     final_meta = meta_events[-1]
     assert '"analysis_followups"' in final_meta
     assert "Compare by region" in final_meta
-    assert any("Suggested follow-ups" in e for e in events if e.startswith("data:"))
+    data_events = [e for e in events if e.startswith("data:") and "[DONE]" not in e]
+    assert any("Ten orders total." in e for e in data_events)
+    assert not any("Suggested follow-ups" in e for e in data_events)
 
 
 class _AsyncStream:

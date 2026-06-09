@@ -9,6 +9,20 @@ interface ReasoningPanelProps {
   className?: string;
 }
 
+/** True when ReasoningPanel would render structured sections (not null). */
+export function reasoningPanelHasContent(
+  reasoning?: ReasoningMetadata | null,
+): reasoning is ReasoningMetadata {
+  if (!reasoning) return false;
+  return (
+    Boolean(reasoning.clarification_required) ||
+    (reasoning.inferred_context?.length ?? 0) > 0 ||
+    (reasoning.clarifying_questions?.length ?? 0) > 0 ||
+    (reasoning.analysis_followups?.length ?? 0) > 0 ||
+    (reasoning.research_notes?.length ?? 0) > 0
+  );
+}
+
 function Section({
   title,
   items,
@@ -41,16 +55,7 @@ function Section({
 }
 
 export function ReasoningPanel({ reasoning, className }: ReasoningPanelProps) {
-  if (!reasoning) return null;
-
-  const hasContent =
-    reasoning.clarification_required ||
-    (reasoning.inferred_context?.length ?? 0) > 0 ||
-    (reasoning.clarifying_questions?.length ?? 0) > 0 ||
-    (reasoning.analysis_followups?.length ?? 0) > 0 ||
-    (reasoning.research_notes?.length ?? 0) > 0;
-
-  if (!hasContent) return null;
+  if (!reasoningPanelHasContent(reasoning)) return null;
 
   return (
     <Card className={cn('border-border/60 bg-muted/10 space-y-3 p-3', className)}>

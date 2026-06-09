@@ -43,6 +43,7 @@ from seal_core.reasoning.models import (
 )
 from seal_core.reasoning.orchestrator import ReasoningOrchestrator
 from seal_semantic.registry import SemanticRegistry
+from seal_sql.boundary import is_boundary_error_message
 from seal_sql.result import QueryResult
 
 from app.database_routing import get_database_bundle
@@ -164,7 +165,7 @@ async def execute_query(
             executor=bundle.executor,
             semantic_registry=semantic,
             data_catalog=catalog,
-            table_names=None,
+            table_names=table_names,
         )
 
         result = QueryResult(
@@ -236,7 +237,7 @@ async def execute_query(
         logger.error("Query metadata validation failed: %s", e.errors)
         raise HTTPException(status_code=500, detail=public_server_error_detail()) from e
     except Exception as e:
-        if "Validation" in str(e) or "Sanitization" in str(e):
+        if is_boundary_error_message(str(e)):
             logger.error("Query failed: %s", e)
             raise HTTPException(status_code=400, detail=public_query_error_detail()) from e
         try:

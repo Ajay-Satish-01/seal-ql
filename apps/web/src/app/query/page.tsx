@@ -2,7 +2,7 @@
 
 import { ChartPanel } from '@/components/dashboard/chart-panel';
 import { MetadataPanel } from '@/components/dashboard/metadata-panel';
-import { ReasoningPanel } from '@/components/dashboard/reasoning-panel';
+import { ReasoningPanel, reasoningPanelHasContent } from '@/components/dashboard/reasoning-panel';
 import { shouldShowTrustPanel } from '@seal/trust-explainability';
 import { TrustPanel } from '@/components/dashboard/trust-panel';
 import { PageShell } from '@/components/dashboard/page-shell';
@@ -61,7 +61,9 @@ export default function QueryPage() {
   });
 
   const hasResults = results.length > 0 || chart != null;
-  const hasAssistantMessage = Boolean(assistantMessage?.trim());
+  const showReasoningPanel = reasoningPanelHasContent(metadata?.reasoning);
+  // message is format_reasoning_message(metadata.reasoning) — skip duplicate summary card
+  const hasAssistantMessage = Boolean(assistantMessage?.trim()) && !showReasoningPanel;
 
   return (
     <PageShell
@@ -87,8 +89,8 @@ export default function QueryPage() {
         </Button>
       </Card>
 
-      {metadata?.reasoning ? (
-        <ReasoningPanel reasoning={metadata.reasoning} className="console-panel" />
+      {showReasoningPanel ? (
+        <ReasoningPanel reasoning={metadata?.reasoning} className="console-panel" />
       ) : null}
 
       {hasAssistantMessage ? (

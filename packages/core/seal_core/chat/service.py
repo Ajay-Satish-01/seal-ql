@@ -50,9 +50,7 @@ from seal_core.reasoning.models import (
     ReasoningContext,
     ReasoningMetadata,
     ReasoningPhase,
-    append_reasoning_to_message,
     normalize_reasoning_clarification,
-    reasoning_suffix_delta,
     should_return_clarification,
 )
 from seal_core.reasoning.orchestrator import build_default_orchestrator
@@ -301,10 +299,6 @@ class ChatService:
                 )
                 turn.reasoning = final_reasoning
                 ctx.last_explainability = self._explainability_snapshot_from_turn(ctx, turn)
-
-                suffix = reasoning_suffix_delta(streamed, final_reasoning)
-                if suffix:
-                    yield format_openai_sse_delta(suffix)
 
                 yield self._format_meta_event(ctx, turn)
                 await self._persist_turn_messages(
@@ -586,7 +580,7 @@ class ChatService:
                 turn.reasoning,
                 self._reasoning_from_answer(enrichment),  # type: ignore[arg-type]
             )
-            message = append_reasoning_to_message(streamed_message, reasoning)
+            message = content_for_llm_history(streamed_message)
             return message, reasoning
 
         answer = await self._client.chat.completions.create(
@@ -601,10 +595,7 @@ class ChatService:
             turn.reasoning,
             self._reasoning_from_answer(answer),  # type: ignore[arg-type]
         )
-        message = append_reasoning_to_message(
-            answer.message,  # type: ignore[union-attr]
-            reasoning,
-        )
+        message = content_for_llm_history(answer.message)  # type: ignore[union-attr]
         return message, reasoning
 
     async def _in_scope_turn_pipeline(

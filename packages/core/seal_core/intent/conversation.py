@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from seal_core.intent.headers import CLARIFICATION_SECTION_HEADERS, POST_ANSWER_REASONING_HEADERS
+from seal_core.intent.headers import (
+    CLARIFICATION_SECTION_HEADERS,
+    INLINE_ANSWER_ENRICHMENT_HEADERS,
+    POST_ANSWER_REASONING_HEADERS,
+)
 
 if TYPE_CHECKING:
     from seal_core.chat.models import ChatMessage
@@ -24,11 +28,14 @@ def content_for_llm_history(content: str) -> str:
     if is_assistant_clarification(content):
         return content
     cut_at = len(content)
-    for header in POST_ANSWER_REASONING_HEADERS:
+    for header in (*POST_ANSWER_REASONING_HEADERS, *INLINE_ANSWER_ENRICHMENT_HEADERS):
         idx = content.find(header)
         if idx >= 0:
             cut_at = min(cut_at, idx)
-    return content[:cut_at].strip()
+    result = content[:cut_at].strip()
+    if result.endswith("---"):
+        result = result[:-3].strip()
+    return result
 
 
 def is_clarification_follow_up(messages: tuple[ChatMessage, ...] | list[ChatMessage]) -> bool:

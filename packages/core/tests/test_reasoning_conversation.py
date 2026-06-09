@@ -29,6 +29,15 @@ def test_content_for_llm_history_preserves_clarification_only_body() -> None:
     assert content_for_llm_history(clarification) == clarification
 
 
+def test_content_for_llm_history_strips_inline_llm_enrichment_sections() -> None:
+    base = "**Orders per month**\n\n| Month | Count |\n| 2024-01 | 10 |"
+    with_inline = (
+        f"{base}\n\n---\n\n### Suggested analysis_followups\n"
+        "1. Compare to prior year.\n\n### Research_notes\n- Peak in October."
+    )
+    assert content_for_llm_history(with_inline) == base
+
+
 def test_is_assistant_clarification_detects_reasoning_headers() -> None:
     text = "**A few details would help**\n- What time range?"
     assert is_assistant_clarification(text) is True
