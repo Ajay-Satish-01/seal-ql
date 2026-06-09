@@ -121,8 +121,8 @@ paths:
                   detail: query_out_of_scope
                   reason: off-topic pattern
                   suggested_queries:
-                  - Show order count by month
                   - What tables are available?
+                  - Show total row count by table
         '422':
           description: Validation Error
           content:
@@ -705,6 +705,11 @@ components:
           - $ref: '#/components/schemas/ScopeMetadata'
           - type: 'null'
           description: Guardrails scope decision when classified.
+        reasoning:
+          anyOf:
+          - $ref: '#/components/schemas/ReasoningInfo'
+          - type: 'null'
+          description: Layered reasoning summary (follow-ups, research notes, clarifications).
         enhancement:
           $ref: '#/components/schemas/EnhancementInfo'
         refusal:
@@ -1163,6 +1168,11 @@ components:
           - $ref: '#/components/schemas/ScopeMetadata'
           - type: 'null'
           description: Guardrails scope decision when trust explainability is enabled.
+        reasoning:
+          anyOf:
+          - $ref: '#/components/schemas/ReasoningInfo'
+          - type: 'null'
+          description: Layered reasoning summary (follow-ups, research notes, clarifications).
       type: object
       title: QueryMetadata
       description: Execution metadata returned on successful /v1/query responses.
@@ -1186,10 +1196,18 @@ components:
       description: The incoming query request from a user.
     QueryResponse:
       properties:
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+          description: Assistant-visible reasoning summary or clarification prompt.
         sql:
           type: string
           title: Sql
-          description: The generated and executed SQL query.
+          description: The generated SQL query, or an empty string when no SQL is
+            generated (e.g., clarification-only responses).
+          default: ''
         columns:
           items:
             $ref: '#/components/schemas/ColumnMetadata'
@@ -1224,11 +1242,61 @@ components:
           description: Execution metadata (time, row count, limits, etc.).
       type: object
       required:
-      - sql
       - columns
       - results
       title: QueryResponse
       description: The complete response containing SQL, data, and visualization.
+    ReasoningInfo:
+      properties:
+        inferred_context:
+          items:
+            type: string
+          type: array
+          maxItems: 5
+          title: Inferred Context
+          description: Concise inferences from prior session state (chat only).
+        analysis_followups:
+          items:
+            type: string
+          type: array
+          maxItems: 5
+          title: Analysis Followups
+          description: Suggested analytical follow-up questions or angles.
+        research_notes:
+          items:
+            type: string
+          type: array
+          maxItems: 5
+          title: Research Notes
+          description: Data-backed observations or research framing notes.
+        clarifying_questions:
+          items:
+            type: string
+          type: array
+          maxItems: 5
+          title: Clarifying Questions
+          description: Targeted questions to gather missing requirements.
+        clarification_required:
+          type: boolean
+          title: Clarification Required
+          description: True when the request lacks sufficient context for a confident
+            answer.
+          default: false
+        layers_applied:
+          items:
+            type: string
+          type: array
+          title: Layers Applied
+          description: Reasoning layer names that contributed to this payload.
+        layers_unavailable:
+          additionalProperties:
+            type: string
+          type: object
+          title: Layers Unavailable
+          description: Layer name to short reason when a layer was skipped or failed.
+      type: object
+      title: ReasoningInfo
+      description: Re-exports core ``ReasoningMetadata`` for OpenAPI.
     RelationshipInfo:
       properties:
         from_table:
@@ -1694,6 +1762,12 @@ components:
           - type: 'null'
           default: null
           description: Guardrails scope decision when classified.
+        reasoning:
+          anyOf:
+          - $ref: '#/components/schemas/ReasoningInfo'
+          - type: 'null'
+          default: null
+          description: Layered reasoning summary (follow-ups, research notes, clarifications).
         enhancement:
           $ref: '#/components/schemas/EnhancementInfo'
         refusal:

@@ -1,6 +1,8 @@
 'use client';
 
 import { ChartPanel } from '@/components/dashboard/chart-panel';
+import { ReasoningPanel, reasoningPanelHasContent } from '@/components/dashboard/reasoning-panel';
+import { contentForLlmHistory } from '@seal/conversation';
 import {
   ExplainabilityTrigger,
   shouldRenderExplainabilityTrigger,
@@ -129,6 +131,8 @@ const AssistantMessage = memo(function AssistantMessage({
     trustExplainabilityEnabled,
     explainability,
   );
+  const showReasoningPanel = reasoningPanelHasContent(explainability.metadata?.reasoning);
+  const displayContent = showReasoningPanel && content ? contentForLlmHistory(content) : content;
 
   return (
     <div className="border-border/50 bg-muted/15 space-y-3 rounded-lg border px-3 py-3">
@@ -141,11 +145,12 @@ const AssistantMessage = memo(function AssistantMessage({
           />
         ) : null}
       </div>
-      {content ? (
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
+      {displayContent ? (
+        <p className="text-sm leading-relaxed whitespace-pre-wrap">{displayContent}</p>
       ) : streaming ? (
         <p className="text-muted-foreground text-sm">Streaming…</p>
       ) : null}
+      <ReasoningPanel reasoning={explainability.metadata?.reasoning} />
       {explainability.chart ? (
         <ChartPanel chart={explainability.chart} results={explainability.results} />
       ) : null}
@@ -347,6 +352,12 @@ function ChatPage() {
           } else if (event.type === 'meta_error') {
             applyPartialStreamMeta(event.partial);
             notifyInfo(`seal.meta validation: ${event.error}`);
+          } else if (event.type === 'stream_error') {
+            setPending(null);
+            setExplainabilityOpen(false);
+            setActiveExplainability(null);
+            notifyErrorFrom(new Error(event.message), event.message);
+            return;
           } else if (event.type === 'delta') {
             streamed += event.content;
             updatePending((prev) =>

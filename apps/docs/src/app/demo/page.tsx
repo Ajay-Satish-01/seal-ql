@@ -3,10 +3,8 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { demoPresets } from '@/lib/demo-fixtures';
-import {
-  chatResponseFromPreset,
-  chatStreamDemoFromPreset,
-} from '@/lib/demo-chat-fixtures';
+import { chatResponseFromPreset, chatStreamDemoFromPreset } from '@/lib/demo-chat-fixtures';
+import { ChatStreamErrorCallout } from '@/components/demo/chat-stream-error-callout';
 import { chatMessageFromQuery } from '@/lib/doc-snippets';
 import { QueryConsole } from '@/components/demo/query-console';
 import { ResultsPanel } from '@/components/demo/results-panel';
@@ -104,7 +102,10 @@ export default function DemoPage() {
 
         <div className="mt-12 grid gap-8 lg:grid-cols-2">
           <ChatDemoPanel message={chatMessage} response={chatResponse} />
-          <ChatStreamDemoPanel demo={streamDemo} />
+          <div className="space-y-4">
+            <ChatStreamDemoPanel demo={streamDemo} />
+            <ChatStreamErrorCallout />
+          </div>
         </div>
       </div>
     </main>

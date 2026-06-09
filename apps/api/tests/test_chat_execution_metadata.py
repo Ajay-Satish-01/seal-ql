@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.dependencies import get_chat_service
 from fastapi.testclient import TestClient
-from seal_core.chat.models import ChatAnswer, ChatDecision
+from seal_core.chat.models import ChatAnswer, ChatAnswerEnrichment, ChatDecision
 from seal_core.chat.service import ChatService
 from seal_core.chat.session import InMemorySessionStore
 from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
@@ -188,7 +188,7 @@ def test_chat_json_sql_error_metadata(monkeypatch) -> None:
         client.app.dependency_overrides[get_chat_service] = lambda: service
         r = client.post(
             "/v1/chat",
-            json={"message": "broken"},
+            json={"message": "count orders with invalid filter"},
             headers=AUTH_HEADERS,
         )
 
@@ -223,13 +223,18 @@ def test_chat_stream_meta_includes_execution_fields(monkeypatch) -> None:
             new=AsyncMock(return_value=(exec_result, None, {"used_sql": True})),
         ),
         patch.object(service, "_answer_system", new=AsyncMock(return_value="SYS")),
+        patch.object(
+            service._client.chat.completions,
+            "create",
+            new=AsyncMock(return_value=ChatAnswerEnrichment()),
+        ),
     ):
         client: TestClient = build_client(monkeypatch)
         client.app.dependency_overrides[get_chat_service] = lambda: service
         with client.stream(
             "POST",
             "/v1/chat",
-            json={"message": "count", "stream": True},
+            json={"message": "count orders last month", "stream": True},
             headers=AUTH_HEADERS,
         ) as r:
             text = "".join(r.iter_text())
@@ -268,13 +273,18 @@ def test_chat_stream_sql_error_meta(monkeypatch) -> None:
             new=AsyncMock(return_value=(None, None, {"sql_error": True})),
         ),
         patch.object(service, "_answer_system", new=AsyncMock(return_value="SYS")),
+        patch.object(
+            service._client.chat.completions,
+            "create",
+            new=AsyncMock(return_value=ChatAnswerEnrichment()),
+        ),
     ):
         client: TestClient = build_client(monkeypatch)
         client.app.dependency_overrides[get_chat_service] = lambda: service
         with client.stream(
             "POST",
             "/v1/chat",
-            json={"message": "broken", "stream": True},
+            json={"message": "count orders with invalid filter", "stream": True},
             headers=AUTH_HEADERS,
         ) as r:
             text = "".join(r.iter_text())

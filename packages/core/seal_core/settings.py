@@ -540,6 +540,42 @@ class Settings(BaseSettings):
         default=True,
         description="Enable prompt enhancement orchestrator for /v1/chat.",
     )
+
+    # ============================================================
+    # Layered reasoning (chat + query)
+    # ============================================================
+
+    reasoning_enabled: bool = Field(
+        default=True,
+        description="Global toggle for layered reasoning on chat and query responses.",
+    )
+    reasoning_chat_enabled: bool = Field(
+        default=True,
+        description="Enable layered reasoning on /v1/chat.",
+    )
+    reasoning_query_enabled: bool = Field(
+        default=True,
+        description="Enable layered reasoning on /v1/query.",
+    )
+    reasoning_clarification_enabled: bool = Field(
+        default=True,
+        description="Return clarifying questions when requirements are insufficient.",
+    )
+    reasoning_analysis_followups_enabled: bool = Field(
+        default=True,
+        description="Include suggested analytical follow-up angles in reasoning metadata.",
+    )
+    reasoning_research_notes_enabled: bool = Field(
+        default=True,
+        description="Include data-backed research framing notes in reasoning metadata.",
+    )
+    reasoning_latency_budget_ms: int = Field(
+        default=500,
+        description=(
+            "Max cumulative milliseconds for heuristic reasoning layers per phase; "
+            "0 disables the budget."
+        ),
+    )
     strict_stream_meta_validation: bool = Field(
         default=False,
         validation_alias=AliasChoices(

@@ -184,6 +184,52 @@
         "vector_rag_available": true,
         "orchestrator_available": true
       }
+    },
+    {
+      "id": "reasoning_clarification",
+      "assert_matches_build": false,
+      "response": {
+        "session_id": "s-reasoning",
+        "sources": [],
+        "sql": null,
+        "results": null,
+        "columns": null,
+        "chart": null,
+        "metadata": {
+          "database_id": "default",
+          "row_count": 0,
+          "execution_time_ms": 0,
+          "truncated": false,
+          "warnings": [],
+          "used_sql": false,
+          "enhancement": { "enabled": true, "applied": [] },
+          "reasoning": {
+            "clarification_required": true,
+            "clarifying_questions": ["What time range should I use?"],
+            "layers_applied": ["clarification"]
+          }
+        }
+      },
+      "expected_flat": {
+        "session_id": "s-reasoning",
+        "sources": [],
+        "sql": null,
+        "results": null,
+        "columns": null,
+        "chart": null,
+        "database_id": "default",
+        "row_count": 0,
+        "execution_time_ms": 0,
+        "truncated": false,
+        "warnings": [],
+        "used_sql": false,
+        "enhancement": { "enabled": true, "applied": [] },
+        "reasoning": {
+          "clarification_required": true,
+          "clarifying_questions": ["What time range should I use?"],
+          "layers_applied": ["clarification"]
+        }
+      }
     }
   ]
 }

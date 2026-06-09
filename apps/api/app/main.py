@@ -16,6 +16,9 @@ from seal_core.database.registry import build_database_registry
 from seal_core.enhancement.orchestrator import build_default_orchestrator
 from seal_core.llm.client import validate_llm_env
 from seal_core.planner.planner import QueryPlanner
+from seal_core.reasoning.orchestrator import (
+    build_default_orchestrator as build_reasoning_orchestrator,
+)
 from seal_core.settings import (
     get_settings,
     validate_chat_session_store_configuration,
@@ -104,6 +107,8 @@ async def lifespan(app: FastAPI):
     session_store = create_session_store(settings)
     await session_store.ensure_schema()
 
+    reasoning_orchestrator = build_reasoning_orchestrator()
+
     chat_service = ChatService(
         planner=planner,
         registry=database_registry,
@@ -111,9 +116,11 @@ async def lifespan(app: FastAPI):
         orchestrator=orchestrator,
         catalog=data_catalog,
         semantic_registry=semantic_registry,
+        reasoning_orchestrator=reasoning_orchestrator,
     )
 
     app.state.database_registry = database_registry
+    app.state.reasoning_orchestrator = reasoning_orchestrator
     app.state.planner = planner
     app.state.semantic_registry = semantic_registry
     app.state.data_catalog = data_catalog

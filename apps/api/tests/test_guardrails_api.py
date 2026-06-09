@@ -107,7 +107,7 @@ def test_chat_poem_refusal_includes_suggested_queries(monkeypatch) -> None:
             new=AsyncMock(
                 return_value=ChatAnswer(
                     message="I only answer data questions.",
-                    suggested_queries=["Show order count by month"],
+                    suggested_queries=["What tables are available?"],
                 )
             ),
         ),
@@ -124,4 +124,4 @@ def test_chat_poem_refusal_includes_suggested_queries(monkeypatch) -> None:
     meta = r.json()["metadata"]
     assert meta.get("refusal") is True
     suggestions = meta.get("suggested_queries")
-    assert suggestions == ["Show order count by month"]
+    assert suggestions == ["What tables are available?"]

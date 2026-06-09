@@ -95,6 +95,7 @@ export async function probeApiConnection(
 }
 
 export interface QueryResponse {
+  message?: string | null;
   sql: string;
   columns: Array<{ name: string; type: string }>;
   results: Record<string, unknown>[];

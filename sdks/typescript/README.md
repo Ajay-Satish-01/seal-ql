@@ -23,6 +23,8 @@ CI enforces this via `make verify-openapi-sync` (committed `src/generated/openap
 
 Public types include `QueryOutOfScopeDetail`, `QueryOutOfScopeErrorResponse`, and `QueryOutOfScopeError` for structured guardrails failures on `client.query()`.
 
+`ReasoningMetadata` / `ReasoningInfo` describe `metadata.reasoning` on query and chat responses (`clarification_required`, `clarifying_questions`, `analysis_followups`, `research_notes`, `inferred_context`). Query may also return top-level `message` when clarification is required.
+
 ## Runtime metadata (SSE)
 
 Wire types (`ChatStreamMeta`, `ChatMetadata`, `QueryMetadata`) come from OpenAPI. **Runtime** checks for streaming use vendored copies of `shared/stream-meta.ts` and `shared/chat-sse-events.ts` (`mapChatSseEvent` → `meta` | `meta_error` | `delta` | `done`), aligned with server `validate_metadata.py`. See [docs/chat-metadata.md](../../docs/chat-metadata.md).
@@ -35,18 +37,29 @@ import { Seal } from 'seal';
 const client = new Seal({ baseUrl: 'http://localhost:8000', apiKey: process.env.SEAL_API_KEY });
 
 const result = await client.query('Monthly revenue by region');
-console.log(result.metadata?.database_id, result.sql);
+console.log(result.metadata?.database_id, result.sql, result.message);
+
+if (result.metadata?.reasoning?.clarification_required) {
+  console.log(result.metadata.reasoning.clarifying_questions);
+}
 
 for await (const event of client.chatStream('Summarize last quarter', { includeCharts: true })) {
   if (event.type === 'meta') console.log(event.data.sql);
   else if (event.type === 'meta_error') console.warn('Invalid seal.meta', event.data);
-  else if (event.type === 'delta') process.stdout.write(event.content);
+  else if (event.type === 'stream_error') {
+    console.error(event.message);
+    break;
+  } else if (event.type === 'delta') process.stdout.write(event.content);
 }
 ```
+
+`src/vendor/` is gitignored; `pnpm test` / `pnpm build` run `scripts/sync-sdk-meta-vendor.mjs` to copy `shared/api-error.ts`, `config/rate_limit_markers.json`, and generate `sdks/python/seal/rate_limit.py` from core. CI enforces marker sync via `make verify-rate-limit-sync`. Use `isRateLimitSignal` and `RATE_LIMIT_USER_MESSAGE` from the package root for HTTP 503 throttling messages.
 
 ### Guardrails errors
 
 Out-of-scope **query** calls throw `QueryOutOfScopeError` with `reason` and `suggestedQueries` parsed from the API body (`detail.detail === 'query_out_of_scope'`). Out-of-scope **chat** returns HTTP 200; read `response.metadata.suggested_queries` or `event.data.suggested_queries` on the first `seal.meta` event when streaming.
+
+When reasoning is enabled, chat streaming may emit a **second** `seal.meta` after answer tokens finish (updated `reasoning` with LLM follow-ups). Treat each `meta` event as an update to the same turn.
 
 ### Multiple databases
 

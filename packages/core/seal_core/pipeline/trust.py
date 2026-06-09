@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from seal_core.settings import get_settings
@@ -33,9 +34,43 @@ def is_trust_explainability_enabled() -> bool:
     return get_settings().trust_explainability_enabled
 
 
+_TABLE_WORD = re.compile(r"\btables?\b")
+_COLUMN_WORD = re.compile(r"\bcolumns?\b")
+
+
+def _is_schema_sensitive_note(note: str) -> bool:
+    lower = note.lower()
+    if lower.startswith("data sourced from:"):
+        return True
+    if "schema exposes " in lower:
+        return True
+    if _TABLE_WORD.search(lower):
+        return True
+    return bool(_COLUMN_WORD.search(lower))
+
+
+def strip_trust_reasoning(reasoning: dict[str, Any]) -> dict[str, Any]:
+    """Remove table-name leakage from reasoning research notes when trust is off."""
+    notes = reasoning.get("research_notes")
+    if not isinstance(notes, list):
+        return reasoning
+    filtered = [
+        note for note in notes if isinstance(note, str) and not _is_schema_sensitive_note(note)
+    ]
+    if filtered == notes:
+        return reasoning
+    gated = dict(reasoning)
+    gated["research_notes"] = filtered
+    return gated
+
+
 def strip_trust_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
     """Remove trust-only metadata keys."""
-    return {key: value for key, value in metadata.items() if key not in TRUST_METADATA_KEYS}
+    gated = {key: value for key, value in metadata.items() if key not in TRUST_METADATA_KEYS}
+    reasoning = gated.get("reasoning")
+    if isinstance(reasoning, dict):
+        gated["reasoning"] = strip_trust_reasoning(reasoning)
+    return gated
 
 
 def apply_trust_gating_to_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
@@ -50,6 +85,9 @@ def apply_trust_gating_to_stream_meta(event: dict[str, Any]) -> dict[str, Any]:
     if is_trust_explainability_enabled():
         return event
     gated = {key: value for key, value in event.items() if key not in TRUST_TOP_LEVEL_KEYS}
+    reasoning = gated.get("reasoning")
+    if isinstance(reasoning, dict):
+        gated["reasoning"] = strip_trust_reasoning(reasoning)
     gated = strip_trust_metadata(gated)
     return gated
 

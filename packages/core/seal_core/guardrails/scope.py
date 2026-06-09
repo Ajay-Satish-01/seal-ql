@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
-from seal_core.guardrails.heuristics import heuristic_in_scope
+from seal_core.guardrails.heuristics import heuristic_in_scope, heuristic_in_scope_with_context
+
+if TYPE_CHECKING:
+    from seal_core.chat.models import ChatMessage
 from seal_core.guardrails.models import (
     GuardrailsChannel,
     ScopeCategory,
@@ -48,7 +52,13 @@ def check_input_limits(
     return None
 
 
-async def classify_scope(text: str, *, channel: GuardrailsChannel) -> ScopeResult:
+async def classify_scope(
+    text: str,
+    *,
+    channel: GuardrailsChannel,
+    prior_messages: tuple[ChatMessage, ...] | list[ChatMessage] | None = None,
+    schema_table_names: tuple[str, ...] | list[str] = (),
+) -> ScopeResult:
     """Classify message scope for the query or chat API channel."""
     settings = get_settings()
 
@@ -64,7 +74,14 @@ async def classify_scope(text: str, *, channel: GuardrailsChannel) -> ScopeResul
     if not settings.guardrails_enabled:
         return ScopeResult(in_scope=True, reason="guardrails disabled", source="disabled")
 
-    hint = heuristic_in_scope(text)
+    if channel == "chat" or schema_table_names:
+        hint = heuristic_in_scope_with_context(
+            text,
+            prior_messages=prior_messages if channel == "chat" else None,
+            schema_table_names=schema_table_names,
+        )
+    else:
+        hint = heuristic_in_scope(text)
     if hint is True:
         return ScopeResult(
             in_scope=True,
@@ -82,6 +99,16 @@ async def classify_scope(text: str, *, channel: GuardrailsChannel) -> ScopeResul
             confidence="high",
         )
 
+    classify_user_content = text
+    if channel == "chat" and prior_messages:
+        from seal_core.intent.conversation import resolve_effective_user_message
+
+        resolved = resolve_effective_user_message(prior_messages)
+        if resolved and resolved.strip() != text.strip():
+            classify_user_content = (
+                f"Conversation context:\n{resolved}\n\nLatest user reply:\n{text}"
+            )
+
     client = get_async_client()
     model = get_model()
     try:
@@ -89,7 +116,7 @@ async def classify_scope(text: str, *, channel: GuardrailsChannel) -> ScopeResul
             model=model,
             messages=[
                 {"role": "system", "content": SCOPE_CLASSIFY_SYSTEM},
-                {"role": "user", "content": text},
+                {"role": "user", "content": classify_user_content},
             ],
             response_model=ScopeDecision,
             api_base=get_api_base(),
@@ -113,5 +140,16 @@ async def classify_scope(text: str, *, channel: GuardrailsChannel) -> ScopeResul
         )
 
 
-async def is_in_scope(text: str, *, channel: GuardrailsChannel) -> ScopeResult:
-    return await classify_scope(text, channel=channel)
+async def is_in_scope(
+    text: str,
+    *,
+    channel: GuardrailsChannel,
+    prior_messages: tuple[ChatMessage, ...] | list[ChatMessage] | None = None,
+    schema_table_names: tuple[str, ...] | list[str] = (),
+) -> ScopeResult:
+    return await classify_scope(
+        text,
+        channel=channel,
+        prior_messages=prior_messages,
+        schema_table_names=schema_table_names,
+    )

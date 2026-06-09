@@ -3,7 +3,13 @@ import type { ChatMetadata, ChatStreamMeta, ColumnDescriptor } from '@/lib/execu
 import { flushSseRemainder, splitSseBuffer, type SseParseResult } from '@/lib/sse-parse';
 import { mapChatSseEvent, type ChatStreamEvent } from '@seal/chat-sse-events';
 
-export type { ChatMetadata, ChatStreamMeta, ColumnDescriptor, EnhancementMetadata } from '@/lib/execution-metadata';
+export type {
+  ChatMetadata,
+  ChatStreamMeta,
+  ColumnDescriptor,
+  EnhancementMetadata,
+  ReasoningMetadata,
+} from '@/lib/execution-metadata';
 
 export type { ChatStreamEvent };
 
@@ -56,7 +62,12 @@ export async function postChat(
 }
 
 function mapSseEvent(event: SseParseResult): ChatStreamEvent | null {
-  if (event.kind === 'meta' || event.kind === 'delta' || event.kind === 'done') {
+  if (
+    event.kind === 'meta' ||
+    event.kind === 'delta' ||
+    event.kind === 'error' ||
+    event.kind === 'done'
+  ) {
     return mapChatSseEvent(event);
   }
   return null;

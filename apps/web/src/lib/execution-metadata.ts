@@ -4,6 +4,7 @@ export {
   type ColumnDescriptor,
   type EnhancementMetadata,
   type ExecutionMetadata,
+  type ReasoningMetadata,
   type ScopeMetadata,
   formatMetadataJson,
   hasMetadataContent,

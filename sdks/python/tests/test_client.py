@@ -104,7 +104,7 @@ class TestSyncClient:
             "detail": {
                 "detail": "query_out_of_scope",
                 "reason": "off-topic pattern",
-                "suggested_queries": ["Show order count by month"],
+                "suggested_queries": ["What tables are available?"],
             }
         }
         transport = httpx.MockTransport(_mock_transport(400, body))
@@ -116,7 +116,7 @@ class TestSyncClient:
             client.query("write me a poem")
         err = exc_info.value
         assert err.reason == "off-topic pattern"
-        assert err.suggested_queries == ["Show order count by month"]
+        assert err.suggested_queries == ["What tables are available?"]
         assert "out of scope" in str(err).lower()
         client.close()
 

@@ -1,4 +1,5 @@
 import type { ChatApiResponse } from '@/lib/chat-api';
+import { RATE_LIMIT_USER_MESSAGE } from '@/lib/api-error';
 import {
   buildDemoChatMetadata,
   chatResponseToStreamMeta,
@@ -11,6 +12,10 @@ export interface ChatStreamDemo {
   message: string;
   meta: ChatStreamMeta;
   answerText: string;
+  streamError?: {
+    code: string;
+    message: string;
+  };
 }
 
 export function chatResponseFromPreset(preset: DemoPreset): ChatApiResponse {
@@ -49,5 +54,13 @@ export function chatStreamDemoFromPreset(preset: DemoPreset): ChatStreamDemo {
     message: chatMessageFromQuery(preset.query),
     meta: chatResponseToStreamMeta(chat),
     answerText: chat.message,
+  };
+}
+
+/** Simulated mid-stream failure (seal.error → stream_error). */
+export function chatStreamErrorDemo(): NonNullable<ChatStreamDemo['streamError']> {
+  return {
+    code: 'rate_limit',
+    message: RATE_LIMIT_USER_MESSAGE,
   };
 }

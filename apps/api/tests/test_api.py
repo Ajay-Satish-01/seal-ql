@@ -32,7 +32,11 @@ def test_schema(api_client: TestClient) -> None:
 
 
 def test_query(api_client: TestClient) -> None:
-    response = api_client.post("/v1/query", json={"query": "test query"}, headers=AUTH_HEADERS)
+    response = api_client.post(
+        "/v1/query",
+        json={"query": "How many orders were placed last month?"},
+        headers=AUTH_HEADERS,
+    )
     assert response.status_code == 200
     data = response.json()
     assert "sql" in data
@@ -41,8 +45,128 @@ def test_query(api_client: TestClient) -> None:
     assert data["results"][0]["id"] == 1
 
 
+def test_query_returns_reasoning_metadata(api_client: TestClient) -> None:
+    response = api_client.post(
+        "/v1/query",
+        json={"query": "How many orders were placed last month?"},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 200
+    reasoning = response.json()["metadata"].get("reasoning")
+    assert isinstance(reasoning, dict)
+    assert isinstance(reasoning.get("layers_applied"), list)
+
+
+def test_query_scope_uses_merged_catalog_and_schema_table_hints(
+    api_app, api_client: TestClient
+) -> None:
+    """Scope gate must see introspected tables, not catalog YAML alone."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from app.dependencies import get_data_catalog, get_database_registry
+    from seal_core.catalog.models import CatalogEntry, DataCatalog
+    from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
+    from seal_core.guardrails.models import ScopeResult
+    from seal_core.schema.models import DatabaseSchema, TableSchema
+    from tests.mocks import MockDataCatalog, MockExecutor
+
+    catalog = MockDataCatalog()
+    catalog._catalog = DataCatalog(tables=[CatalogEntry(name="orders", schema_name="public")])
+
+    introspector = MagicMock()
+    introspector.introspect = AsyncMock(
+        return_value=DatabaseSchema(
+            tables=[TableSchema(name="live_events", schema_name="public")],
+            dialect="postgres",
+        )
+    )
+    registry = DatabaseRegistry(
+        {
+            "default": DatabaseBundle(
+                database_id="default",
+                dialect="postgres",
+                url="mock://",
+                introspector=introspector,
+                executor=MockExecutor(),
+            )
+        }
+    )
+    api_app.dependency_overrides[get_data_catalog] = lambda: catalog
+    api_app.dependency_overrides[get_database_registry] = lambda: registry
+
+    captured: dict[str, tuple[str, ...]] = {}
+
+    async def capture_scope(
+        _text: str,
+        *,
+        channel: str,
+        prior_messages: object = None,
+        schema_table_names: tuple[str, ...] | list[str] = (),
+    ) -> ScopeResult:
+        captured["names"] = tuple(schema_table_names)
+        return ScopeResult(in_scope=True, reason="in_scope", source="heuristic")
+
+    with patch("app.routes.query.classify_scope", new=AsyncMock(side_effect=capture_scope)):
+        response = api_client.post(
+            "/v1/query",
+            json={"query": "count rows"},
+            headers=AUTH_HEADERS,
+        )
+
+    assert response.status_code == 200
+    names = {name.lower() for name in captured["names"]}
+    assert "orders" in names
+    assert "live_events" in names
+
+
+def test_query_table_name_skips_false_clarification(api_app, api_client: TestClient) -> None:
+    """Short catalog table names must not trigger metric-only clarification."""
+    from app.dependencies import get_data_catalog
+    from seal_core.catalog.models import CatalogEntry, DataCatalog
+    from tests.mocks import MockDataCatalog
+
+    catalog = MockDataCatalog()
+    catalog._catalog = DataCatalog(tables=[CatalogEntry(name="orders", schema_name="public")])
+    api_app.dependency_overrides[get_data_catalog] = lambda: catalog
+
+    response = api_client.post(
+        "/v1/query",
+        json={"query": "orders"},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["sql"]
+    reasoning = data["metadata"].get("reasoning") or {}
+    assert not reasoning.get("clarification_required")
+
+
+def test_query_clarification_when_ambiguous(api_client: TestClient) -> None:
+    response = api_client.post(
+        "/v1/query",
+        json={"query": "show me trends"},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["sql"] == ""
+    assert data["results"] == []
+    assert data["columns"] == []
+    assert data["metadata"]["used_sql"] is False
+    reasoning = data["metadata"]["reasoning"]
+    assert reasoning["clarification_required"] is True
+    assert isinstance(reasoning["clarifying_questions"], list)
+    assert len(reasoning["clarifying_questions"]) > 0
+    assert isinstance(reasoning.get("layers_applied"), list)
+    assert data["message"]
+
+
 def test_query_returns_execution_metadata(api_client: TestClient) -> None:
-    response = api_client.post("/v1/query", json={"query": "test query"}, headers=AUTH_HEADERS)
+    response = api_client.post(
+        "/v1/query",
+        json={"query": "How many orders were placed last month?"},
+        headers=AUTH_HEADERS,
+    )
     assert response.status_code == 200
     meta = response.json()["metadata"]
     assert meta["used_sql"] is True

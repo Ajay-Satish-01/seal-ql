@@ -66,6 +66,11 @@ export default function ChatStreamingPage() {
           <code>data: {'{...}'}</code> — OpenAI-style <code>chat.completion.chunk</code> deltas
         </li>
         <li>
+          Optional <code>event: seal.error</code> — client-visible failure (e.g. LLM rate limit) with{' '}
+          <code>{'{"code":"rate_limit","message":"..."}'}</code> before <code>[DONE]</code> when the
+          stream cannot complete. Mapped to <code>stream_error</code> in SDKs and the dashboard.
+        </li>
+        <li>
           <code>data: [DONE]</code> — end of stream
         </li>
       </ol>
@@ -78,8 +83,10 @@ export default function ChatStreamingPage() {
         <code>seal.meta</code> (for example invalid <code>scope.source</code>) yields a{' '}
         <code>meta_error</code> event with <code>partial</code> fields when{' '}
         <code>session_id</code> / <code>database_id</code> are still readable; answer deltas may
-        continue. Same rules in <code>shared/stream-meta.ts</code> used by the dashboard and docs
-        demo.
+        continue. LLM provider throttling surfaces as <code>seal.error</code> (
+        <code>stream_error</code>) — not HTTP 429 on the chat stream; non-streaming routes return{' '}
+        <strong>503</strong> with a rate-limit message. Same rules in <code>shared/stream-meta.ts</code>{' '}
+        used by the dashboard and docs demo.
       </Callout>
 
       <p className="text-muted-foreground mt-6 text-sm">

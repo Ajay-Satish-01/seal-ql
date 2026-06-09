@@ -8,6 +8,7 @@ export {
   type ColumnDescriptor,
   type EnhancementMetadata,
   type ExecutionMetadata,
+  type ReasoningMetadata,
   type ScopeMetadata,
   STREAM_META_METADATA_KEYS,
   chatResponseToStreamMeta,
@@ -21,6 +22,7 @@ import {
   type ColumnDescriptor,
   type EnhancementMetadata,
   type ExecutionMetadata,
+  type ReasoningMetadata,
   type ScopeMetadata,
   formatMetadataJson,
 } from '@seal/metadata-contract';
@@ -44,6 +46,15 @@ export const QUERY_EXECUTION_FIELDS: MetadataFieldDef[] = [
   {
     name: 'sources (top-level)',
     description: 'Context tables selected for planning when trust explainability is enabled',
+  },
+  {
+    name: 'reasoning',
+    description:
+      'Layered reasoning summary: inferred_context (chat only), clarifying_questions, analysis_followups, research_notes, clarification_required',
+  },
+  {
+    name: 'message (top-level)',
+    description: 'Assistant-visible reasoning or clarification text when present',
   },
 ];
 
@@ -80,6 +91,21 @@ export const CHAT_METADATA_EXTRA_FIELDS: MetadataFieldDef[] = [
     name: 'metadata.sql_error',
     description: 'Data path failed; used_sql stays false and sql is omitted',
   },
+  {
+    name: 'metadata.reasoning',
+    description:
+      'Layered reasoning (same shape as query). Flat on seal.meta when streaming. See reasoning fields table on this page.',
+  },
+];
+
+export const REASONING_FIELDS: MetadataFieldDef[] = [
+  { name: 'inferred_context', description: 'Concise bullets from prior chat turns (chat only)' },
+  { name: 'clarifying_questions', description: 'Targeted requirement-gathering questions' },
+  { name: 'analysis_followups', description: 'Suggested deeper analytical angles' },
+  { name: 'research_notes', description: 'Data-backed observations tied to results or schema' },
+  { name: 'clarification_required', description: 'true when the request lacks sufficient detail' },
+  { name: 'layers_applied', description: 'Reasoning layer names that contributed' },
+  { name: 'layers_unavailable', description: 'Layer name → skip/failure reason (object)' },
 ];
 
 export const SCOPE_IN_SCOPE: ScopeMetadata = {
@@ -114,6 +140,29 @@ export const CHAT_METADATA_SQL_EXAMPLE: ChatMetadata = {
     applied: ['schema_aware', 'vector_rag'],
   },
   scope: SCOPE_IN_SCOPE,
+  reasoning: {
+    analysis_followups: ['Break this down by segment or category to compare drivers.'],
+    research_notes: ['Query returned 4 row(s) in 24.5 ms.'],
+    layers_applied: ['analysis_followups', 'research_notes'],
+  },
+};
+
+export const REASONING_CLARIFICATION_EXAMPLE: ReasoningMetadata = {
+  clarification_required: true,
+  clarifying_questions: ['What time range should I use (e.g. last 30 days, this quarter)?'],
+  layers_applied: ['clarification'],
+};
+
+export const CHAT_METADATA_CLARIFICATION_EXAMPLE: ChatMetadata = {
+  database_id: 'default',
+  row_count: 0,
+  execution_time_ms: 0,
+  truncated: false,
+  warnings: [],
+  used_sql: false,
+  enhancement: { enabled: true, applied: ['schema_aware'] },
+  scope: SCOPE_IN_SCOPE,
+  reasoning: REASONING_CLARIFICATION_EXAMPLE,
 };
 
 export const CHAT_METADATA_REFUSAL_EXAMPLE: ChatMetadata = {
@@ -130,7 +179,7 @@ export const CHAT_METADATA_REFUSAL_EXAMPLE: ChatMetadata = {
   },
   scope: SCOPE_OFF_TOPIC,
   refusal: true,
-  suggested_queries: ['Show order count by month', 'What tables are available?'],
+  suggested_queries: ['What tables are available?', 'Show total row count by table'],
 };
 
 const DEMO_SESSION_ID = 'demo-session-a1b2c3d4';
@@ -139,6 +188,9 @@ export const QUERY_METADATA_JSON = formatMetadataJson({ metadata: QUERY_METADATA
 export const CHAT_METADATA_SQL_JSON = formatMetadataJson({ metadata: CHAT_METADATA_SQL_EXAMPLE });
 export const CHAT_METADATA_REFUSAL_JSON = formatMetadataJson({
   metadata: CHAT_METADATA_REFUSAL_EXAMPLE,
+});
+export const CHAT_METADATA_CLARIFICATION_JSON = formatMetadataJson({
+  metadata: CHAT_METADATA_CLARIFICATION_EXAMPLE,
 });
 
 export function chatStreamMetaExample(overrides?: {
@@ -158,6 +210,7 @@ export function chatStreamMetaExample(overrides?: {
     ...QUERY_METADATA_EXAMPLE,
     row_count: overrides?.results?.length ?? 1,
     enhancement: CHAT_METADATA_SQL_EXAMPLE.enhancement,
+    reasoning: CHAT_METADATA_SQL_EXAMPLE.reasoning,
   };
 }
 

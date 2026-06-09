@@ -9,8 +9,9 @@ from seal_core.guardrails.suggestions import merge_suggestions, suggest_queries
 
 def test_suggest_queries_limits_source() -> None:
     scope = ScopeResult(in_scope=False, reason="query exceeds 4000 characters", source="limits")
-    assert len(suggest_queries(scope)) <= 3
-    assert "month" in suggest_queries(scope)[0].lower()
+    suggestions = suggest_queries(scope)
+    assert len(suggestions) <= 3
+    assert any("count" in s.lower() or "table" in s.lower() for s in suggestions)
 
 
 def test_suggest_queries_off_topic_reason_fallback() -> None:
@@ -28,7 +29,7 @@ def test_suggest_queries_abuse_category() -> None:
     )
     suggestions = suggest_queries(scope)
     assert len(suggestions) == 3
-    assert any("orders" in s.lower() for s in suggestions)
+    assert any("table" in s.lower() or "metric" in s.lower() for s in suggestions)
 
 
 def test_merge_suggestions_prefers_llm() -> None:

@@ -91,9 +91,7 @@ export default function CatalogPage() {
 
   function updateDescription(key: string, value: string) {
     setTables((prev) =>
-      prev.map((row) =>
-        catalogEntryKey(row) === key ? withDescription(row, value) : row,
-      ),
+      prev.map((row) => (catalogEntryKey(row) === key ? withDescription(row, value) : row)),
     );
   }
 
@@ -128,9 +126,7 @@ export default function CatalogPage() {
         const res = await patchCatalogDescriptions(
           apiUrl,
           apiKey,
-          dirtyTables.map((table) =>
-            patchPayloadForEntry(table, descriptionForEntry(table)),
-          ),
+          dirtyTables.map((table) => patchPayloadForEntry(table, descriptionForEntry(table))),
         );
         applyLoadedTables(res.tables);
         setLastSavedAt(new Date());
@@ -172,7 +168,9 @@ export default function CatalogPage() {
     >
       <DatabaseScopeBanner feature="Catalog sync and YAML" />
 
-      <div className={`console-panel flex flex-wrap items-start gap-3 rounded-lg border p-4 ${statusTone}`}>
+      <div
+        className={`console-panel flex flex-wrap items-start gap-3 rounded-lg border p-4 ${statusTone}`}
+      >
         <div className="mt-0.5 shrink-0">
           {hasUnsavedChanges ? (
             <CircleAlert className="size-5 text-amber-700 dark:text-amber-300" />
@@ -216,9 +214,8 @@ export default function CatalogPage() {
           </button>
           {showCurationHelp && (
             <p className="text-muted-foreground border-border/50 border-t pt-2 text-xs">
-              Edits persist in workspace Postgres.{' '}
-              <code className="font-mono">Sync from DB</code> rebuilds YAML; overrides are
-              re-applied.{' '}
+              Edits persist in workspace Postgres. <code className="font-mono">Sync from DB</code>{' '}
+              rebuilds YAML; overrides are re-applied.{' '}
               <a
                 href={docsPageUrl('/docs/data-catalog')}
                 target="_blank"
@@ -282,7 +279,9 @@ export default function CatalogPage() {
             onClick={save}
             disabled={isSaving || isPending || isSyncing || !hasUnsavedChanges}
           >
-            {isSaving ? 'Saving…' : `Save ${dirtyCount > 0 ? dirtyCount : ''} description${dirtyCount === 1 ? '' : 's'}`.trim()}
+            {isSaving
+              ? 'Saving…'
+              : `Save ${dirtyCount > 0 ? dirtyCount : ''} description${dirtyCount === 1 ? '' : 's'}`.trim()}
           </Button>
         </div>
       )}

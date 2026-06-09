@@ -19,6 +19,11 @@ const LLM_SKIP_MARKERS = [
   'instructor',
   'internal error',
   'ollama',
+  'model not found',
+  'model not available',
+  'model unavailable',
+  'service unavailable',
+  'overloaded',
 ];
 
 export function llmUnavailableMessage(error: unknown): string | null {

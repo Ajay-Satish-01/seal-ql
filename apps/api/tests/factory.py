@@ -9,11 +9,13 @@ from app.dependencies import (
     get_data_catalog,
     get_database_registry,
     get_query_planner,
+    get_reasoning_orchestrator,
     get_semantic_registry,
 )
 from app.main import create_app
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from seal_core.reasoning.orchestrator import build_default_orchestrator
 from seal_core.settings import Settings, clear_settings_cache
 from tests.mocks import (
     MockChatService,
@@ -30,11 +32,13 @@ if TYPE_CHECKING:
 def apply_dependency_mocks(application: FastAPI) -> None:
     """Attach in-memory mocks so /v1/* tests do not require Postgres."""
     registry = make_mock_database_registry()
+    reasoning = build_default_orchestrator()
     application.dependency_overrides[get_database_registry] = lambda: registry
     application.dependency_overrides[get_query_planner] = lambda: MockPlanner()
     application.dependency_overrides[get_semantic_registry] = lambda: MockSemanticRegistry()
     application.dependency_overrides[get_data_catalog] = lambda: MockDataCatalog()
     application.dependency_overrides[get_chat_service] = lambda: MockChatService()
+    application.dependency_overrides[get_reasoning_orchestrator] = lambda: reasoning
 
 
 def clear_dependency_mocks(application: FastAPI) -> None:

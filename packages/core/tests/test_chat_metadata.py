@@ -5,7 +5,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from seal_core.chat.models import ChatAnswer, ChatDecision
+from seal_core.chat.models import ChatAnswer, ChatDecision, ChatMessage
 from seal_core.chat.service import ChatService
 from seal_core.chat.session import InMemorySessionStore
 from seal_core.database.registry import DatabaseBundle, DatabaseRegistry
@@ -156,6 +156,56 @@ async def test_run_turn_sql_error_metadata() -> None:
 
 
 @pytest.mark.asyncio
+async def test_handle_json_sql_error_does_not_pin_database() -> None:
+    """Failed SQL turns persist messages but must not pin the session database."""
+    store = InMemorySessionStore()
+    service = ChatService(
+        planner=MagicMock(),
+        registry=_registry(),
+        sessions=store,
+        orchestrator=None,
+        catalog=None,
+        semantic_registry=None,
+    )
+    with (
+        patch(
+            "seal_core.chat.service.classify_scope",
+            new=AsyncMock(
+                return_value=ScopeResult(in_scope=True, reason="in_scope", source="heuristic")
+            ),
+        ),
+        patch.object(
+            service,
+            "_chat_decision",
+            new=AsyncMock(return_value=ChatDecision(needs_data=True, confidence="high")),
+        ),
+        patch.object(
+            service,
+            "_execute_data_path",
+            new=AsyncMock(return_value=(None, None, {"sql_error": True})),
+        ),
+        patch.object(service, "_answer_system", new=AsyncMock(return_value="SYS")),
+        patch.object(
+            service._client.chat.completions,
+            "create",
+            new=AsyncMock(return_value=ChatAnswer(message="Could not query data.")),
+        ),
+    ):
+        result = await service.handle_json(
+            message="broken query",
+            session_id=None,
+            messages_override=None,
+            include_charts=False,
+            enhancement_enabled=False,
+        )
+
+    assert result.metadata["sql_error"] is True
+    state = await store.get_session(result.session_id)
+    assert state is not None
+    assert state.database_id is None
+
+
+@pytest.mark.asyncio
 async def test_run_turn_no_sql_when_decision_skips_data() -> None:
     service = ChatService(
         planner=MagicMock(),
@@ -192,6 +242,44 @@ async def test_run_turn_no_sql_when_decision_skips_data() -> None:
     execute_mock.assert_not_called()
     assert result.metadata["used_sql"] is False
     assert "enhancement" in result.metadata
+
+
+@pytest.mark.asyncio
+async def test_chat_decision_uses_complete_recent_turns() -> None:
+    service = ChatService(
+        planner=MagicMock(),
+        registry=_registry(),
+        sessions=InMemorySessionStore(),
+        orchestrator=None,
+        catalog=None,
+        semantic_registry=None,
+    )
+    history = [
+        ChatMessage(role="user", content="u1"),
+        ChatMessage(role="assistant", content="a1"),
+        ChatMessage(role="user", content="u2"),
+        ChatMessage(role="assistant", content="a2"),
+        ChatMessage(role="user", content="u3"),
+        ChatMessage(role="assistant", content="a3"),
+        ChatMessage(role="user", content="u4"),
+        ChatMessage(role="assistant", content="a4"),
+    ]
+    ctx = await service._prepare_turn("current", None, history, False, "default")
+    create = AsyncMock(return_value=ChatDecision(needs_data=False, confidence="high"))
+
+    with patch.object(service._client.chat.completions, "create", new=create):
+        await service._chat_decision(ctx)
+
+    messages = create.await_args.kwargs["messages"]
+    assert [m["role"] for m in messages] == [
+        "system",
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "user",
+    ]
+    assert [m["content"] for m in messages[1:]] == ["u3", "a3", "u4", "a4", "current"]
 
 
 @pytest.mark.asyncio

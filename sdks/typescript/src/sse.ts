@@ -6,6 +6,7 @@
 export type SseParseResult =
   | { kind: 'meta'; data: Record<string, unknown> }
   | { kind: 'delta'; content: string }
+  | { kind: 'error'; code: string; message: string }
   | { kind: 'done' };
 
 /** Parse one SSE event block (lines between blank-line separators). */
@@ -29,6 +30,21 @@ export function parseSseEventBlock(part: string): SseParseResult | null {
   if (eventName === 'seal.meta') {
     try {
       return { kind: 'meta', data: JSON.parse(dataLine) as Record<string, unknown> };
+    } catch {
+      return null;
+    }
+  }
+
+  if (eventName === 'seal.error') {
+    try {
+      const parsed = JSON.parse(dataLine) as { code?: string; message?: string };
+      if (typeof parsed.message === 'string' && parsed.message.trim()) {
+        return {
+          kind: 'error',
+          code: typeof parsed.code === 'string' ? parsed.code : 'error',
+          message: parsed.message,
+        };
+      }
     } catch {
       return null;
     }

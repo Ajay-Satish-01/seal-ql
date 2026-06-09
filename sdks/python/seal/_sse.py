@@ -61,8 +61,18 @@ class ChatStreamDoneEvent(TypedDict):
     type: Literal["done"]
 
 
+class ChatStreamErrorEvent(TypedDict):
+    type: Literal["stream_error"]
+    code: str
+    message: str
+
+
 ChatStreamEvent = (
-    ChatStreamMetaEvent | ChatStreamMetaErrorEvent | ChatStreamDeltaEvent | ChatStreamDoneEvent
+    ChatStreamMetaEvent
+    | ChatStreamMetaErrorEvent
+    | ChatStreamErrorEvent
+    | ChatStreamDeltaEvent
+    | ChatStreamDoneEvent
 )
 
 _EXECUTION_KEYS = frozenset(
@@ -226,6 +236,23 @@ def parse_sse_stream(lines: Iterator[str]) -> Iterator[ChatStreamEvent]:
 
         if data_line == "[DONE]":
             return {"type": "done"}
+
+        if event_name_local == "seal.error":
+            try:
+                parsed = json.loads(data_line)
+            except json.JSONDecodeError:
+                return None
+            if not isinstance(parsed, dict):
+                return None
+            message = parsed.get("message")
+            if not isinstance(message, str) or not message.strip():
+                return None
+            code = parsed.get("code")
+            return {
+                "type": "stream_error",
+                "code": code if isinstance(code, str) and code.strip() else "error",
+                "message": message.strip(),
+            }
 
         if event_name_local == "seal.meta":
             try:

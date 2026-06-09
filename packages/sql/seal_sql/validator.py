@@ -228,6 +228,8 @@ class SQLValidator:
                 continue
 
             scope_select = col_node.find_ancestor(exp.Select)
+            if scope_select is not None and self._is_output_alias(scope_select, col_name):
+                continue
             scope_tables = (
                 self._tables_in_select_scope(scope_select)
                 if scope_select is not None
@@ -246,6 +248,17 @@ class SQLValidator:
                 )
 
         return columns, ambiguous_columns
+
+    def _select_output_aliases(self, select: exp.Select) -> set[str]:
+        """Output column aliases declared in a SELECT list (for GROUP BY / ORDER BY)."""
+        aliases: set[str] = set()
+        for expr in select.expressions:
+            if isinstance(expr, exp.Alias) and expr.alias:
+                aliases.add(expr.alias.lower())
+        return aliases
+
+    def _is_output_alias(self, select: exp.Select, col_name: str) -> bool:
+        return col_name.lower() in self._select_output_aliases(select)
 
     def _tables_in_select_scope(self, select: exp.Select) -> set[str]:
         """Tables visible in a single SELECT (FROM/JOIN), excluding subquery innards."""

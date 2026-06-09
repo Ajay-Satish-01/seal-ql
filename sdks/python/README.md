@@ -45,7 +45,7 @@ with Seal("http://localhost:8000", api_key="your-secret") as client:
 
 ## Chat streaming (SSE)
 
-The first SSE event is `seal.meta` with a **flat** JSON payload (execution fields at the top level, not nested under `metadata`). See [docs/chat-metadata.md](../../docs/chat-metadata.md) for the full contract (`used_sql`, `enhancement`, `scope`, `refusal`, `sql_error`).
+The first SSE event is `seal.meta` with a **flat** JSON payload (execution fields at the top level, not nested under `metadata`). A second `seal.meta` may arrive after streaming completes with updated `reasoning` (answer follow-ups); merge each meta event for the same turn. See [docs/chat-metadata.md](../../docs/chat-metadata.md) for the full contract (`used_sql`, `enhancement`, `scope`, `refusal`, `sql_error`, `reasoning`).
 
 ```python
 for event in client.chat_stream("Summarize orders by region", include_charts=True):
@@ -60,6 +60,22 @@ for event in client.chat_stream("Summarize orders by region", include_charts=Tru
 
 Non-streaming `client.chat()` returns nested `metadata` on `ChatResponse` (same fields as query `metadata`, plus chat-specific keys such as `scope`, `refusal`, and `suggested_queries` on guardrails refusals).
 
+## Layered reasoning
+
+Query and chat responses may include `metadata.reasoning` (`ReasoningMetadata`): clarifying questions, follow-up angles, research notes, and (chat only) `inferred_context`. Query can return top-level `message` when `clarification_required` is true (empty `sql`).
+
+```python
+from seal import ReasoningMetadata, Seal
+
+with Seal("http://localhost:8000", api_key="your-secret") as client:
+    result = client.query("show me trends")
+    reasoning = result.metadata.get("reasoning") if isinstance(result.metadata, dict) else getattr(result.metadata, "reasoning", None)
+    if isinstance(reasoning, dict) and reasoning.get("clarification_required"):
+        print(result.message, reasoning.get("clarifying_questions"))
+```
+
+Toggle with `REASONING_*` env vars — see [docs/reasoning-layers.md](../../docs/reasoning-layers.md).
+
 ## Guardrails errors
 
 Out-of-scope **query** requests return HTTP 400 with a structured FastAPI `detail` object:
@@ -69,7 +85,7 @@ Out-of-scope **query** requests return HTTP 400 with a structured FastAPI `detai
   "detail": {
     "detail": "query_out_of_scope",
     "reason": "off-topic pattern",
-    "suggested_queries": ["Show order count by month", "What tables are available?"]
+    "suggested_queries": ["What tables are available?", "Show total row count by table"]
   }
 }
 ```

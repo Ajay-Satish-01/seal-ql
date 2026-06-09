@@ -10,7 +10,11 @@ from seal_core.schema.models import (
     TableKind,
     TableSchema,
 )
-from seal_sql.boundary import format_boundary_errors, validate_and_sanitize
+from seal_sql.boundary import (
+    format_boundary_errors,
+    is_boundary_error_message,
+    validate_and_sanitize,
+)
 from seal_sql.limits import SanitizerLimits
 from seal_sql.parse import ParseFailure, parse_one_expression, parse_single_statement
 from seal_sql.sanitizer import SQLSanitizer
@@ -152,6 +156,12 @@ class TestFormatBoundaryErrors:
 
     def test_empty_list(self) -> None:
         assert format_boundary_errors([]) == "SQL boundary failed"
+
+    def test_is_boundary_error_message(self) -> None:
+        assert is_boundary_error_message(
+            "Unknown column: 'month' — not found in any referenced table."
+        )
+        assert not is_boundary_error_message("connection reset by peer")
 
 
 # ---------------------------------------------------------------------------

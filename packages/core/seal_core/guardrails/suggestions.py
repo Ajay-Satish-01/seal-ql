@@ -8,30 +8,30 @@ _MAX_SUGGESTIONS = 3
 _MAX_SUGGESTION_CHARS = 200
 
 _DEFAULT: tuple[str, ...] = (
-    "Show order count by month",
     "What tables are available?",
-    "List top customers by revenue",
+    "Show total row count by table",
+    "Describe the schema for a specific table",
 )
 
 _OFF_TOPIC: tuple[str, ...] = (
-    "Show order count by month",
     "What tables are available?",
-    "Describe the orders table schema",
+    "Show a count grouped by month",
+    "Describe the schema for a specific table",
 )
 
 _ABUSE: tuple[str, ...] = (
-    "How many orders were placed last month?",
-    "What columns does the orders table have?",
-    "Show revenue trends by month",
+    "How many records were added last month?",
+    "What columns does a specific table have?",
+    "Show a trend over time for a key metric",
 )
 
 _LIMITS: tuple[str, ...] = (
-    "Show order count by month",
+    "Show a count grouped by month",
     "What tables are in the catalog?",
 )
 
 _AMBIGUOUS: tuple[str, ...] = (
-    "Show order count by month",
+    "What tables are available?",
     "What metrics can I query?",
     "List available tables",
 )

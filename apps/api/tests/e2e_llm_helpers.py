@@ -34,8 +34,21 @@ _LLM_SKIP_TEXT_MARKERS = (
     "geminiexception",
     "ollama",
     "model not found",
+    "model not available",
+    "model unavailable",
+    "no healthy upstream",
+    "service unavailable",
+    "overloaded",
     "internal error occurred",
     "an internal error",
+)
+
+_SCHEMA_TABLE_CLARIFY_MARKERS: tuple[str, ...] = (
+    "which table or area",
+    "which table",
+    "table or area",
+    "available schema",
+    "schema area",
 )
 
 _DEFAULT_PROBE_TIMEOUT = 60.0
@@ -111,13 +124,15 @@ def skip_if_llm_unavailable(
         pytest.skip(f"LLM unavailable: {reason}")
 
 
-def probe_live_llm(
+def _probe_live_route(
     *,
     base_url: str,
+    path: str,
+    payload: dict[str, Any],
     api_key: str | None = None,
     timeout: float = _DEFAULT_PROBE_TIMEOUT,
 ) -> str | None:
-    """Return a skip reason when /v1/query is not viable; None when LLM path looks healthy."""
+    """Return a skip reason when an LLM-backed route is not viable."""
     headers: dict[str, str] = {}
     if api_key:
         headers["X-API-Key"] = api_key
@@ -127,16 +142,49 @@ def probe_live_llm(
             headers=headers,
             timeout=timeout,
         ) as client:
-            response = client.post(
-                "/v1/query",
-                json={"query": "How many tables are in the database?"},
-            )
+            response = client.post(path, json=payload)
     except httpx.RequestError as exc:
         return llm_unavailable_reason(exc=exc) or f"{type(exc).__name__}: {_snippet(str(exc))}"
 
     if response.status_code == 401:
         return None
     return llm_unavailable_reason(status_code=response.status_code, body=response.text)
+
+
+def probe_live_llm(
+    *,
+    base_url: str,
+    api_key: str | None = None,
+    timeout: float = _DEFAULT_PROBE_TIMEOUT,
+) -> str | None:
+    """Return a skip reason when /v1/query is not viable; None when LLM path looks healthy."""
+    return _probe_live_route(
+        base_url=base_url,
+        path="/v1/query",
+        payload={"query": "How many tables are in the database?"},
+        api_key=api_key,
+        timeout=timeout,
+    )
+
+
+def probe_live_chat(
+    *,
+    base_url: str,
+    api_key: str | None = None,
+    timeout: float = _DEFAULT_PROBE_TIMEOUT,
+) -> str | None:
+    """Return a skip reason when /v1/chat is not viable; None when LLM path looks healthy."""
+    return _probe_live_route(
+        base_url=base_url,
+        path="/v1/chat",
+        payload={
+            "message": "Name one table in the database.",
+            "stream": False,
+            "include_charts": False,
+        },
+        api_key=api_key,
+        timeout=timeout,
+    )
 
 
 def assert_chat_json_body(body: dict[str, Any]) -> None:
@@ -163,3 +211,74 @@ def assert_query_json_body(data: dict[str, Any]) -> None:
     metadata = data.get("metadata") or {}
     row_count = metadata.get("row_count", len(results))
     assert row_count > 0, "expected row_count > 0"
+
+
+def assert_not_refusal(body: dict[str, Any]) -> None:
+    """Chat/query responses must not be guardrails refusals."""
+    metadata = body.get("metadata") or {}
+    assert not metadata.get("refusal"), f"unexpected refusal: {body.get('message')!r}"
+
+
+def assert_no_schema_table_clarification(body: dict[str, Any]) -> None:
+    """Reasoning must not ask the user to pick tables or schema areas."""
+    reasoning = (body.get("metadata") or {}).get("reasoning") or {}
+    questions = reasoning.get("clarifying_questions") or []
+    message = str(body.get("message") or "")
+    combined = f"{' '.join(questions)} {message}".lower()
+    for marker in _SCHEMA_TABLE_CLARIFY_MARKERS:
+        assert marker not in combined, f"unexpected schema/table clarification prompt: {combined!r}"
+
+
+def post_chat_json(
+    client: httpx.Client,
+    *,
+    message: str,
+    session_id: str | None = None,
+    messages: list[dict[str, str]] | None = None,
+    headers: dict[str, str] | None = None,
+) -> httpx.Response:
+    """POST /v1/chat (non-streaming) with shared LLM skip handling."""
+    payload: dict[str, Any] = {
+        "message": message,
+        "stream": False,
+        "include_charts": False,
+    }
+    if session_id:
+        payload["session_id"] = session_id
+    if messages:
+        payload["messages"] = messages
+    try:
+        return client.post("/v1/chat", json=payload, headers=headers)
+    except httpx.RequestError as exc:
+        skip_if_llm_unavailable(exc=exc)
+        raise
+
+
+def assert_chat_response_ok(response: httpx.Response) -> dict[str, Any]:
+    """Apply LLM skip rules and return parsed chat JSON on HTTP 200."""
+    assert response.status_code != 401, response.text
+    skip_if_llm_unavailable(status_code=response.status_code, body=response.text)
+    if response.status_code == 400:
+        pytest.fail(f"Unexpected 400 from chat: {response.text}")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert_chat_json_body(body)
+    return body
+
+
+def assert_query_response_ok(response: httpx.Response) -> dict[str, Any]:
+    """Apply LLM skip rules and return parsed query JSON on HTTP 200."""
+    assert response.status_code != 401, response.text
+    skip_if_llm_unavailable(status_code=response.status_code, body=response.text)
+    detail = ""
+    try:
+        detail = str(response.json().get("detail", ""))
+    except Exception:
+        detail = response.text
+    if response.status_code == 400 and "out_of_scope" in detail:
+        pytest.fail(f"Benign query incorrectly marked out of scope: {response.text}")
+    if response.status_code == 400:
+        pytest.fail(f"Unexpected 400 from query: {response.text}")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    return body

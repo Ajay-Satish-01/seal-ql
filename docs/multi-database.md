@@ -29,6 +29,17 @@ Responses echo the backend used:
 - **Chat (JSON):** `metadata.database_id` (including refusals)
 - **Chat (SSE):** top-level `database_id` on the flat `seal.meta` object (see [chat-metadata.md](chat-metadata.md))
 
+## Reasoning capabilities for new databases
+
+Layered reasoning (`metadata.reasoning`) is database-agnostic. When you add a backend:
+
+1. Register it in `DatabaseRegistry` (this document).
+2. Set `DatabaseBundle.dialect` correctly at build time.
+3. Extend `DatabaseCapabilities.from_bundle()` in `seal_core/reasoning/models.py` only when the engine has distinct features (JSON columns, time-series helpers, etc.).
+4. Optionally register a custom `ReasoningLayer` that reads `ctx.database_capabilities` — no changes to `/v1/chat` or `/v1/query` routes.
+
+See [reasoning-layers.md](reasoning-layers.md).
+
 ## Configuration
 
 | Source | Registers |

@@ -52,6 +52,9 @@ jobs:
       - name: Verify OpenAPI docs sync
         run: make verify-openapi-sync
 
+      - name: Verify rate-limit marker sync
+        run: make verify-rate-limit-sync
+
       - name: Validate demo fixtures
         run: uv run pytest tests/test_response_validation.py -v --tb=short
 
@@ -200,7 +203,7 @@ jobs:
         run: bash scripts/ci-wait-for-ollama.sh
 
       - name: Run Python E2E tests
-        run: docker compose exec -T api uv run pytest -v --tb=short sdks/python/tests/test_sdk_e2e.py apps/api/tests/test_e2e.py apps/api/tests/test_catalog_workspace_integration.py --junitxml=/tmp/e2e-test-results.xml
+        run: docker compose exec -T api uv run pytest -v --tb=short sdks/python/tests/test_sdk_e2e.py apps/api/tests/test_e2e.py apps/api/tests/test_e2e_reasoning.py apps/api/tests/test_catalog_workspace_integration.py --junitxml=/tmp/e2e-test-results.xml
 
       - name: Upload Python test results
         if: always()

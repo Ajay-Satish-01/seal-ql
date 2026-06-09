@@ -60,6 +60,8 @@ async def test_stream_incomplete_does_not_persist_messages() -> None:
                     chart=None,
                     meta={},
                     system="SYS",
+                    reasoning=None,
+                    clarification_only=False,
                 )
             ),
         ),
@@ -68,10 +70,13 @@ async def test_stream_incomplete_does_not_persist_messages() -> None:
             new=AsyncMock(side_effect=RuntimeError("stream aborted")),
         ),
     ):
-        stream = service.stream_turn(ctx, message="hello", include_charts=False)
-        with pytest.raises(RuntimeError, match="stream aborted"):
-            async for _ in stream:
-                pass
+        chunks: list[str] = []
+        async for chunk in service.stream_turn(ctx, message="hello", include_charts=False):
+            chunks.append(chunk)
+
+    payload = "".join(chunks)
+    assert "event: seal.error" in payload
+    assert "data: [DONE]" in payload
 
     state = await store.get_session(ctx.session_id)
     assert state is None or len(state.messages) == 0

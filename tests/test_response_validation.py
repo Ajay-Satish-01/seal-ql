@@ -108,8 +108,8 @@ def test_chat_refusal_with_suggested_queries_validates() -> None:
             "scope": {"in_scope": False, "reason": "off-topic", "source": "heuristic"},
             "refusal": True,
             "suggested_queries": [
-                "Show order count by month",
                 "What tables are available?",
+                "Show total row count by table",
             ],
         },
     }

@@ -167,6 +167,63 @@ export const guardrailsConfig: ConfigRow[] = [
   },
 ];
 
+export const reasoningConfig: ConfigRow[] = [
+  {
+    name: 'REASONING_ENABLED',
+    type: 'boolean',
+    default: 'true',
+    description: 'Global toggle for layered reasoning on chat and query responses.',
+    expect:
+      'When false, metadata.reasoning is omitted and routes skip the reasoning orchestrator.',
+  },
+  {
+    name: 'REASONING_CHAT_ENABLED',
+    type: 'boolean',
+    default: 'true',
+    description: 'Enable layered reasoning on POST /v1/chat (includes prior-turn inferred_context).',
+    expect: 'Disable for thinner chat latency when your agent already supplies context.',
+  },
+  {
+    name: 'REASONING_QUERY_ENABLED',
+    type: 'boolean',
+    default: 'true',
+    description: 'Enable layered reasoning on POST /v1/query (stateless; no session inference).',
+    expect:
+      'Ambiguous queries may return clarification_required with top-level message and empty sql.',
+  },
+  {
+    name: 'REASONING_CLARIFICATION_ENABLED',
+    type: 'boolean',
+    default: 'true',
+    description: 'Return clarifying questions when requirements are insufficient.',
+    expect:
+      'When true, underspecified questions get clarifying_questions before SQL runs.',
+  },
+  {
+    name: 'REASONING_ANALYSIS_FOLLOWUPS_ENABLED',
+    type: 'boolean',
+    default: 'true',
+    description: 'Include suggested analytical follow-up angles in metadata.reasoning.',
+    expect: 'Populates analysis_followups after successful SQL or schema-grounded turns.',
+  },
+  {
+    name: 'REASONING_RESEARCH_NOTES_ENABLED',
+    type: 'boolean',
+    default: 'true',
+    description: 'Include data-backed research framing notes in metadata.reasoning.',
+    expect: 'Populates research_notes from execution stats, tables, and planner explanation.',
+  },
+  {
+    name: 'REASONING_LATENCY_BUDGET_MS',
+    type: 'integer',
+    default: '500',
+    description:
+      'Max cumulative milliseconds for heuristic reasoning layers per phase (0 = no budget).',
+    expect:
+      'Under pressure, non-critical layers may set layers_unavailable to latency_budget_exceeded.',
+  },
+];
+
 export const chatConfig: ConfigRow[] = [
   {
     name: 'CHAT_ENHANCEMENT_ENABLED',

@@ -1,0 +1,12 @@
+{
+  "user_message": "Rate limited. The LLM provider is throttling requests — wait a few seconds and try again.",
+  "markers": [
+    "rate limit",
+    "rate_limit",
+    "ratelimiterror",
+    "rate limit exceeded",
+    "rate limited",
+    "tokens per minute",
+    "too many requests"
+  ]
+}

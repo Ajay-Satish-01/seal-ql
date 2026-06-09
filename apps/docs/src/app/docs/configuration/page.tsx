@@ -8,6 +8,7 @@ import {
   authConfig,
   catalogConfig,
   chatConfig,
+  reasoningConfig,
   corsConfig,
   databaseConfig,
   guardrailsConfig,
@@ -158,6 +159,25 @@ export default function ConfigurationPage() {
             </>
           }
           rows={chatConfig}
+        />
+
+        <ConfigSection
+          id="reasoning"
+          title="Layered reasoning"
+          intro={
+            <>
+              <p>
+                Optional product-intelligence layers on query and chat: clarifying questions when
+                input is thin, analytical follow-ups, research notes, and (chat only) inferred
+                context from prior turns. Outputs appear in assistant text and{' '}
+                <code>metadata.reasoning</code>.
+              </p>
+              <p>
+                Contributor reference: <code>docs/reasoning-layers.md</code> in the repository.
+              </p>
+            </>
+          }
+          rows={reasoningConfig}
         />
 
         <ConfigSection

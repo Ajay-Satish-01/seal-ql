@@ -21,6 +21,16 @@ describe('parseSseEventBlock', () => {
     expect(parseSseEventBlock('data: [DONE]')).toEqual({ kind: 'done' });
   });
 
+  it('parses seal.error', () => {
+    const block =
+      'event: seal.error\ndata: {"code":"rate_limit","message":"Rate limited. Try again soon."}';
+    expect(parseSseEventBlock(block)).toEqual({
+      kind: 'error',
+      code: 'rate_limit',
+      message: 'Rate limited. Try again soon.',
+    });
+  });
+
   it('joins multiple data lines for meta', () => {
     const block = 'event: seal.meta\ndata: {"session_id":\ndata: "s1"}';
     const event = parseSseEventBlock(block);

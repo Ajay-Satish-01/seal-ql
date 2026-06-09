@@ -4,14 +4,19 @@ Seal chains built-in `PromptEnhancer` implementations on `POST /v1/chat` when `C
 
 **User-facing guide:** `/docs/prompt-enhancement` on the docs site  
 **Doc index:** [README.md](README.md) · **Full chat + LLM flow:** [how-seal-works.md](how-seal-works.md) · **RAG boundary for embedders:** [embedding.md](embedding.md)  
-**Execution metadata (query + chat JSON/SSE):** [chat-metadata.md](chat-metadata.md) — includes `metadata.enhancement.*`, flat SSE `seal.meta`, OpenAPI type generation, and CI contract checks.
+**Execution metadata (query + chat JSON/SSE):** [chat-metadata.md](chat-metadata.md) — includes `metadata.enhancement.*`, `metadata.reasoning.*`, flat SSE `seal.meta`, OpenAPI type generation, and CI contract checks.
+
+**Layered reasoning (separate from enhancement):** [reasoning-layers.md](reasoning-layers.md) — clarifying questions, follow-ups, research notes, chat-only inferred context via `ReasoningOrchestrator`.
 
 ## Where enhancement fits in a chat turn
 
 ```text
 classify_scope (guardrails)
+    → ReasoningOrchestrator (pre) — clarification / inferred context
+    → [if clarification_required] early return with clarifying questions
     → EnhancementOrchestrator @ stage=decision → ChatDecision LLM
     → [if needs_data] execute_natural_language_query (planner, no enhancer on planner today)
+    → ReasoningOrchestrator (post) — follow-ups / research notes
     → EnhancementOrchestrator @ stage=answer → Answer LLM (or SSE stream)
 ```
 

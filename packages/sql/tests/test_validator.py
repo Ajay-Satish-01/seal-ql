@@ -191,6 +191,14 @@ class TestBasicValidation:
         )
         assert result.valid
 
+    def test_valid_group_by_select_alias(self, validator: SQLValidator) -> None:
+        """GROUP BY / ORDER BY may reference SELECT output aliases (common LLM pattern)."""
+        result = validator.validate(
+            "SELECT DATE_TRUNC('month', created_at) AS month, COUNT(*) AS n "
+            "FROM orders GROUP BY month ORDER BY month"
+        )
+        assert result.valid
+
     def test_valid_subquery(self, validator: SQLValidator) -> None:
         result = validator.validate(
             "SELECT name FROM users WHERE id IN (SELECT user_id FROM orders WHERE amount > 100)"

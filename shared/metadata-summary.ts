@@ -74,6 +74,23 @@ export function metadataBadges(meta: ChatMetadata | ExecutionMetadata): Metadata
     badges.push(...enhancementBadges(enh));
   }
 
+  const reasoning = meta.reasoning;
+  if (reasoning?.clarification_required) {
+    badges.push({ label: 'clarification required', variant: 'warning' });
+  }
+  if (reasoning?.analysis_followups && reasoning.analysis_followups.length > 0) {
+    badges.push({
+      label: `${reasoning.analysis_followups.length} follow-up(s)`,
+      variant: 'muted',
+    });
+  }
+  if (reasoning?.research_notes && reasoning.research_notes.length > 0) {
+    badges.push({
+      label: `${reasoning.research_notes.length} research note(s)`,
+      variant: 'muted',
+    });
+  }
+
   return badges;
 }
 
