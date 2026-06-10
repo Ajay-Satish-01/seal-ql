@@ -31,8 +31,8 @@ ReasoningOrchestrator (packages/core/seal_core/reasoning/)
     └─ post_execution: AnalysisFollowupsLayer, ResearchNotesLayer
 ```
 
-- **Chat** wires the orchestrator in `ChatService` and merges LLM `ChatDecision` / `ChatAnswer` fields.
-- **Query** calls the orchestrator in `apps/api/app/routes/query.py` (stateless; no session history).
+- **Chat** runs **pre-execution** layers in `ChatService`, merges heuristic output with `ChatDecision`, then produces follow-ups and research notes via the **answer LLM** (`ChatAnswer` / stream enrichment) — not via post-execution heuristic layers.
+- **Query** calls pre- and **post-execution** layers in `apps/api/app/routes/query.py` (stateless; no session history).
 - Layers are **fail-open**: failures set `layers_unavailable` and other layers still run.
 
 ## Configuration
@@ -41,20 +41,26 @@ Env vars (also workspace-hot-reloadable where noted in `settings_schema.py`):
 
 | Variable | Default | Purpose |
 | -------- | ------- | ------- |
-| `REASONING_ENABLED` | `true` | Global toggle |
-| `REASONING_CHAT_ENABLED` | `true` | `/v1/chat` reasoning |
-| `REASONING_QUERY_ENABLED` | `true` | `/v1/query` reasoning |
-| `REASONING_CLARIFICATION_ENABLED` | `true` | Clarifying-question branch |
-| `REASONING_ANALYSIS_FOLLOWUPS_ENABLED` | `true` | Follow-up suggestions |
-| `REASONING_RESEARCH_NOTES_ENABLED` | `true` | Research framing notes |
+| `REASONING_ENABLED` | `true` | Global toggle for heuristic layers |
+| `REASONING_CHAT_ENABLED` | `true` | Heuristic pre-layers on `/v1/chat` |
+| `REASONING_QUERY_ENABLED` | `true` | Heuristic pre/post layers on `/v1/query` |
+| `REASONING_CLARIFICATION_ENABLED` | `true` | Heuristic clarification layer |
+| `REASONING_ANALYSIS_FOLLOWUPS_ENABLED` | `true` | Query post-layer follow-ups (not chat) |
+| `REASONING_RESEARCH_NOTES_ENABLED` | `true` | Query post-layer research notes (not chat) |
 | `REASONING_LATENCY_BUDGET_MS` | `500` | Per-phase heuristic budget (`0` = unlimited) |
+
+`REASONING_*` toggles control **heuristic layers** only. The orchestrator still runs; disabled layers return empty partial metadata. On chat, `ChatDecision` and the answer LLM can still set `inferred_context`, `clarifying_questions`, `analysis_followups`, and `research_notes` in `metadata.reasoning` regardless of these flags. `REASONING_ANALYSIS_FOLLOWUPS_ENABLED` and `REASONING_RESEARCH_NOTES_ENABLED` affect query post layers only.
 
 ## Adding a custom reasoning layer
 
 1. Implement `ReasoningLayer` in `seal_core/reasoning/protocol.py` (`name`, `phase`, `enabled`, `run`).
-2. Register on the orchestrator: `orchestrator.register(MyLayer())` at app startup, or extend `build_default_orchestrator()`.
+2. Register on the orchestrator:
+   - **Fork for production:** extend `build_default_orchestrator()` in `seal_core/reasoning/orchestrator.py`, or call `orchestrator.register(MyLayer())` on the instance passed to `ChatService` / query handling in `apps/api/app/main.py` lifespan.
+   - There is no `SEAL_REASONING_LAYERS` env var yet (unlike `SEAL_ENHANCERS` for prompt enhancers).
 3. Return partial `ReasoningLayerResult` fields; the orchestrator merges and dedupes.
 4. If new metadata keys are needed, extend `ReasoningMetadata` and run the [chat-metadata](chat-metadata.md) contract checklist (OpenAPI, `stream_meta_metadata_keys.json`, shared TS).
+
+Programmatic helpers on `ReasoningOrchestrator` — `run_clarification_only` and `run_full` — are for integrators and tests; the default HTTP routes use `run_pre` / `run_post` only.
 
 ## Onboarding a new database engine
 

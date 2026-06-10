@@ -208,7 +208,7 @@ seed: ## Re-apply demo data (truncates orders/events, re-seeds; CAGG refresh run
 
 refresh-cagg: ## Refresh Timescale continuous aggregates (events_hourly, events_daily)
 	docker compose exec -T postgres psql -U postgres -d seal < scripts/refresh_continuous_aggregates.sql
-	@echo "ℹ️  Apply workspace schema: docker compose exec -T postgres psql -U postgres -d seal < scripts/migrate_app.sql"
+	@echo "ℹ️  Workspace schema is applied on API startup (manual migrate only if API is not run)"
 
 EVAL_DB_URL ?= postgresql+asyncpg://postgres:postgres@postgres:5432/seal
 EVAL_MIN_RATE_FLAG = --min-execution-rate $${EVAL_MIN_RATE:-0.6}

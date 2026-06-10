@@ -32,12 +32,13 @@ See [guardrails.md](guardrails.md).
 `apps/api/app/routes/query.py`:
 
 1. Resolve `database_id` → `DatabaseRegistry.get()` (**404** if unknown)
-2. `classify_scope`
-3. `ReasoningOrchestrator.run_pre()` — optional clarification (`metadata.reasoning`, top-level `message`, no SQL)
-4. `bundle.introspector.introspect()` — catalog/semantic only when `database_id=default`
-5. `execute_natural_language_query()` — planner → validate → sanitize → execute → repair loop
-6. `ReasoningOrchestrator.run_post()` — follow-ups and research notes
-7. `ChartEngine.generate()` — response `metadata` with `database_id`, `used_sql: true`, execution stats (`enforce_query_metadata` on success)
+2. `bundle.introspector.introspect()` — schema for scope hints and execution
+3. `classify_scope` (uses table-name hints from introspection)
+4. `ReasoningOrchestrator.run_pre()` — optional clarification (`metadata.reasoning`, top-level `message`, no SQL)
+5. `execute_natural_language_query()` — planner → validate → sanitize → execute → repair loop; catalog/semantic only when `database_id=default`
+6. `ChartEngine.generate()` — Vega-Lite from plan + result
+7. `ReasoningOrchestrator.run_post()` — follow-ups and research notes
+8. Assemble response `metadata` (`database_id`, `used_sql: true`, execution stats; `enforce_query_metadata` on success)
 
 No chat enhancement chain on this path. See [reasoning-layers.md](reasoning-layers.md).
 
@@ -50,11 +51,11 @@ See [multi-database.md](multi-database.md) for registry config, DuckDB URL norma
 1. API resolves `database_id` → registry (**404** if unknown)
 2. `BaseSessionStore` — reject `database_id` change after pin (`SessionDatabaseMismatchError` → HTTP 400)
 3. `_scope_gate` → metadata `scope`
-4. `ReasoningOrchestrator` pre-phase — inferred context + clarification; early return when `clarification_required`
-5. `_chat_decision` → `ChatDecision.needs_data` (enhancement at `stage=decision` when enabled)
+4. `ReasoningOrchestrator.run_pre` — inferred context + clarification; early return when `clarification_required` (merged with `ChatDecision` clarification fields)
+5. `_chat_decision` → `ChatDecision.needs_data` (`enhance_system_prompt` at `stage=decision` when enhancement enabled)
 6. If `needs_data`: `ContextRetriever.select_tables` + `execute_natural_language_query` using bundle executor (+ optional chart)
-7. `ReasoningOrchestrator` post-phase — follow-ups and research notes
-8. `_answer_system` (enhancement at `stage=answer`) + answer LLM or SSE stream
+7. `ReasoningOrchestrator.run_post` — on chat, post heuristic follow-up/research layers are skipped (`resolve_reasoning_config` is query-only for those layers)
+8. `_answer_system` — `enhance_system_prompt` at `stage=answer`, then answer LLM or SSE stream; follow-ups and research notes come from `ChatAnswer` / stream enrichment (not query-style post layers)
 
 Streaming: `seal.meta` (flat JSON with `database_id`, execution fields, `enhancement`, `scope` as `ScopeMetadata` with typed `source`, optional `refusal` / `sql_error`) then token deltas; mismatch errors before SSE starts. Server validates with `validate_stream_meta_event`; clients use `shared/stream-meta.ts` and `mapChatSseEvent` (`meta_error` on malformed payloads).
 

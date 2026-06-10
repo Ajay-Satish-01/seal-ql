@@ -167,10 +167,10 @@ export default function ConfigurationPage() {
           intro={
             <>
               <p>
-                Optional product-intelligence layers on query and chat: clarifying questions when
-                input is thin, analytical follow-ups, research notes, and (chat only) inferred
-                context from prior turns. Outputs appear in assistant text and{' '}
-                <code>metadata.reasoning</code>.
+                Heuristic product-intelligence layers on query and chat, plus chat{' '}
+                <code>ChatDecision</code> / answer LLM fields in{' '}
+                <code>metadata.reasoning</code>. Env toggles below control heuristic layers only —
+                not chat answer-enrichment LLM calls.
               </p>
               <p>
                 Contributor reference: <code>docs/reasoning-layers.md</code> in the repository.

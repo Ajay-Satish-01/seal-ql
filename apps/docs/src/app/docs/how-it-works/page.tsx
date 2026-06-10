@@ -39,8 +39,8 @@ export default function HowItWorksPage() {
           <strong><code>POST /v1/chat</code></strong> is conversational: server-side{' '}
           <code>session_id</code>, optional SSE streaming, optional charts, optional{' '}
           <code>database_id</code>, and the default{' '}
-          <strong>enhancement chain</strong> (schema focus, vector RAG, multi-turn summaries) before
-          decision and answer models run.
+          <strong>enhancement chain</strong> (schema focus, vector RAG, multi-turn context) on system
+          prompts before decision and answer models run.
         </p>
         <p>
           <Link href="/docs/embedding">Embedding Seal</Link> — responsibility split, BFF pattern, and
@@ -88,26 +88,33 @@ export default function HowItWorksPage() {
           <code>docs/guardrails.md</code>.
         </p>
 
-        <h2>Query path (after guardrails)</h2>
+        <h2>Query path</h2>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          Unlike chat, query <strong>introspects schema before</strong> <code>classify_scope</code>{' '}
+          so table-name hints can inform the scope gate.
+        </p>
         <pre className="not-prose overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-5 font-mono text-xs leading-relaxed text-foreground">
           {`POST /v1/query
     │
     ├─ resolve database_id → registry
     │     └─ unknown → HTTP 404 unknown_database_id
     │
-    ├─ classify_scope (channel=query)
+    ├─ introspect schema (chosen backend)
+    ├─ classify_scope (channel=query, uses table hints from schema)
     │     └─ out of scope → HTTP 400 structured query_out_of_scope
     │
-    ├─ introspect schema (chosen backend)
+    ├─ ReasoningOrchestrator.run_pre (clarification)
+    │     └─ clarification_required → message + empty sql, no execution
     │
-    └─ execute_natural_language_query (shared pipeline)
-          ├─ planner.generate_plan → QueryPlan (LLM + Instructor)
-          ├─ SQLValidator (schema: tables / columns)
-          ├─ SQLSanitizer (read-only AST, LIMIT, complexity)
-          ├─ executor.execute
-          └─ repair loop (feed DB/validation errors back to planner, up to 3 attempts)
+    ├─ execute_natural_language_query (shared pipeline)
+    │     ├─ planner.generate_plan → QueryPlan (LLM + Instructor)
+    │     ├─ SQLValidator (schema: tables / columns)
+    │     ├─ SQLSanitizer (read-only AST, LIMIT, complexity)
+    │     ├─ executor.execute
+    │     └─ repair loop (feed DB/validation errors back to planner, up to 3 attempts)
     │
-    └─ ChartEngine.generate → Vega-Lite spec (heuristic, not an LLM)`}
+    ├─ ChartEngine.generate → Vega-Lite spec (heuristic, not an LLM)
+    └─ ReasoningOrchestrator.run_post (follow-ups, research notes)`}
         </pre>
         <p>
           You should expect one primary planner LLM call per attempt, plus extra calls only when SQL
@@ -128,17 +135,22 @@ export default function HowItWorksPage() {
     ├─ classify_scope (channel=chat)
     │     └─ out of scope → refusal LLM only → 200 + metadata.scope
     │
+    ├─ ReasoningOrchestrator.run_pre (clarification, inferred context)
+    │     └─ clarification_required → early return, no SQL
+    │
     ├─ ChatDecision LLM (needs_data true/false)
-    │     └─ enhancement may rewrite system prompt (stage=decision)
+    │     └─ enhance_system_prompt (stage=decision)
     │
     ├─ if needs_data:
     │     ├─ ContextRetriever.select_tables (catalog + schema, no LLM)
     │     └─ execute_natural_language_query (same pipeline as /v1/query)
     │           optional ChartEngine when include_charts=true
     │
-    └─ Answer LLM (ChatAnswer or streamed tokens)
-          └─ enhancement on system prompt (stage=answer)
-          └─ user messages include recent history + SQL preview rows`}
+    ├─ ReasoningOrchestrator.run_post (chat skips heuristic follow-up layers)
+    ├─ enhance_system_prompt (stage=answer)
+    └─ Answer LLM (ChatAnswer or streamed tokens + enrichment)
+          └─ follow-ups / research notes from answer LLM (not query post layers)
+          └─ recent history + SQL preview rows in prompt`}
         </pre>
         <p>
           <code>needs_data=false</code> skips SQL entirely — useful for &quot;what does this column
@@ -162,7 +174,13 @@ export default function HowItWorksPage() {
             inferred context from prior turns.
           </li>
           <li>
-            <strong>Post-execution</strong> — analytical follow-ups and data-backed research notes.
+            <strong>Post-execution (query)</strong> — heuristic follow-ups and research notes after
+            SQL. <strong>Chat</strong> uses the answer LLM for those fields instead of post layers.
+          </li>
+          <li>
+            <code>REASONING_ANALYSIS_FOLLOWUPS_ENABLED</code> and{' '}
+            <code>REASONING_RESEARCH_NOTES_ENABLED</code> affect query post layers only; chat
+            follow-ups and research notes still come from the answer LLM.
           </li>
           <li>
             When <code>clarification_required</code> is true, chat returns early without SQL; query
@@ -187,15 +205,16 @@ export default function HowItWorksPage() {
             <code>none</code>, or message is too short.
           </li>
           <li>
-            <strong>MultiTurnEnhancer</strong> — Summarizes older turns when history exceeds{' '}
-            <code>CHAT_SUMMARIZE_AFTER_MESSAGES</code>; keeps{' '}
-            <code>CHAT_RECENT_MESSAGES</code> verbatim for the answer stage.
+            <strong>MultiTurnEnhancer</strong> — Optional conversation summary in the system prompt;
+            <code>ChatService</code> keeps the last three user turns at decision and{' '}
+            <code>CHAT_RECENT_MESSAGES</code> at the answer stage.
           </li>
         </ol>
         <p>
-          Enhancers implement <code>enhance_system_prompt</code> and{' '}
-          <code>enhance_user_messages</code>. They <strong>fail open</strong>: exceptions log a warning
-          and the base prompt is used. Custom enhancers append via <code>SEAL_ENHANCERS</code>.
+          <code>ChatService</code> calls <code>enhance_system_prompt</code> at decision and answer
+          stages. <code>enhance_user_messages</code> is part of the enhancer protocol for custom and
+          orchestrator use. Enhancers <strong>fail open</strong>: exceptions log a warning and the
+          base prompt is used. Custom enhancers append via <code>SEAL_ENHANCERS</code>.
         </p>
         <p>
           <Link href="/docs/prompt-enhancement">Prompt enhancement</Link> ·{' '}

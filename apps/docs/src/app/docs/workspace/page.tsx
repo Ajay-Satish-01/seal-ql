@@ -73,9 +73,9 @@ export default function WorkspacePage() {
         </p>
         <p>
           <strong>Postgres (`seal_app.workspace_kv`)</strong> is the source of truth for production.
-          The dashboard Settings and Catalog pages write here. Run{' '}
-          <code>scripts/migrate_app.sql</code> once per database (included in <code>make seed</code>{' '}
-          flows) so the schema exists before the API starts.
+          The dashboard Settings and Catalog pages write here. The API applies{' '}
+          <code>scripts/migrate_app.sql</code> on startup via <code>ensure_schema()</code> — manual{' '}
+          <code>psql</code> is only needed when you manage Postgres without running the API.
         </p>
 
         <ConfigReference rows={workspaceRuntimeRows} />

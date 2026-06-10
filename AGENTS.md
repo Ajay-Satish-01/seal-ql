@@ -50,7 +50,7 @@
 
 ## Commands
 
-- `make up` / `make down` / `make seed`: Docker stack and seed data (`migrate_app.sql` for workspace).
+- `make up` / `make down` / `make seed`: Docker stack and seed data (workspace schema auto-applied on API startup).
 - `make eval` / `make eval-planner` / `make eval-local`: **Local only** planner evals — see `docs/local-evals.md` (not in PR CI; requires LLM + seeded Postgres for full execution).
 - `make sync-catalog`: Regenerate `config/catalog.yaml` from live schema.
 - `make sync-docs-assets`: OpenAPI + demo fixtures → `apps/docs`.

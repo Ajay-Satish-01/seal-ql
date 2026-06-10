@@ -120,7 +120,7 @@ export const catalogConfig: ConfigRow[] = [
     description:
       'Where dashboard and API persist workspace settings and catalog description overrides: `postgres` (default) or `file` for tests.',
     expect:
-      'With `postgres`, rows live in `seal_app.workspace_kv` after `migrate_app.sql`. With `file`, only `config/workspace.json` is used — no dashboard writes to a shared DB.',
+      'With `postgres`, rows live in `seal_app.workspace_kv` (schema applied on API startup). With `file`, only `config/workspace.json` is used — no dashboard writes to a shared DB.',
   },
 ];
 
@@ -161,9 +161,10 @@ export const guardrailsConfig: ConfigRow[] = [
     name: 'MAX_CHAT_HISTORY_CHARS',
     type: 'integer',
     default: '32000',
-    description: 'Total character budget across chat history when enhancement summarizes older turns.',
+    description:
+      'Total character budget when the client passes a `messages` override on POST /v1/chat (SDK multi-turn).',
     expect:
-      'Very long sessions compress older messages; recent turns stay verbatim per `CHAT_RECENT_MESSAGES`.',
+      'Exceeding the cap returns HTTP 422 before the turn runs. Normal session history uses `CHAT_MAX_HISTORY_MESSAGES` (message count), not this char limit.',
   },
 ];
 
@@ -172,16 +173,19 @@ export const reasoningConfig: ConfigRow[] = [
     name: 'REASONING_ENABLED',
     type: 'boolean',
     default: 'true',
-    description: 'Global toggle for layered reasoning on chat and query responses.',
+    description:
+      'Global toggle for heuristic reasoning layers (orchestrator pre/post on query; pre on chat).',
     expect:
-      'When false, metadata.reasoning is omitted and routes skip the reasoning orchestrator.',
+      'When false, heuristic layers are skipped. Chat may still populate analysis_followups and research_notes via the answer LLM (`ChatAnswer` / stream enrichment), which is not gated by this flag.',
   },
   {
     name: 'REASONING_CHAT_ENABLED',
     type: 'boolean',
     default: 'true',
-    description: 'Enable layered reasoning on POST /v1/chat (includes prior-turn inferred_context).',
-    expect: 'Disable for thinner chat latency when your agent already supplies context.',
+    description:
+      'Enable heuristic reasoning layers on POST /v1/chat (pre-execution inferred context and clarification).',
+    expect:
+      'Skips heuristic layers only. ChatDecision and answer LLM calls still run and may populate metadata.reasoning.',
   },
   {
     name: 'REASONING_QUERY_ENABLED',
@@ -195,23 +199,28 @@ export const reasoningConfig: ConfigRow[] = [
     name: 'REASONING_CLARIFICATION_ENABLED',
     type: 'boolean',
     default: 'true',
-    description: 'Return clarifying questions when requirements are insufficient.',
+    description:
+      'Heuristic clarification layer before SQL. Chat ChatDecision may still set clarification_required independently.',
     expect:
-      'When true, underspecified questions get clarifying_questions before SQL runs.',
+      'When true, underspecified queries may get clarifying_questions from heuristic layers before SQL runs.',
   },
   {
     name: 'REASONING_ANALYSIS_FOLLOWUPS_ENABLED',
     type: 'boolean',
     default: 'true',
-    description: 'Include suggested analytical follow-up angles in metadata.reasoning.',
-    expect: 'Populates analysis_followups after successful SQL or schema-grounded turns.',
+    description:
+      'Enable post-execution follow-up heuristic layer on `/v1/query`. Chat uses the answer LLM for follow-ups instead.',
+    expect:
+      'Query only: heuristic analysis_followups after SQL. Chat follow-ups always come from the answer LLM and ignore this toggle.',
   },
   {
     name: 'REASONING_RESEARCH_NOTES_ENABLED',
     type: 'boolean',
     default: 'true',
-    description: 'Include data-backed research framing notes in metadata.reasoning.',
-    expect: 'Populates research_notes from execution stats, tables, and planner explanation.',
+    description:
+      'Enable post-execution research-notes heuristic layer on `/v1/query`. Chat uses the answer LLM instead.',
+    expect:
+      'Query only: heuristic research_notes from execution stats. Chat research_notes come from the answer LLM and ignore this toggle.',
   },
   {
     name: 'REASONING_LATENCY_BUDGET_MS',
@@ -230,7 +239,7 @@ export const chatConfig: ConfigRow[] = [
     type: 'boolean',
     default: 'true',
     description:
-      'Enables the enhancement chain: schema focus, optional vector RAG, and multi-turn summarization before the answer LLM.',
+      'Enables the enhancement chain: schema focus, optional vector RAG, and multi-turn system-prompt context before decision and answer LLMs.',
     expect:
       'With `false`, chat behaves like a thinner Q&A path — faster, less context, no RAG retrieval step. Good when your agent already supplies schema.',
   },
@@ -259,7 +268,7 @@ export const chatConfig: ConfigRow[] = [
     description:
       'Chat session backend: `memory` (in-process, TTL) or `postgres` (persistent `seal_app.chat_sessions`). Alias: `MEMORY_BACKEND` (`sql` → postgres).',
     expect:
-      'Use `postgres` on Lambda and multi-task ECS. Run `scripts/migrate_app.sql`. Dashboard lists sessions via `GET /v1/chat/sessions`.',
+      'Use `postgres` on Lambda and multi-task ECS. Schema is applied on API startup. Dashboard lists sessions via `GET /v1/chat/sessions`.',
   },
   {
     name: 'CHAT_SESSION_STORE_CLASS',
@@ -304,17 +313,27 @@ export const chatConfig: ConfigRow[] = [
     name: 'CHAT_MAX_HISTORY_MESSAGES',
     type: 'integer',
     default: '20',
-    description: 'Upper bound on stored messages per session before summarization kicks in.',
+    description: 'Upper bound on messages stored per chat session.',
     expect:
-      'Older turns roll into a summary block; the UI still shows recent messages from the API response, not the full raw history.',
+      'Oldest messages drop from session storage when the cap is exceeded; prompts still trim to `CHAT_RECENT_MESSAGES`.',
+  },
+  {
+    name: 'CHAT_SUMMARIZE_AFTER_MESSAGES',
+    type: 'integer',
+    default: '12',
+    description:
+      'Reserved threshold for LLM conversation summarization (not yet applied in ChatService).',
+    expect:
+      'Today, long sessions rely on `CHAT_RECENT_MESSAGES` prompt trimming and `CHAT_MAX_HISTORY_MESSAGES` storage cap.',
   },
   {
     name: 'CHAT_RECENT_MESSAGES',
     type: 'integer',
     default: '6',
-    description: 'How many latest turns stay verbatim when building the answer-stage prompt.',
+    description:
+      'How many latest messages `ChatService` includes verbatim in the **answer** LLM prompt.',
     expect:
-      'Follow-up questions like “filter that to Q3” retain nearby context; ancient turns are summarized only.',
+      'Decision stage uses the last three user turns (hardcoded). Answer stage keeps this many recent messages for follow-ups like “filter that to Q3”.',
   },
   {
     name: 'CHAT_ANSWER_PREVIEW_ROWS',

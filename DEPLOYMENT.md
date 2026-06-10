@@ -71,7 +71,7 @@ Use the published compose example (also at `apps/docs/public/compose/docker-comp
 1. Download `docker-compose.example.yml` and `seed.sql`.
 2. Create `.env` with `SEAL_API_KEY`, `SEAL_DEV_MODE=false`, `SEAL_DISABLE_DOCS=true`.
 3. Mount a host directory for config, e.g. `./config:/app/config` (catalog YAML, optional `databases.yaml`, workspace fallback).
-4. Apply workspace schema once: `psql … < scripts/migrate_app.sql` (creates `seal_app.workspace_kv` for settings and catalog description overrides).
+4. Start the API — `scripts/migrate_app.sql` runs on startup (`ensure_schema()` for workspace and chat sessions). Manual `psql … < scripts/migrate_app.sql` only if Postgres is managed without running the API.
 5. Optional: copy `config/databases.example.yaml` → `config/databases.yaml` for extra `database_id` backends.
 
 ### Environment Variables
@@ -109,8 +109,8 @@ Use the published compose example (also at `apps/docs/public/compose/docker-comp
 | `CHAT_ENHANCEMENT_ENABLED`      | Prompt enhancer chain on `/v1/chat`                  | `true`                |
 | `CHAT_SESSION_TTL_SECONDS`      | In-memory chat session TTL                           | `3600`                |
 | `CHAT_MAX_HISTORY_MESSAGES`     | Max messages stored per session                      | `20`                  |
-| `CHAT_SUMMARIZE_AFTER_MESSAGES` | Summarize when history exceeds this count            | `12`                  |
-| `CHAT_RECENT_MESSAGES`          | Recent messages kept verbatim at answer stage        | `6`                   |
+| `CHAT_SUMMARIZE_AFTER_MESSAGES` | Reserved for LLM summarization (not yet wired; use `CHAT_RECENT_MESSAGES` for prompt trimming) | `12` |
+| `CHAT_RECENT_MESSAGES`          | Recent messages in answer LLM prompt (decision uses last 3 user turns) | `6` |
 | `CHAT_ANSWER_PREVIEW_ROWS`      | Result rows sent to the LLM as grounding facts       | `20`                  |
 | `CHAT_MAX_CONTEXT_TABLES`       | Max tables in focused schema/catalog context         | `8`                   |
 | `VECTOR_STORE`                  | `none`, `chroma`, or custom via `VECTOR_STORE_CLASS` | `none`                |
@@ -151,7 +151,7 @@ Copy `config/databases.example.yaml` → `config/databases.yaml` and mount `./co
 
 #### Workspace
 
-Apply `scripts/migrate_app.sql` to create `seal_app.workspace_kv`. Routes: [docs/workspace-api.md](docs/workspace-api.md).
+`seal_app.workspace_kv` is created on API startup via `ensure_schema()`. Routes: [docs/workspace-api.md](docs/workspace-api.md).
 
 The API logs **warnings** at startup for common misconfigurations (e.g. cloud model without `OLLAMA_PROFILE=disabled`).
 
@@ -284,14 +284,14 @@ flowchart LR
 | --------- | ---------- |
 | **Compute** | ECS service on Fargate; task definition uses `seal/api:latest` (or your ECR mirror). |
 | **Load balancer** | ALB → target group; health check `GET /health` on port **8000**. |
-| **Database** | RDS/Aurora Postgres; run `scripts/migrate_app.sql` once for `seal_app.workspace_kv`. |
+| **Database** | RDS/Aurora Postgres; `seal_app` schema applied on first API startup (`ensure_schema()`). |
 | **Secrets** | `SEAL_API_KEY`, `LLM_API_KEY`, `DATABASE_URL` from Secrets Manager or SSM. |
 | **Config** | EFS mount at `/app/config` (`DATA_CATALOG_PATH`, catalog overrides). |
 | **LLM** | `OLLAMA_PROFILE=disabled`, `LLM_MODEL=gemini/...` or `openai/...` (no Ollama sidecar). |
 | **Auth** | `SEAL_API_KEY` required; `SEAL_DEV_MODE=false`, `SEAL_DISABLE_DOCS=true`. |
 | **Scaling** | Target tracking on CPU/latency; new tasks often take **1–3 minutes** (image pull + boot). |
 
-**Multi-task chat:** Set `CHAT_SESSION_STORE=postgres` and run `scripts/migrate_app.sql` (or `migrate_chat_sessions.sql`) so all tasks share `seal_app.chat_sessions`. If your primary `DATABASE_URL` is DuckDB, set `CHAT_SESSION_DATABASE_URL` to a Postgres connection string for session storage. With `memory`, use ALB sticky sessions or treat history as per-instance only.
+**Multi-task chat:** Set `CHAT_SESSION_STORE=postgres` so all tasks share `seal_app.chat_sessions` (tables created on API startup). If your primary `DATABASE_URL` is DuckDB, set `CHAT_SESSION_DATABASE_URL` to a Postgres connection string for session storage. With `memory`, use ALB sticky sessions or treat history as per-instance only.
 
 **Session API security:** `GET/DELETE /v1/chat/sessions` are scoped only by `X-API-Key` — any key holder can list, read, and delete all chat history. Use a dedicated ops key; do not expose the same key to untrusted clients.
 
@@ -322,7 +322,7 @@ Push the image to ECR with `docker tag seal/api:latest <account>.dkr.ecr.<region
 | **Idle cost** | Scales to zero between invocations. |
 | **Cold start** | Often faster than ECS task launch (Firecracker + block lazy-load of image layers). |
 | **Max duration** | **15 minutes** per invocation — enough for most queries; watch repair loops × LLM latency. |
-| **Chat sessions** | Set `CHAT_SESSION_STORE=postgres`, run `scripts/migrate_app.sql` on RDS (`seal_app.chat_sessions`). If `DATABASE_URL` is DuckDB, also set `CHAT_SESSION_DATABASE_URL` to Postgres. In-memory (`memory`) does not survive cold starts or multi-task without sticky sessions. |
+| **Chat sessions** | Set `CHAT_SESSION_STORE=postgres` (`seal_app.chat_sessions` on API startup). If `DATABASE_URL` is DuckDB, also set `CHAT_SESSION_DATABASE_URL` to Postgres. In-memory (`memory`) does not survive cold starts or multi-task without sticky sessions. |
 | **DB connections** | One concurrent invocation ≈ one pool; use **RDS Proxy** (or PgBouncer) to avoid exhausting Postgres `max_connections`. |
 | **Streaming** | Prefer **Lambda Function URLs** (up to 15 min, response streaming) over API Gateway REST (29 s integration timeout). |
 | **RAG / Chroma** | Default `VECTOR_STORE=none` on Lambda; if using Chroma, cache under `/tmp` (up to 10 GB ephemeral) or use an external vector service. |
@@ -359,7 +359,7 @@ Configure the Lambda function with **Function URL** or ALB integration, containe
 2. **Lambda Function URLs** (or HTTP API with 15 min timeout) for `/v1/query` and `/v1/chat` when LLM + repair can exceed **29 s**.
 3. **`QUERY_TIMEOUT_SECONDS`** — align with ALB/Lambda timeout and expected SQL runtime.
 4. **`CORS_ORIGINS`** — list your dashboard/docs origins if browsers call the API directly.
-5. **Workspace** — `migrate_app.sql` on RDS; production settings via `POST /v1/workspace/settings/apply` (not dev hot-reload).
+5. **Workspace** — `seal_app` schema on first API boot; production settings via `POST /v1/workspace/settings/apply` (not dev hot-reload).
 6. **Gateway** — WAF or API Gateway in front of public endpoints; rate-limit `POST /v1/query` and failed `X-API-Key` (see [docs/embedding.md](docs/embedding.md)).
 7. **Chroma** — if `VECTOR_STORE=chroma`, persist index data on EFS (ECS) or `/tmp` warm cache (Lambda); image may need `SEAL_EXTRA=chroma` at build time.
 8. **Observability** — CloudWatch logs from Uvicorn; trace LLM latency separately (LiteLLM provider dashboards).

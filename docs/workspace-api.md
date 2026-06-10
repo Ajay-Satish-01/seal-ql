@@ -35,7 +35,7 @@ All routes require `X-API-Key` when `SEAL_API_KEY` is set.
 | `DATABASE_URL` | Postgres URL | Required for primary storage |
 | `SEAL_DEV_MODE` | `true` (local) | Hot-apply on PATCH vs persist-only + apply endpoint |
 
-Schema: `scripts/migrate_app.sql` (`seal_app.workspace_kv`) — applied on API startup when using Postgres (`make seed` includes this for local stacks).
+Schema: `scripts/migrate_app.sql` (`seal_app.workspace_kv`) — applied automatically on API startup via `workspace_store.ensure_schema()` when using Postgres. Manual `psql < scripts/migrate_app.sql` is only needed for database-only ops without starting the API.
 
 ## Hot reload vs restart
 
