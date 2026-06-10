@@ -36,11 +36,15 @@ export default function ReasoningPage() {
           both SDKs, and the shared TypeScript contract.
         </p>
 
-        <Callout variant="info" title="Heuristic, not LLM">
-          Built-in reasoning layers use fast keyword and schema heuristics — they do not make
-          additional LLM calls. This keeps latency low and costs zero extra tokens. The{' '}
-          <code>REASONING_LATENCY_BUDGET_MS</code> budget (default 500 ms) ensures reasoning
-          never delays the response beyond a configurable threshold.
+        <Callout variant="info" title="Heuristic layers vs chat answer LLM">
+          Built-in <strong>reasoning layers</strong> use fast keyword and schema heuristics — no
+          extra LLM calls. <strong>Chat</strong> also runs an answer LLM (and optional stream
+          enrichment) that populates <code>analysis_followups</code> and{' '}
+          <code>research_notes</code>; those fields are not controlled by{' '}
+          <code>REASONING_ANALYSIS_FOLLOWUPS_ENABLED</code> or{' '}
+          <code>REASONING_RESEARCH_NOTES_ENABLED</code>. The{' '}
+          <code>REASONING_LATENCY_BUDGET_MS</code> budget (default 500 ms) applies to heuristic
+          layers only.
         </Callout>
 
         <h2>How it works</h2>
@@ -59,10 +63,11 @@ export default function ReasoningPage() {
           └─ ResearchNotesLayer      (data-backed observations)`}
         </pre>
         <p>
-          <strong>Chat</strong> runs both phases: pre-execution before SQL and post-execution after
-          the answer LLM. <strong>Query</strong> is stateless — it skips{' '}
-          <code>InferredContextLayer</code> (no session) and runs both phases around the shared
-          SQL pipeline.
+          <strong>Chat</strong> runs <strong>pre-execution</strong> layers before SQL, then produces
+          follow-ups and research notes via the <strong>answer LLM</strong> — post-execution heuristic
+          layers are disabled on chat. <strong>Query</strong> is stateless — it skips{' '}
+          <code>InferredContextLayer</code> (no session) and runs both pre- and post-execution layers
+          around the shared SQL pipeline.
         </p>
 
         <h2>Layer reference</h2>
@@ -101,22 +106,22 @@ export default function ReasoningPage() {
               </tr>
               <tr>
                 <td className="px-4 py-2 font-mono text-xs">analysis_followups</td>
-                <td className="px-4 py-2">Yes</td>
-                <td className="px-4 py-2">Yes</td>
+                <td className="px-4 py-2">Answer LLM</td>
+                <td className="px-4 py-2">Post layer</td>
                 <td className="px-4 py-2">Post</td>
                 <td className="px-4 py-2">
-                  After SQL runs, suggests deeper analytical angles (e.g. &quot;Break this down by
-                  segment or category to compare drivers&quot;).
+                  Chat: <code>ChatAnswer</code> / stream enrichment. Query: heuristic layer after SQL
+                  (e.g. &quot;Break this down by segment&quot;).
                 </td>
               </tr>
               <tr>
                 <td className="px-4 py-2 font-mono text-xs">research_notes</td>
-                <td className="px-4 py-2">Yes</td>
-                <td className="px-4 py-2">Yes</td>
+                <td className="px-4 py-2">Answer LLM</td>
+                <td className="px-4 py-2">Post layer</td>
                 <td className="px-4 py-2">Post</td>
                 <td className="px-4 py-2">
-                  Observations tied to execution: row count, timing, tables sourced, schema size.
-                  Trust-gated when <code>SEAL_TRUST_EXPLAINABILITY_ENABLED=false</code>.
+                  Chat: answer LLM fields. Query: execution-backed heuristic notes. Trust-gated when{' '}
+                  <code>SEAL_TRUST_EXPLAINABILITY_ENABLED=false</code>.
                 </td>
               </tr>
             </tbody>
@@ -254,37 +259,46 @@ class MyCustomLayer:
         )`}
         />
         <p>
-          Register the layer on the orchestrator at app startup or extend{' '}
-          <code>build_default_orchestrator()</code>. If your layer introduces new metadata keys,
-          follow the contract checklist in the contributor doc{' '}
-          <code>docs/reasoning-layers.md</code> (OpenAPI, <code>stream_meta_metadata_keys.json</code>,
-          shared TypeScript types).
+          Register the layer by extending <code>build_default_orchestrator()</code> or calling{' '}
+          <code>orchestrator.register(MyLayer())</code> on the instance wired in{' '}
+          <code>apps/api/app/main.py</code> (there is no <code>SEAL_REASONING_LAYERS</code> env var
+          yet, unlike <code>SEAL_ENHANCERS</code>). If your layer introduces new metadata keys,
+          follow the contract checklist in <code>docs/reasoning-layers.md</code> (OpenAPI,{' '}
+          <code>stream_meta_metadata_keys.json</code>, shared TypeScript types).
         </p>
 
-        <h2>Disabling reasoning</h2>
-        <p>Per-route or globally:</p>
+        <h2>Disabling heuristic reasoning</h2>
+        <p>
+          <code>REASONING_*</code> toggles control <strong>heuristic layers</strong> only. On chat,{' '}
+          <code>ChatDecision</code> and the answer LLM (or stream enrichment) can still populate{' '}
+          <code>metadata.reasoning</code> — those LLM calls are not gated by these flags.
+        </p>
         <ul>
           <li>
-            <code>REASONING_ENABLED=false</code> — disables all reasoning on both routes
+            <code>REASONING_ENABLED=false</code> — skips heuristic pre/post layers on both routes
           </li>
           <li>
-            <code>REASONING_CHAT_ENABLED=false</code> — disables reasoning on{' '}
-            <code>/v1/chat</code> only
+            <code>REASONING_CHAT_ENABLED=false</code> — skips heuristic layers on{' '}
+            <code>/v1/chat</code> only (including <code>InferredContextLayer</code>)
           </li>
           <li>
-            <code>REASONING_QUERY_ENABLED=false</code> — disables reasoning on{' '}
+            <code>REASONING_QUERY_ENABLED=false</code> — skips heuristic layers on{' '}
             <code>/v1/query</code> only
           </li>
           <li>
-            Individual layer toggles:{' '}
-            <code>REASONING_CLARIFICATION_ENABLED</code>,{' '}
-            <code>REASONING_ANALYSIS_FOLLOWUPS_ENABLED</code>,{' '}
-            <code>REASONING_RESEARCH_NOTES_ENABLED</code>
+            <code>REASONING_CLARIFICATION_ENABLED=false</code> — skips heuristic clarification;
+            chat <code>ChatDecision</code> may still set <code>clarification_required</code>
+          </li>
+          <li>
+            <code>REASONING_ANALYSIS_FOLLOWUPS_ENABLED</code> /{' '}
+            <code>REASONING_RESEARCH_NOTES_ENABLED</code> — query post layers only; chat uses the
+            answer LLM for those fields
           </li>
         </ul>
         <p>
-          When reasoning is fully disabled, <code>metadata.reasoning</code> is omitted from
-          responses and the orchestrator is not invoked.
+          The orchestrator is still invoked; disabled layers return empty partial metadata. To omit
+          structured reasoning entirely you would need to change chat/query handlers — not supported
+          via env today.
         </p>
 
         <h2>Related</h2>

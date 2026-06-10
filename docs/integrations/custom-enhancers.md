@@ -26,7 +26,13 @@ Required attributes/methods (validated at startup): `name`, `enabled`, `enhance_
 
 ## Stages
 
-`EnhancementContext.stage` is `decision` or `answer` when called from `ChatService`. Use it to inject different context per phase.
+`ChatService` invokes enhancement at **`decision`** (before `ChatDecision`) and **`answer`** (before the final answer LLM or stream). Use `EnhancementContext.stage` to inject different system-prompt context per phase.
+
+`EnhancementContext` also allows a `planner` stage in the type definition for forward compatibility; the default API path does not call enhancers during SQL planning.
+
+## Message hook
+
+`enhance_user_messages` is required on custom enhancers and is chained by `EnhancementOrchestrator`. Today `ChatService` calls **`enhance_system_prompt` only** and trims history itself. Implement `enhance_system_prompt` for production custom enhancers; use `enhance_user_messages` when calling `EnhancementOrchestrator.enhance_user_messages` directly or once `ChatService` wires the message hook.
 
 ## Failure behavior
 

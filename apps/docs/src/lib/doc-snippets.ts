@@ -225,8 +225,7 @@ export function localDevSetupSnippet(): string {
 
 make up
 make seed
-# Workspace schema (first time or fresh DB):
-docker compose exec -T postgres psql -U postgres -d seal < scripts/migrate_app.sql
+# seal_app schema (workspace + chat sessions) is applied on API startup
 
 make sync-catalog   # optional; API also syncs when CATALOG_AUTO_SYNC=true
 

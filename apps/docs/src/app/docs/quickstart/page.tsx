@@ -176,16 +176,16 @@ cp .env.example .env
 make up`,
           },
           {
-            title: 'Seed analytics data & workspace schema',
+            title: 'Seed analytics data',
             body: (
               <p>
                 <code>make seed</code> loads sample tables (<code>products</code>,{' '}
-                <code>orders</code>, <code>events_hourly</code>, …). Apply workspace tables once per
-                fresh database.
+                <code>orders</code>, <code>events_hourly</code>, …). The{' '}
+                <code>seal_app</code> workspace and chat-session schema are applied when the API
+                starts — no manual migrate after <code>make up</code>.
               </p>
             ),
             code: `make seed
-docker compose exec -T postgres psql -U postgres -d seal < scripts/migrate_app.sql
 make sync-catalog`,
           },
           {

@@ -10,7 +10,7 @@ description: Step-by-step workflow for spinning up the local environment, seedin
 
 2. **Seed the Database**
    Run `make seed`. Creates TimescaleDB hypertables and continuous aggregates for introspection and tests.
-   Apply workspace schema: `docker compose exec -T postgres psql -U postgres -d seal < scripts/migrate_app.sql`
+   Workspace and chat session schema (`scripts/migrate_app.sql`) are applied when the API starts — no manual migrate after `make up`.
 
 3. **Sync Data Catalog (optional)**
    Run `make sync-catalog` or rely on `CATALOG_AUTO_SYNC=true` on API startup. Edit `config/catalog.yaml` descriptions for better chat/query answers.

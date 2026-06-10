@@ -96,8 +96,9 @@ ${curlChat(base, 'Show revenue for the largest table', { sessionId: 'YOUR_SESSIO
 
       <h2 className="font-heading mt-8 text-xl font-semibold">Session history &amp; explainability</h2>
       <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
-        With <code>CHAT_SESSION_STORE=postgres</code> (and <code>scripts/migrate_app.sql</code>{' '}
-        applied), conversations persist in <code>seal_app.chat_sessions</code>. Each assistant
+        With <code>CHAT_SESSION_STORE=postgres</code> (tables created on API startup via{' '}
+        <code>ensure_schema()</code>), conversations persist in <code>seal_app.chat_sessions</code>.
+        Each assistant
         message stores an <strong>explainability snapshot</strong> — the SQL, sources, metadata,
         chart spec, and result preview from that turn. When you load a past session, the same
         explainability data is available for review. The operational dashboard (

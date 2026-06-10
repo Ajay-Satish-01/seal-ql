@@ -155,7 +155,8 @@ export default function SelfHostingPage() {
             {
               name: 'CHAT_RECENT_MESSAGES',
               type: 'integer',
-              description: 'Recent messages kept verbatim at answer stage (default 6).',
+              description:
+                'Recent messages in the answer LLM prompt (default 6). Decision uses last 3 user turns.',
             },
             {
               name: 'CHAT_ANSWER_PREVIEW_ROWS',

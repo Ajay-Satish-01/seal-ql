@@ -51,9 +51,12 @@ export default function PromptEnhancementPage() {
           </li>
         </ul>
         <p>
-          Each enhancer exposes <code>enhance_system_prompt</code> (once per stage invocation) and{' '}
-          <code>enhance_user_messages</code> (can trim or augment the message list). Applied enhancer
-          names accumulate in <code>metadata.enhancement.applied</code> on chat responses and in{' '}
+          <code>ChatService</code> calls <code>enhance_system_prompt</code> at each stage. The{' '}
+          <code>enhance_user_messages</code> hook is part of the enhancer protocol and{' '}
+          <code>EnhancementOrchestrator</code> (built-in <code>MultiTurnEnhancer</code> trims to{' '}
+          <code>CHAT_RECENT_MESSAGES</code> when that hook runs); message lists for the default API
+          path are trimmed in <code>ChatService</code> directly. Applied enhancer names accumulate in{' '}
+          <code>metadata.enhancement.applied</code> on chat responses and in{' '}
           <code>seal.meta</code> SSE events. When vector RAG cannot run but enhancement is on,{' '}
           <code>metadata.enhancement.vector_skipped_reason</code> is{' '}
           <code>non_default_database</code> or <code>vector_store_disabled</code>. If enhancement was
@@ -93,14 +96,16 @@ export default function PromptEnhancementPage() {
 
         <h3>MultiTurnEnhancer</h3>
         <p>
-          When session history exceeds <code>CHAT_SUMMARIZE_AFTER_MESSAGES</code>, older turns compress
-          into a summary block. The answer stage still receives the last{' '}
-          <code>CHAT_RECENT_MESSAGES</code> verbatim plus SQL preview rows (
-          <code>CHAT_ANSWER_PREVIEW_ROWS</code>).
+          Appends a <code>## Conversation summary</code> block to the system prompt when{' '}
+          <code>conversation_summary</code> is present in enhancement metadata.{' '}
+          <code>ChatService</code> includes the last <code>CHAT_RECENT_MESSAGES</code> turns in
+          answer prompts and the last three user turns at the decision stage.{' '}
+          <code>CHAT_SUMMARIZE_AFTER_MESSAGES</code> is reserved for future LLM summarization;{' '}
+          <code>CHAT_MAX_HISTORY_MESSAGES</code> caps stored session length.
         </p>
         <p>
-          <strong>Expect:</strong> Long sessions stay within token budgets; very old details may only
-          appear in the summary, not verbatim.
+          <strong>Expect:</strong> Long sessions stay within token budgets via recent-message
+          trimming; older turns are dropped from prompts unless a summary is injected.
         </p>
 
         <h2>Fail-open semantics</h2>

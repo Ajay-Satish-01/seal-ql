@@ -82,7 +82,7 @@ console.log(chat.message, chat.sql);
 ## 🚀 Key Features
 
 * **Schema-Grounded Chat (Q&A)**: `POST /v1/chat` with session memory, prompt enhancement (schema + optional vector RAG + multi-turn), layered reasoning (clarifying questions, follow-ups, prior-turn context), SSE streaming, and optional charts via `include_charts`.
-* **Layered reasoning (query + chat)**: Optional `metadata.reasoning` and assistant-visible summaries — clarification when input is thin, analytical follow-ups, and data-backed research notes (`REASONING_*` env vars).
+* **Layered reasoning (query + chat)**: Optional `metadata.reasoning` — heuristic layers (`REASONING_*` env vars) plus chat `ChatDecision` / answer LLM fields for clarification, follow-ups, and prior-turn context.
 * **Global Data Catalog**: Auto-synced YAML (`config/catalog.yaml`) with business descriptions injected into query, chat, and planner paths; `GET /v1/catalog` and `POST /v1/catalog/sync`.
 * **Advanced Schema Introspection**: Deep introspection covering normal tables, database views, materialized views, foreign/primary key constraints, and TimescaleDB-specific features (hypertables, continuous aggregations) with automatic extension detection.
 * **Semantic Metric Layer**: Map raw schema structures to business logic with declarative YAML metric/dimension models to enhance LLM context accuracy.

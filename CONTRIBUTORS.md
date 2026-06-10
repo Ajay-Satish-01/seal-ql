@@ -98,11 +98,9 @@ cd apps/web && pnpm install && pnpm dev
 make setup
 ```
 
-### 4. Workspace schema (first time / after pull)
-```bash
-make seed   # includes reminder to run migrate_app.sql
-docker compose exec -T postgres psql -U postgres -d seal < scripts/migrate_app.sql
-```
+### 4. Workspace schema
+
+The API applies `scripts/migrate_app.sql` on startup (`workspace_store.ensure_schema()` and chat session schema). After `make up`, no manual migrate is required for normal local dev. Run `docker compose exec -T postgres psql -U postgres -d seal < scripts/migrate_app.sql` only when touching Postgres without starting the API.
 
 ### 5. Full validation (CI mirror)
 ```bash
