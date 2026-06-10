@@ -10,7 +10,7 @@ description: Step-by-step workflow for spinning up the local environment, seedin
 
 2. **Seed the Database**
    Run `make seed`. Creates TimescaleDB hypertables and continuous aggregates for introspection and tests.
-   Workspace and chat session schema (`scripts/migrate_app.sql`) are applied when the API starts — no manual migrate after `make up`.
+   On API startup, `workspace_store.ensure_schema()` applies `scripts/migrate_app.sql` (`seal_app.workspace_kv`), and `session_store.ensure_schema()` applies `scripts/migrate_chat_sessions.sql` (`seal_app.chat_sessions`, `seal_app.chat_messages`) when `CHAT_SESSION_STORE=postgres`. No manual migrate after `make up`.
 
 3. **Sync Data Catalog (optional)**
    Run `make sync-catalog` or rely on `CATALOG_AUTO_SYNC=true` on API startup. Edit `config/catalog.yaml` descriptions for better chat/query answers.

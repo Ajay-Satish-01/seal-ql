@@ -98,9 +98,19 @@ cd apps/web && pnpm install && pnpm dev
 make setup
 ```
 
-### 4. Workspace schema
+### 4. App schema (workspace + chat sessions)
 
-The API applies `scripts/migrate_app.sql` on startup (`workspace_store.ensure_schema()` and chat session schema). After `make up`, no manual migrate is required for normal local dev. Run `docker compose exec -T postgres psql -U postgres -d seal < scripts/migrate_app.sql` only when touching Postgres without starting the API.
+On API startup, two migrations run via separate stores:
+
+- **Workspace** — `workspace_store.ensure_schema()` runs `scripts/migrate_app.sql` (creates `seal_app.workspace_kv`).
+- **Chat sessions** — `session_store.ensure_schema()` runs `scripts/migrate_chat_sessions.sql` (creates `seal_app.chat_sessions`, `seal_app.chat_messages`) when `CHAT_SESSION_STORE=postgres` (default local compose uses `memory`, so this is a no-op until you enable Postgres sessions).
+
+After `make up`, no manual migrate is required for normal local dev. If you manage Postgres without starting the API:
+
+```bash
+docker compose exec -T postgres psql -U postgres -d seal < scripts/migrate_app.sql
+docker compose exec -T postgres psql -U postgres -d seal < scripts/migrate_chat_sessions.sql
+```
 
 ### 5. Full validation (CI mirror)
 ```bash
