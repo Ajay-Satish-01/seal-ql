@@ -106,7 +106,9 @@ def test_query_scope_uses_merged_catalog_and_schema_table_hints(
         captured["names"] = tuple(schema_table_names)
         return ScopeResult(in_scope=True, reason="in_scope", source="heuristic")
 
-    with patch("app.routes.query.classify_scope", new=AsyncMock(side_effect=capture_scope)):
+    with patch(
+        "seal_core.pipeline.query_service.classify_scope", new=AsyncMock(side_effect=capture_scope)
+    ):
         response = api_client.post(
             "/v1/query",
             json={"query": "count rows"},

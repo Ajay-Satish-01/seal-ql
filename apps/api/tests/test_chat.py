@@ -58,7 +58,7 @@ def test_query_out_of_scope_returns_400(monkeypatch) -> None:
 
     client: TestClient = build_client(monkeypatch)
     with patch(
-        "app.routes.query.classify_scope",
+        "seal_core.pipeline.query_service.classify_scope",
         new=AsyncMock(
             return_value=ScopeResult(in_scope=False, reason="off-topic", source="heuristic")
         ),

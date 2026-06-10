@@ -32,7 +32,7 @@ ReasoningOrchestrator (packages/core/seal_core/reasoning/)
 ```
 
 - **Chat** runs **pre-execution** layers in `ChatService`, merges heuristic output with `ChatDecision`, then produces follow-ups and research notes via the **answer LLM** (`ChatAnswer` / stream enrichment) — not via post-execution heuristic layers.
-- **Query** calls pre- and **post-execution** layers in `apps/api/app/routes/query.py` (stateless; no session history).
+- **Query** calls pre- and **post-execution** layers in `QueryService` (`seal_core/pipeline/query_service.py`; stateless; no session history).
 - Layers are **fail-open**: failures set `layers_unavailable` and other layers still run.
 
 ## Configuration
@@ -77,4 +77,4 @@ No reasoning-specific route changes are needed when adding a database id; only r
 
 - `packages/core/seal_core/reasoning/` — models, layers, orchestrator, config
 - `packages/core/seal_core/chat/service.py` — chat integration
-- `apps/api/app/routes/query.py` — query integration
+- `packages/core/seal_core/pipeline/query_service.py` — query integration (`apps/api/app/routes/query.py` delegates)

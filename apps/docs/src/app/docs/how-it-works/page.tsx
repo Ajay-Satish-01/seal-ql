@@ -90,8 +90,10 @@ export default function HowItWorksPage() {
 
         <h2>Query path</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Unlike chat, query <strong>introspects schema before</strong> <code>classify_scope</code>{' '}
-          so table-name hints can inform the scope gate.
+          The API route delegates to <code>QueryService</code> in{' '}
+          <code>seal_core/pipeline/query_service.py</code>. Unlike chat, query{' '}
+          <strong>introspects schema before</strong> <code>classify_scope</code> so table-name hints
+          can inform the scope gate.
         </p>
         <pre className="not-prose overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-5 font-mono text-xs leading-relaxed text-foreground">
           {`POST /v1/query
@@ -99,6 +101,7 @@ export default function HowItWorksPage() {
     ├─ resolve database_id → registry
     │     └─ unknown → HTTP 404 unknown_database_id
     │
+    ├─ QueryService.execute
     ├─ introspect schema (chosen backend)
     ├─ classify_scope (channel=query, uses table hints from schema)
     │     └─ out of scope → HTTP 400 structured query_out_of_scope

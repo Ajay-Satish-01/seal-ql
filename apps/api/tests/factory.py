@@ -33,10 +33,13 @@ def apply_dependency_mocks(application: FastAPI) -> None:
     """Attach in-memory mocks so /v1/* tests do not require Postgres."""
     registry = make_mock_database_registry()
     reasoning = build_default_orchestrator()
+    planner = MockPlanner()
+    catalog = MockDataCatalog()
+    semantic = MockSemanticRegistry()
     application.dependency_overrides[get_database_registry] = lambda: registry
-    application.dependency_overrides[get_query_planner] = lambda: MockPlanner()
-    application.dependency_overrides[get_semantic_registry] = lambda: MockSemanticRegistry()
-    application.dependency_overrides[get_data_catalog] = lambda: MockDataCatalog()
+    application.dependency_overrides[get_query_planner] = lambda: planner
+    application.dependency_overrides[get_semantic_registry] = lambda: semantic
+    application.dependency_overrides[get_data_catalog] = lambda: catalog
     application.dependency_overrides[get_chat_service] = lambda: MockChatService()
     application.dependency_overrides[get_reasoning_orchestrator] = lambda: reasoning
 

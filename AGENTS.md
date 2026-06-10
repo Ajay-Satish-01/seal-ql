@@ -23,6 +23,7 @@
 - **Data catalog**: Auto-synced YAML (`DATA_CATALOG_PATH`); description overrides in workspace DB (re-applied after sync).
 - **Chat**: `ChatService` + pluggable `BaseSessionStore` (`CHAT_SESSION_STORE=memory|postgres`) + `EnhancementOrchestrator` (schema → vector RAG → multi-turn) + `ReasoningOrchestrator` (clarification, follow-ups, prior-turn inference). Session history: `GET/DELETE /v1/chat/sessions`. DuckDB-primary deployments can set `CHAT_SESSION_DATABASE_URL` to a separate Postgres instance for persistent sessions.
 - **Workspace**: Postgres `seal_app.workspace_kv` (primary); `config/workspace.json` read fallback; `.env` base. Hot-reload on save in dev; prod uses `POST /v1/workspace/settings/apply`.
+- **Query**: `QueryService` (`seal_core/pipeline/query_service.py`) — stateless `/v1/query` orchestration; shares `execute_natural_language_query` with chat.
 - **Query Planner**: LiteLLM + Instructor; shared `execute_natural_language_query` pipeline with chat SQL.
 - **SQL Validator**: SQLGlot AST — zero-trust boundary for all LLM-generated SQL.
 - **Database Executor**: Postgres (TimescaleDB) or DuckDB.
@@ -64,7 +65,7 @@
 - **Schema / catalog**: Introspection in `packages/core/`; catalog sync preserves user descriptions; PATCH `/v1/catalog/descriptions` for overrides.
 - **Guardrails**: `packages/core/seal_core/guardrails/`; wire in `ChatService` and `apps/api` query route.
 - **Chat / enhancement**: Changes in `seal_core/enhancement/` and `seal_core/chat/`; wire default chain in `apps/api` lifespan.
-- **Layered reasoning**: `seal_core/reasoning/`; wire in `ChatService` and `apps/api/app/routes/query.py`; see `docs/reasoning-layers.md`.
+- **Layered reasoning**: `seal_core/reasoning/`; wire in `ChatService` and `QueryService` (`seal_core/pipeline/query_service.py`); see `docs/reasoning-layers.md`.
 - **Workspace**: `seal_core/workspace/` + `apps/api/app/routes/workspace.py`; startup + hot-reload via `apply_workspace_on_startup` / `apply_runtime_overrides`.
 - **Agent queries**: All dynamic SQL through `packages/sql/` AST validation — never execute raw LLM SQL.
 - **Visualization**: Chart columns must match SQL result columns.
