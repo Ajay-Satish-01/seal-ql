@@ -3,15 +3,14 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from seal_core.database.registry import DatabaseRegistry, UnknownDatabaseError
+from seal_core.database.registry import UnknownDatabaseError
 from seal_core.guardrails.scope import build_query_out_of_scope_detail
 from seal_core.pipeline.query_service import QueryOutOfScopeError, QueryService
 from seal_core.pipeline.trust import apply_trust_gating_to_query_response
 from seal_core.pipeline.validate_metadata import InvalidQueryMetadataError
 from seal_sql.boundary import is_boundary_error_message
 
-from app.database_routing import get_database_bundle
-from app.dependencies import get_database_registry, get_query_service
+from app.dependencies import get_query_service
 from app.errors import public_query_error_detail, public_server_error_detail
 from app.llm_errors import raise_for_llm_failure
 from app.openapi_responses import QUERY_ENDPOINT_RESPONSES
@@ -27,10 +26,8 @@ async def execute_query(
     request: QueryRequest,
     _: None = Security(require_api_key),
     query_service: QueryService = Depends(get_query_service),  # noqa: B008
-    registry: DatabaseRegistry = Depends(get_database_registry),  # noqa: B008
 ):
     """Translates natural language to SQL, executes it, and returns chart specs."""
-    get_database_bundle(registry, request.database_id)
     try:
         result = await query_service.execute(
             query=request.query,
