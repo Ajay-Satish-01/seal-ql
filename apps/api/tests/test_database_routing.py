@@ -57,7 +57,7 @@ def test_unknown_database_id_on_query_before_scope_returns_404(monkeypatch) -> N
     scope_mock = AsyncMock(
         return_value=ScopeResult(in_scope=False, reason="off-topic", source="heuristic")
     )
-    with patch("app.routes.query.classify_scope", new=scope_mock):
+    with patch("seal_core.pipeline.query_service.classify_scope", new=scope_mock):
         response = client.post(
             "/v1/query",
             json={"query": "write me a poem", "database_id": "nonexistent"},

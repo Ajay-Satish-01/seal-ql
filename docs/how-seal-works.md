@@ -29,16 +29,16 @@ See [guardrails.md](guardrails.md).
 
 ## Query path
 
-`apps/api/app/routes/query.py`:
+`seal_core/pipeline/query_service.py` (`QueryService`) — wired from `apps/api/app/routes/query.py`:
 
-1. Resolve `database_id` → `DatabaseRegistry.get()` (**404** if unknown)
-2. `bundle.introspector.introspect()` — schema for scope hints and execution
-3. `classify_scope` (uses table-name hints from introspection)
+1. API resolves `database_id` → `DatabaseRegistry.get()` (**404** if unknown)
+2. `QueryService.execute()` — `bundle.introspector.introspect()` for scope hints and execution
+3. `classify_scope` (uses table-name hints from introspection); out-of-scope → HTTP 400
 4. `ReasoningOrchestrator.run_pre()` — optional clarification (`metadata.reasoning`, top-level `message`, no SQL)
 5. `execute_natural_language_query()` — planner → validate → sanitize → execute → repair loop; catalog/semantic only when `database_id=default`
 6. `ChartEngine.generate()` — Vega-Lite from plan + result
 7. `ReasoningOrchestrator.run_post()` — follow-ups and research notes
-8. Assemble response `metadata` (`database_id`, `used_sql: true`, execution stats; `enforce_query_metadata` on success)
+8. Assemble response `metadata` via `ExecutionMetadata` (`database_id`, `used_sql`, execution stats; `enforce_query_metadata` on success)
 
 No chat enhancement chain on this path. See [reasoning-layers.md](reasoning-layers.md).
 

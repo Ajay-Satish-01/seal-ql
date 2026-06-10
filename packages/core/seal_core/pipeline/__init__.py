@@ -5,6 +5,7 @@ from seal_core.pipeline.models import (
     build_chat_metadata,
     build_stream_meta_event,
 )
+from seal_core.pipeline.query_service import QueryOutOfScopeError, QueryService, QueryTurnResult
 from seal_core.pipeline.validate_metadata import (
     InvalidChatMetadataError,
     InvalidQueryMetadataError,
@@ -22,6 +23,9 @@ __all__ = [
     "EnhancementMetadata",
     "ExecutionMetadata",
     "ExecuteQueryResult",
+    "QueryOutOfScopeError",
+    "QueryService",
+    "QueryTurnResult",
     "build_chat_metadata",
     "build_stream_meta_event",
     "execute_natural_language_query",

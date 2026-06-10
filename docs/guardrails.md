@@ -101,6 +101,6 @@ Docs site **Configuration reference** (`/docs/configuration#guardrails`) include
 
 - `packages/core/seal_core/guardrails/` — models, heuristics, `classify_scope`, `suggestions`, prompts
 - `packages/core/seal_core/chat/service.py` — `_scope_gate`, `_refusal_turn`, `_refusal_stream`
-- `apps/api/app/routes/query.py` — query gate before planner
+- `packages/core/seal_core/pipeline/query_service.py` — query scope gate (`apps/api/app/routes/query.py` maps `QueryOutOfScopeError` to HTTP 400)
 
 Refusal and scope fields on chat responses: [chat-metadata.md](chat-metadata.md).

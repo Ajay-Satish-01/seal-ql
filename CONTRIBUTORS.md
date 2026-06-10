@@ -256,7 +256,7 @@ When adding or renaming metadata fields, update the manifest, flatten golden (`t
 | Area | Code | Docs |
 | ---- | ---- | ---- |
 | Registry & config | `packages/core/seal_core/database/registry.py`, `config.py` | [docs/multi-database.md](docs/multi-database.md) |
-| API wiring | `apps/api/app/main.py`, `dependencies.py`, `routes/query.py`, `chat.py`, `schema.py` | `/docs/multi-database` |
+| API wiring | `apps/api/app/main.py`, `dependencies.py`, `pipeline/query_service.py`, `routes/query.py`, `chat.py`, `schema.py` | `/docs/multi-database` |
 | Chat session pin | `packages/core/seal_core/chat/service.py`, `errors.py` | `session_database_id_mismatch` |
 | Example config | `config/databases.example.yaml` | [DEPLOYMENT.md](DEPLOYMENT.md) |
 

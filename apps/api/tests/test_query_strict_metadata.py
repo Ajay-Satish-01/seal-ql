@@ -18,7 +18,10 @@ def test_query_strict_metadata_validation_returns_500(api_client: TestClient, mo
             "database_id": "default",
             "used_sql": True,
         }
-        with patch("app.routes.query.ExecutionMetadata.from_execute_result", return_value=bad):
+        with patch(
+            "seal_core.pipeline.query_service.ExecutionMetadata.from_execute_result",
+            return_value=bad,
+        ):
             response = api_client.post(
                 "/v1/query",
                 json={"query": "How many orders were placed last month?"},

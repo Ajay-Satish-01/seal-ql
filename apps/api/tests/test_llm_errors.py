@@ -24,8 +24,8 @@ def test_query_maps_unknown_model_to_502(api_client: TestClient) -> None:
         return ScopeResult(in_scope=True, reason="ok", suggested_queries=[])
 
     with (
-        patch("app.routes.query.classify_scope", new=in_scope),
-        patch("app.routes.query.execute_natural_language_query", new=boom),
+        patch("seal_core.pipeline.query_service.classify_scope", new=in_scope),
+        patch("seal_core.pipeline.query_service.execute_natural_language_query", new=boom),
     ):
         response = api_client.post(
             "/v1/query",
