@@ -9,6 +9,9 @@ from pydantic import BaseModel, Field
 from seal_charts.engine import ChartEngine
 from seal_sql.result import QueryResult
 
+if TYPE_CHECKING:
+    from seal_charts.models import ChartStyleOptions
+
 from seal_core.catalog.table_names import (
     catalog_table_names,
     merge_table_name_hints,
@@ -109,7 +112,13 @@ class QueryService:
         self._reasoning = reasoning_orchestrator
         self._retriever = context_retriever or ContextRetriever()
 
-    async def execute(self, *, query: str, database_id: str) -> QueryTurnResult:
+    async def execute(
+        self,
+        *,
+        query: str,
+        database_id: str,
+        chart_style: ChartStyleOptions | None = None,
+    ) -> QueryTurnResult:
         bundle = self._registry.get(database_id)
         catalog_names = catalog_table_names(self._data_catalog)
 
@@ -178,7 +187,7 @@ class QueryService:
             truncated=exec_result.truncated,
             sql=exec_result.sql,
         )
-        chart_spec = ChartEngine.generate(exec_result.plan, result)
+        chart_spec = ChartEngine.generate(exec_result.plan, result, style=chart_style)
 
         post_ctx = ReasoningContext(
             route="query",

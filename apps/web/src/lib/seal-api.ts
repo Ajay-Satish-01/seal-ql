@@ -1,3 +1,4 @@
+import type { ChartStyleSelection } from '@seal/chart-styles';
 import { resolveTrustExplainabilityEnabled } from '@seal/trust-explainability';
 import { formatApiError } from '@/lib/api-error';
 import type { QueryMetadata } from '@/lib/execution-metadata';
@@ -178,11 +179,19 @@ export async function postQuery(
   apiKey: string,
   databaseId: string,
   signal?: AbortSignal,
+  chartStyle?: ChartStyleSelection,
 ): Promise<QueryResponse> {
+  const body: Record<string, unknown> = {
+    query,
+    database_id: databaseId.trim() || 'default',
+  };
+  if (chartStyle) {
+    body.chart_style = chartStyle;
+  }
   const res = await fetch(`${normalizeBaseUrl(baseUrl)}/v1/query`, {
     method: 'POST',
     headers: authHeaders(apiKey),
-    body: JSON.stringify({ query, database_id: databaseId.trim() || 'default' }),
+    body: JSON.stringify(body),
     signal,
   });
   if (!res.ok) await readError(res);

@@ -128,7 +128,84 @@ export default function ChartsAnalysisPage() {
     "applied_chart_type": "bar",
     "x_field": "category",
     "y_field": "total_revenue",
-    "color_field": null
+    "color_field": null,
+    "template": "rounded",
+    "color_scheme": "tableau10"
+  }
+}`}
+        />
+
+        <h2>Chart templates and color schemes</h2>
+        <p>
+          Seal still picks the chart <strong>type</strong> (bar, line, pie, etc.) from query results.
+          Styling is <strong>opt-in</strong> via <code>chart_style</code> on the request — omit it
+          for plain Vega-Lite specs (no extra colors or template config). When provided, choose a{' '}
+          <strong>template</strong> (minimal axes, bold titles, rounded bars) and a{' '}
+          <strong>color scheme</strong> (Vega built-in palettes).
+        </p>
+        <ParamTable
+          rows={[
+            {
+              name: 'chart_style.template',
+              type: 'string',
+              description:
+                'default | minimal | bold | rounded — applied as Vega-Lite config and mark tweaks.',
+            },
+            {
+              name: 'chart_style.color_scheme',
+              type: 'string',
+              description:
+                'category10 | tableau10 | set2 | viridis | blues | oranges — mapped to encoding.color.scale.scheme.',
+            },
+          ]}
+        />
+        <p>
+          List available options with <code>GET /v1/charts/styles</code>. The applied choices are
+          echoed in <code>chart.metadata.template</code> and{' '}
+          <code>chart.metadata.color_scheme</code>.
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`curl -s "${base}/v1/charts/styles" \\
+  -H "X-API-Key: your-api-key" | jq '.templates, .color_schemes'`}
+        />
+        <CodeBlock
+          language="bash"
+          code={`curl -s -X POST "${base}/v1/query" \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: your-api-key" \\
+  -d '{
+    "query": "Revenue by product category",
+    "chart_style": {
+      "template": "rounded",
+      "color_scheme": "tableau10"
+    }
+  }' | jq '.chart.metadata | {template, color_scheme}'`}
+        />
+        <CodeBlock
+          language="json"
+          code={`{
+  "chart_type": "bar",
+  "vega_lite_spec": {
+    "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+    "config": {
+      "axis": { "grid": false, "domain": false }
+    },
+    "mark": { "type": "bar", "tooltip": true, "cornerRadiusEnd": 4 },
+    "encoding": {
+      "x": { "field": "category", "type": "nominal" },
+      "y": { "field": "total_revenue", "type": "quantitative" },
+      "color": {
+        "field": "category",
+        "type": "nominal",
+        "scale": { "scheme": "tableau10" }
+      }
+    },
+    "data": { "values": [{ "category": "Electronics", "total_revenue": 45200 }] }
+  },
+  "metadata": {
+    "template": "rounded",
+    "color_scheme": "tableau10"
   }
 }`}
         />

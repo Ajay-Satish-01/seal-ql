@@ -2,11 +2,17 @@
 
 import dynamic from 'next/dynamic';
 import { useTheme } from 'next-themes';
-import { memo, useCallback, useEffect, useRef, type RefObject } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, type RefObject } from 'react';
 import type { ChartSpec } from 'seal';
 import { collectCsvColumns, formatResultCell } from '@seal/chart-csv';
+import {
+  chartStyleFromMetadata,
+  resolveStyledChartSpec,
+  type ChartStyleSelection,
+} from '@seal/chart-styles';
 import { getChartYField, isRenderableVegaChart, resolveMetricSnapshot } from '@seal/chart-spec';
 import { ChartExportMenu } from '@/components/dashboard/chart-export-menu';
+import { ChartStylePicker } from '@/components/dashboard/chart-style-picker';
 import { Badge } from '@/components/ui/badge';
 import { isVegaChartView, type VegaChartView } from '@/lib/chart-export';
 
@@ -41,6 +47,9 @@ function EmptyChartState({ message }: { message: string }) {
 interface ChartPanelProps {
   chart: ChartSpec | null;
   results: Record<string, unknown>[];
+  chartStyle?: ChartStyleSelection;
+  onChartStyleChange?: (style: ChartStyleSelection) => void;
+  stylePersistAction?: string;
 }
 
 function ChartPanelHeader({
@@ -49,25 +58,46 @@ function ChartPanelHeader({
   vegaViewRef,
   canExportVegaImages,
   metricSnapshot,
+  chartStyle,
+  onChartStyleChange,
+  chartMetadata,
+  stylePersistAction,
 }: {
   chartType: string;
   results: Record<string, unknown>[];
   vegaViewRef: RefObject<VegaChartView | null>;
   canExportVegaImages: boolean;
   metricSnapshot?: ReturnType<typeof resolveMetricSnapshot>;
+  chartStyle?: ChartStyleSelection;
+  onChartStyleChange?: (style: ChartStyleSelection) => void;
+  chartMetadata?: Record<string, unknown> | null;
+  stylePersistAction?: string;
 }) {
   return (
-    <div className="flex items-center gap-2">
-      <Badge variant="outline" className="font-mono text-xs uppercase">
-        {chartType}
-      </Badge>
-      <ChartExportMenu
-        chartType={chartType}
-        results={results}
-        vegaViewRef={vegaViewRef}
-        canExportVegaImages={canExportVegaImages}
-        metricSnapshot={metricSnapshot}
-      />
+    <div className="flex flex-col gap-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="font-mono text-xs uppercase">
+            {chartType}
+          </Badge>
+          <ChartExportMenu
+            chartType={chartType}
+            results={results}
+            vegaViewRef={vegaViewRef}
+            canExportVegaImages={canExportVegaImages}
+            metricSnapshot={metricSnapshot}
+          />
+        </div>
+      </div>
+      {chartStyle && onChartStyleChange ? (
+        <ChartStylePicker
+          chartType={chartType}
+          style={chartStyle}
+          metadata={chartMetadata}
+          onStyleChange={onChartStyleChange}
+          persistAction={stylePersistAction}
+        />
+      ) : null}
     </div>
   );
 }
@@ -123,10 +153,32 @@ function ResultsTable({ results }: { results: Record<string, unknown>[] }) {
   );
 }
 
-export const ChartPanel = memo(function ChartPanel({ chart, results }: ChartPanelProps) {
+export const ChartPanel = memo(function ChartPanel({
+  chart,
+  results,
+  chartStyle,
+  onChartStyleChange,
+  stylePersistAction,
+}: ChartPanelProps) {
   const { resolvedTheme } = useTheme();
   const vegaViewRef = useRef<VegaChartView | null>(null);
   const vegaTheme = resolvedTheme === 'dark' ? 'dark' : 'light';
+
+  const resolvedStyle = chartStyle ?? (chart ? chartStyleFromMetadata(chart.metadata) : undefined);
+
+  const styledChart = useMemo(() => {
+    if (!chart || !resolvedStyle) {
+      return chart;
+    }
+    const styledSpec = resolveStyledChartSpec(chart, resolvedStyle);
+    if (!styledSpec) {
+      return chart;
+    }
+    return {
+      ...chart,
+      vega_lite_spec: styledSpec,
+    } satisfies ChartSpec;
+  }, [chart, resolvedStyle]);
 
   const handleVegaRender = useCallback((view: unknown) => {
     if (view == null) {
@@ -138,7 +190,7 @@ export const ChartPanel = memo(function ChartPanel({ chart, results }: ChartPane
 
   useEffect(() => {
     vegaViewRef.current = null;
-  }, [chart, vegaTheme]);
+  }, [styledChart, vegaTheme]);
 
   if (!chart) {
     return results.length > 0 ? (
@@ -169,6 +221,10 @@ export const ChartPanel = memo(function ChartPanel({ chart, results }: ChartPane
         vegaViewRef={vegaViewRef}
         canExportVegaImages={canExportVegaImages}
         metricSnapshot={metricSnapshot}
+        chartStyle={resolvedStyle}
+        onChartStyleChange={onChartStyleChange}
+        chartMetadata={chart.metadata}
+        stylePersistAction={stylePersistAction}
       />
 
       {chartType === 'table' ? (
@@ -182,7 +238,7 @@ export const ChartPanel = memo(function ChartPanel({ chart, results }: ChartPane
       ) : canExportVegaImages ? (
         <div className={`${CHART_HEIGHT_CLASS} w-full`}>
           <VegaChart
-            spec={chart}
+            spec={styledChart}
             theme={vegaTheme}
             className="h-full w-full"
             onRender={handleVegaRender}

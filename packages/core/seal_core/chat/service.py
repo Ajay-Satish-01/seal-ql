@@ -60,6 +60,8 @@ from seal_core.settings import get_settings
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
+    from seal_charts.models import ChartStyleOptions
+
     from seal_core.chat.session.base import BaseSessionStore
     from seal_core.database.registry import DatabaseRegistry
     from seal_core.enhancement.orchestrator import EnhancementOrchestrator
@@ -92,6 +94,7 @@ class TurnContext:
     enhancement_enabled: bool
     enhancement_requested: bool = False
     database_id: str = DEFAULT_DATABASE_ID
+    chart_style: ChartStyleOptions | None = None
     last_explainability: ChatMessageExplainability | None = None
 
 
@@ -178,6 +181,7 @@ class ChatService:
         include_charts: bool,
         enhancement_enabled: bool | None,
         database_id: str = DEFAULT_DATABASE_ID,
+        chart_style: ChartStyleOptions | None = None,
     ) -> ChatResult:
         ctx = await self._prepare_turn(
             message,
@@ -185,6 +189,7 @@ class ChatService:
             messages_override,
             enhancement_enabled,
             database_id,
+            chart_style=chart_style,
         )
         result = await self._run_turn(ctx, include_charts=include_charts)
         should_pin = (
@@ -208,6 +213,7 @@ class ChatService:
         messages_override: list[ChatMessage] | None,
         enhancement_enabled: bool | None,
         database_id: str = DEFAULT_DATABASE_ID,
+        chart_style: ChartStyleOptions | None = None,
     ) -> TurnContext:
         """Validate session/database before opening an SSE stream."""
         return await self._prepare_turn(
@@ -216,6 +222,7 @@ class ChatService:
             messages_override,
             enhancement_enabled,
             database_id,
+            chart_style=chart_style,
         )
 
     async def stream_turn(
@@ -337,6 +344,7 @@ class ChatService:
         messages_override: list[ChatMessage] | None,
         enhancement_enabled: bool | None,
         database_id: str,
+        chart_style: ChartStyleOptions | None = None,
     ) -> TurnContext:
         settings = get_settings()
         sid, state = await self._sessions.get_or_create(session_id)
@@ -371,6 +379,7 @@ class ChatService:
             enhancement_enabled=enh_on and self._orchestrator is not None,
             enhancement_requested=enh_on,
             database_id=database_id,
+            chart_style=chart_style,
         )
 
     def _enhancement_metadata_kwargs(self, ctx: TurnContext) -> dict[str, bool]:
@@ -952,7 +961,7 @@ class ChatService:
                 truncated=exec_result.truncated,
                 sql=exec_result.sql,
             )
-            chart = ChartEngine.generate(exec_result.plan, qr)
+            chart = ChartEngine.generate(exec_result.plan, qr, style=ctx.chart_style)
 
         return exec_result, chart, {"used_sql": True}
 

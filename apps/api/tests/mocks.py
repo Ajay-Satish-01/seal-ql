@@ -109,6 +109,7 @@ class MockDataCatalog(DataCatalogRegistry):
 
 class MockChatService:
     last_database_id: str | None = None
+    last_chart_style: object | None = None
 
     async def handle_json(
         self,
@@ -119,10 +120,12 @@ class MockChatService:
         include_charts: bool,
         enhancement_enabled: bool | None,
         database_id: str = "default",
+        chart_style: object | None = None,
     ) -> Any:
         from seal_core.chat.service import ChatResult
 
         MockChatService.last_database_id = database_id
+        MockChatService.last_chart_style = chart_style
         sid = session_id or "test-session"
         from seal_core.pipeline.models import build_chat_metadata
 
@@ -149,10 +152,12 @@ class MockChatService:
         messages_override: list[ChatMessage] | None,
         enhancement_enabled: bool | None,
         database_id: str = "default",
+        chart_style: object | None = None,
     ) -> Any:
         from seal_core.chat.service import TurnContext
 
         MockChatService.last_database_id = database_id
+        MockChatService.last_chart_style = chart_style
         return TurnContext(
             session_id=session_id or "test-session",
             turn_id="mock-turn",
@@ -162,6 +167,7 @@ class MockChatService:
             metadata={},
             enhancement_enabled=False,
             database_id=database_id,
+            chart_style=chart_style,
         )
 
     async def stream_turn(
@@ -203,6 +209,7 @@ class MockChatService:
         include_charts: bool,
         enhancement_enabled: bool | None,
         database_id: str = "default",
+        chart_style: object | None = None,
     ) -> AsyncIterator[str]:
         ctx = await self.prepare_stream_turn(
             message=message,
@@ -210,6 +217,7 @@ class MockChatService:
             messages_override=messages_override,
             enhancement_enabled=enhancement_enabled,
             database_id=database_id,
+            chart_style=chart_style,
         )
         async for chunk in self.stream_turn(ctx, message=message, include_charts=include_charts):
             yield chunk

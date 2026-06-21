@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Self
 
 from pydantic import BaseModel, Field, model_validator
-from seal_charts.models import ChartSpec
+from seal_charts.models import ChartSpec, ChartStyleOptions
 from seal_core.guardrails.models import ScopeMetadata
 from seal_core.pipeline.models import CatalogMatchItem, EnhancementMetadata, ExecutionMetadata
 from seal_core.reasoning.models import ReasoningMetadata
@@ -51,6 +51,27 @@ class QueryRequest(BaseModel):
         description="The natural language query to translate to SQL and execute.",
     )
     database_id: str = DATABASE_ID_FIELD
+    chart_style: ChartStyleOptions | None = Field(
+        None,
+        description="Optional chart template and color scheme.",
+    )
+
+
+class ChartStyleTemplateInfo(BaseModel):
+    id: str
+    label: str
+    description: str
+
+
+class ChartColorSchemeInfo(BaseModel):
+    id: str
+    label: str
+    swatches: list[str]
+
+
+class ChartStylesResponse(BaseModel):
+    templates: list[ChartStyleTemplateInfo]
+    color_schemes: list[ChartColorSchemeInfo]
 
 
 class CatalogMatch(CatalogMatchItem):
@@ -195,6 +216,10 @@ class ChatRequest(BaseModel):
         ),
     )
     database_id: str = DATABASE_ID_FIELD
+    chart_style: ChartStyleOptions | None = Field(
+        None,
+        description="Optional chart template and color scheme when include_charts is true.",
+    )
 
     @model_validator(mode="after")
     def validate_history_size(self) -> Self:

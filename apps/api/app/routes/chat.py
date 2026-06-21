@@ -54,6 +54,7 @@ async def chat(
                 messages_override=override,
                 enhancement_enabled=request.enhancement,
                 database_id=request.database_id,
+                chart_style=request.chart_style,
             )
             stream = chat_service.stream_turn(
                 ctx,
@@ -69,6 +70,7 @@ async def chat(
             include_charts=request.include_charts,
             enhancement_enabled=request.enhancement,
             database_id=request.database_id,
+            chart_style=request.chart_style,
         )
     except InvalidSessionIdError as exc:
         raise_session_not_found(exc)

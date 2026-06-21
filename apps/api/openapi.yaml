@@ -131,6 +131,20 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - APIKeyHeader: []
+  /v1/charts/styles:
+    get:
+      summary: List Chart Styles
+      description: Return available chart templates and color schemes.
+      operationId: list_chart_styles_v1_charts_styles_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChartStylesResponse'
+      security:
+      - APIKeyHeader: []
   /v1/chat:
     post:
       summary: Chat
@@ -601,6 +615,35 @@ components:
       - removed
       - path
       title: CatalogSyncResponse
+    ChartColorScheme:
+      type: string
+      enum:
+      - category10
+      - tableau10
+      - set2
+      - viridis
+      - blues
+      - oranges
+      title: ChartColorScheme
+    ChartColorSchemeInfo:
+      properties:
+        id:
+          type: string
+          title: Id
+        label:
+          type: string
+          title: Label
+        swatches:
+          items:
+            type: string
+          type: array
+          title: Swatches
+      type: object
+      required:
+      - id
+      - label
+      - swatches
+      title: ChartColorSchemeInfo
     ChartSpec:
       properties:
         chart_type:
@@ -623,6 +666,59 @@ components:
         \    If chart_type is 'table' or 'metric_card', this will be empty (as they\
         \ are\n        rendered natively by the UI, not via Vega-Lite).\n    metadata:\
         \ Additional metadata for rendering (e.g., suggested titles, formatting hints)."
+    ChartStyleOptions:
+      properties:
+        template:
+          $ref: '#/components/schemas/ChartTemplate'
+          default: default
+        color_scheme:
+          $ref: '#/components/schemas/ChartColorScheme'
+          default: category10
+      type: object
+      title: ChartStyleOptions
+      description: User-selected chart template and color scheme.
+    ChartStyleTemplateInfo:
+      properties:
+        id:
+          type: string
+          title: Id
+        label:
+          type: string
+          title: Label
+        description:
+          type: string
+          title: Description
+      type: object
+      required:
+      - id
+      - label
+      - description
+      title: ChartStyleTemplateInfo
+    ChartStylesResponse:
+      properties:
+        templates:
+          items:
+            $ref: '#/components/schemas/ChartStyleTemplateInfo'
+          type: array
+          title: Templates
+        color_schemes:
+          items:
+            $ref: '#/components/schemas/ChartColorSchemeInfo'
+          type: array
+          title: Color Schemes
+      type: object
+      required:
+      - templates
+      - color_schemes
+      title: ChartStylesResponse
+    ChartTemplate:
+      type: string
+      enum:
+      - default
+      - minimal
+      - bold
+      - rounded
+      title: ChartTemplate
     ChartType:
       type: string
       enum:
@@ -781,6 +877,12 @@ components:
           title: Database Id
           description: 'Registered database identifier (default: ''default'').'
           default: default
+        chart_style:
+          anyOf:
+          - $ref: '#/components/schemas/ChartStyleOptions'
+          - type: 'null'
+          description: Optional chart template and color scheme when include_charts
+            is true.
       type: object
       required:
       - message
@@ -1189,6 +1291,11 @@ components:
           title: Database Id
           description: 'Registered database identifier (default: ''default'').'
           default: default
+        chart_style:
+          anyOf:
+          - $ref: '#/components/schemas/ChartStyleOptions'
+          - type: 'null'
+          description: Optional chart template and color scheme.
       type: object
       required:
       - query

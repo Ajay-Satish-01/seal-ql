@@ -66,7 +66,8 @@
             },
             "mark": {
               "type": "bar",
-              "tooltip": true
+              "tooltip": true,
+              "cornerRadiusEnd": 4
             },
             "encoding": {
               "x": {
@@ -79,6 +80,13 @@
               "y": {
                 "field": "total_revenue",
                 "type": "quantitative"
+              },
+              "color": {
+                "field": "category",
+                "type": "nominal",
+                "scale": {
+                  "scheme": "tableau10"
+                }
               }
             }
           },
@@ -87,7 +95,9 @@
             "applied_chart_type": "bar",
             "x_field": "category",
             "y_field": "total_revenue",
-            "color_field": null
+            "color_field": null,
+            "template": "rounded",
+            "color_scheme": "tableau10"
           }
         },
         "metadata": {
@@ -99,6 +109,10 @@
           "repair_attempts": 0,
           "used_sql": true
         }
+      },
+      "chart_style": {
+        "template": "rounded",
+        "color_scheme": "tableau10"
       }
     },
     {
@@ -184,6 +198,18 @@
               "y": {
                 "field": "event_count",
                 "type": "quantitative"
+              },
+              "color": {
+                "value": "#440154"
+              }
+            },
+            "config": {
+              "axis": {
+                "grid": false,
+                "domain": false
+              },
+              "view": {
+                "stroke": "transparent"
               }
             }
           },
@@ -192,7 +218,9 @@
             "applied_chart_type": "line",
             "x_field": "hour",
             "y_field": "event_count",
-            "color_field": null
+            "color_field": null,
+            "template": "minimal",
+            "color_scheme": "viridis"
           }
         },
         "metadata": {
@@ -204,6 +232,10 @@
           "repair_attempts": 0,
           "used_sql": true
         }
+      },
+      "chart_style": {
+        "template": "minimal",
+        "color_scheme": "viridis"
       }
     },
     {
