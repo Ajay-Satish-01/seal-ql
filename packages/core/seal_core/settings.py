@@ -117,6 +117,26 @@ class Settings(BaseSettings):
         default=None,
         description="Groq API key (also read by LiteLLM from the environment).",
     )
+    mistral_api_key: str | None = Field(
+        default=None,
+        description="Mistral API key (also read by LiteLLM from the environment).",
+    )
+    cohere_api_key: str | None = Field(
+        default=None,
+        description="Cohere API key (also read by LiteLLM from the environment).",
+    )
+    deepseek_api_key: str | None = Field(
+        default=None,
+        description="DeepSeek API key (also read by LiteLLM from the environment).",
+    )
+    xai_api_key: str | None = Field(
+        default=None,
+        description="xAI API key (also read by LiteLLM from the environment).",
+    )
+    azure_api_key: str | None = Field(
+        default=None,
+        description="Azure API key (also read by LiteLLM from the environment).",
+    )
     llm_max_retries: int = Field(
         default=2,
         description="Retry attempts for LLM structured output validation.",
@@ -135,6 +155,11 @@ class Settings(BaseSettings):
         "openai_api_key",
         "anthropic_api_key",
         "groq_api_key",
+        "mistral_api_key",
+        "cohere_api_key",
+        "deepseek_api_key",
+        "xai_api_key",
+        "azure_api_key",
         mode="before",
     )
     @classmethod
@@ -199,6 +224,11 @@ class Settings(BaseSettings):
             or self.openai_api_key
             or self.anthropic_api_key
             or self.groq_api_key
+            or self.mistral_api_key
+            or self.cohere_api_key
+            or self.deepseek_api_key
+            or self.xai_api_key
+            or self.azure_api_key
         )
 
     @property
@@ -221,7 +251,7 @@ class Settings(BaseSettings):
         """Explicit API key passed to Instructor/LiteLLM in cloud mode.
 
         Only the generic ``LLM_API_KEY`` is returned here. Provider-specific keys
-        (``GEMINI_API_KEY`` / ``OPENAI_API_KEY`` / ``ANTHROPIC_API_KEY`` / ``GROQ_API_KEY``) are
+        (``GEMINI_API_KEY`` / ``OPENAI_API_KEY`` / ``ANTHROPIC_API_KEY`` / ``GROQ_API_KEY`` / ``MISTRAL_API_KEY`` / ``COHERE_API_KEY`` / ``DEEPSEEK_API_KEY`` / ``XAI_API_KEY`` / ``AZURE_API_KEY``) are
         read directly from the environment by LiteLLM, so returning None for those is
         expected — has_cloud_api_credentials() still validates their presence.
         """
@@ -273,7 +303,7 @@ class Settings(BaseSettings):
         if cloud_mode and not self.has_cloud_api_credentials():
             warnings.append(
                 "OLLAMA_PROFILE=disabled but no API key found. Set LLM_API_KEY or "
-                "GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY / GROQ_API_KEY."
+                "GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY / GROQ_API_KEY / MISTRAL_API_KEY / COHERE_API_KEY / DEEPSEEK_API_KEY / XAI_API_KEY / AZURE_API_KEY."
             )
 
         return warnings
@@ -300,6 +330,16 @@ class Settings(BaseSettings):
             return self.anthropic_api_key or self.llm_api_key
         if model.startswith("groq/"):
             return self.groq_api_key or self.llm_api_key
+        if model.startswith("mistral/"):
+            return self.mistral_api_key or self.llm_api_key
+        if model.startswith("cohere/"):
+            return self.cohere_api_key or self.llm_api_key
+        if model.startswith("deepseek/"):
+            return self.deepseek_api_key or self.llm_api_key
+        if model.startswith("xai/"):
+            return self.xai_api_key or self.llm_api_key
+        if model.startswith("azure/"):
+            return self.azure_api_key or self.llm_api_key
         return self.llm_api_key or self.openai_api_key
 
     def has_embedding_credentials(self) -> bool:
