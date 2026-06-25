@@ -21,6 +21,7 @@ def _clear_llm_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "OPENAI_API_KEY",
         "ANTHROPIC_API_KEY",
         "GROQ_API_KEY",
+        "MISTRAL_API_KEY",
         "VECTOR_STORE",
         "EMBEDDING_MODEL",
         "OPENAI_API_KEY",
@@ -70,6 +71,18 @@ def test_groq_api_key_counts_for_cloud(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_MODEL", "groq/llama-3.3-70b-versatile")
     monkeypatch.delenv("LLM_API_KEY", raising=False)
     monkeypatch.setenv("GROQ_API_KEY", "gsk-test")
+
+    settings = get_settings()
+    assert settings.has_cloud_api_credentials()
+    assert settings.is_cloud_model()
+    assert not settings.collect_llm_configuration_warnings()
+
+
+def test_mistral_api_key_counts_for_cloud(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OLLAMA_PROFILE", "disabled")
+    monkeypatch.setenv("LLM_MODEL", "mistral/mistral-large-latest")
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.setenv("MISTRAL_API_KEY", "mistral-test")
 
     settings = get_settings()
     assert settings.has_cloud_api_credentials()

@@ -4,7 +4,7 @@
 # LLM modes (set in .env beside this file):
 #   A) Ollama (default): LLM_MODEL=ollama/llama3.2:1b, LLM_BASE_URL=http://ollama:11434
 #   B) Cloud (Gemini/Claude/OpenAI): OLLAMA_PROFILE=disabled, LLM_MODEL=gemini/…,
-#      plus LLM_API_KEY or GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY / GROQ_API_KEY
+#      plus LLM_API_KEY or GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY / GROQ_API_KEY / MISTRAL_API_KEY
 
 services:
   api:
@@ -22,6 +22,8 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
       MAX_ROWS: ${MAX_ROWS:-10000}
       QUERY_TIMEOUT_SECONDS: ${QUERY_TIMEOUT_SECONDS:-30}
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000","http://localhost:5173"]}

@@ -117,6 +117,10 @@ class Settings(BaseSettings):
         default=None,
         description="Groq API key (also read by LiteLLM from the environment).",
     )
+    mistral_api_key: str | None = Field(
+        default=None,
+        description="Mistral API key (also read by LiteLLM from the environment).",
+    )
     llm_max_retries: int = Field(
         default=2,
         description="Retry attempts for LLM structured output validation.",
@@ -135,6 +139,7 @@ class Settings(BaseSettings):
         "openai_api_key",
         "anthropic_api_key",
         "groq_api_key",
+        "mistral_api_key",
         mode="before",
     )
     @classmethod
@@ -199,6 +204,7 @@ class Settings(BaseSettings):
             or self.openai_api_key
             or self.anthropic_api_key
             or self.groq_api_key
+            or self.mistral_api_key
         )
 
     @property
@@ -273,7 +279,8 @@ class Settings(BaseSettings):
         if cloud_mode and not self.has_cloud_api_credentials():
             warnings.append(
                 "OLLAMA_PROFILE=disabled but no API key found. Set LLM_API_KEY or "
-                "GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY / GROQ_API_KEY."
+                "GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY / "
+                "GROQ_API_KEY / MISTRAL_API_KEY."
             )
 
         return warnings
@@ -300,6 +307,8 @@ class Settings(BaseSettings):
             return self.anthropic_api_key or self.llm_api_key
         if model.startswith("groq/"):
             return self.groq_api_key or self.llm_api_key
+        if model.startswith("mistral/"):
+            return self.mistral_api_key or self.llm_api_key
         return self.llm_api_key or self.openai_api_key
 
     def has_embedding_credentials(self) -> bool:
