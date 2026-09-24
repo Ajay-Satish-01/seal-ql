@@ -69,7 +69,11 @@ from seal import ReasoningMetadata, Seal
 
 with Seal("http://localhost:8000", api_key="your-secret") as client:
     result = client.query("show me trends")
-    reasoning = result.metadata.get("reasoning") if isinstance(result.metadata, dict) else getattr(result.metadata, "reasoning", None)
+    reasoning = (
+        result.metadata.get("reasoning")
+        if isinstance(result.metadata, dict)
+        else getattr(result.metadata, "reasoning", None)
+    )
     if isinstance(reasoning, dict) and reasoning.get("clarification_required"):
         print(result.message, reasoning.get("clarifying_questions"))
 ```
@@ -82,11 +86,11 @@ Out-of-scope **query** requests return HTTP 400 with a structured FastAPI `detai
 
 ```python
 {
-  "detail": {
-    "detail": "query_out_of_scope",
-    "reason": "off-topic pattern",
-    "suggested_queries": ["What tables are available?", "Show total row count by table"]
-  }
+    "detail": {
+        "detail": "query_out_of_scope",
+        "reason": "off-topic pattern",
+        "suggested_queries": ["What tables are available?", "Show total row count by table"],
+    }
 }
 ```
 
@@ -109,6 +113,7 @@ Out-of-scope **chat** returns HTTP 200 with `metadata.refusal=true` and `metadat
 import asyncio
 from seal import AsyncSeal
 
+
 async def main():
     async with AsyncSeal("http://localhost:8000", api_key="your-secret") as client:
         result = await client.query("Count all users")
@@ -117,6 +122,7 @@ async def main():
         async for event in client.chat_stream("Hello"):
             if event["type"] == "delta":
                 print(event["content"], end="")
+
 
 asyncio.run(main())
 ```
