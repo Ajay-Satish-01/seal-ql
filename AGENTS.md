@@ -42,7 +42,7 @@
 - Python and TypeScript: `Seal` / `AsyncSeal` with `query`, `schema`, `catalog`, `chat`, `chat_stream` / `chatStream`.
 - **TypeScript types**: Pydantic v2 → FastAPI OpenAPI (`make openapi`) → `openapi-typescript` (`make openapi-ts`) → `sdks/typescript/src/generated/openapi.ts`. Do not edit `types.ts` field lists by hand; regenerate.
 - Pass `api_key` / `apiKey` when `SEAL_API_KEY` is set (`X-API-Key`).
-- LiteLLM for providers (OpenAI, Anthropic, Google, Ollama, etc.); Postgres and DuckDB for data.
+- LiteLLM for providers (OpenAI, Anthropic, Google, Ollama, etc.); Postgres and DuckDB for data by default; optional MySQL/MariaDB, SQLite, and ClickHouse extras (`mysql` / `sqlite` / `clickhouse`).
 
 ## Conventions
 
