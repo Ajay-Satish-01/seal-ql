@@ -4,23 +4,23 @@ version = "0.1.0"
 description = "FastAPI application for the Seal SDK"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.115.0",
-    "uvicorn>=0.34.0",
-    "pydantic>=2.10.0",
+    "fastapi>=0.141.1",
+    "uvicorn>=0.53.0",
+    "pydantic>=2.13.5",
     "seal-core",
     "seal-sql",
     "seal-charts",
     "seal-semantic",
-    "python-dotenv>=1.2.2",
+    "python-dotenv>=1.2.3",
 ]
 
 [project.optional-dependencies]
 chroma = ["seal-core[chroma]"]
 dev = [
-    "pytest>=8.0",
-    "pytest-asyncio>=0.24.0",
-    "ruff>=0.15.14",
-    "httpx>=0.28.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.8",
+    "httpx>=0.28.1",
 ]
 
 [tool.uv.sources]

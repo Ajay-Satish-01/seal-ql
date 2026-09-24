@@ -4,19 +4,19 @@ version = "0.1.0"
 description = "Schema introspection and query planning for Seal"
 requires-python = ">=3.11"
 dependencies = [
-    "pydantic>=2.10.0",
-    "pydantic-settings>=2.6.0",
-    "duckdb>=1.1.0",
-    "asyncpg>=0.30.0",
-    "litellm>=1.83.7,<2",
-    "instructor>=1.7.0",
-    "pyyaml>=6.0.0",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
+    "duckdb>=1.5.5",
+    "asyncpg>=0.31.0",
+    "litellm>=1.102.1,<2",
+    "instructor>=1.17.0",
+    "pyyaml>=6.0.3",
 ]
 
 [project.optional-dependencies]
 # Linux/Docker only — chromadb/onnxruntime wheels are unreliable on macOS in CI lock resolution.
 chroma = ["chromadb>=0.6,<0.7; sys_platform == 'linux'"]
 dev = [
-    "pytest>=8.0",
-    "pytest-asyncio>=0.24.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
 ]
