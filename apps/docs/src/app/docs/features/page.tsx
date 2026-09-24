@@ -27,7 +27,8 @@ export default function FeaturesPage() {
         </p>
         <ul>
           <li>
-            <strong>Dialects:</strong> Postgres, TimescaleDB, DuckDB
+            <strong>Dialects:</strong> Postgres, TimescaleDB, DuckDB, MySQL/MariaDB, SQLite,
+            ClickHouse
           </li>
           <li>
             <strong>API:</strong> <code>GET /v1/schema</code> · SDK <code>client.schema()</code>
@@ -80,7 +81,9 @@ export default function FeaturesPage() {
             statements
           </li>
           <li>Rejects dynamic <code>LIMIT</code>; injects/clamps outer <code>LIMIT</code></li>
-          <li>Dialect-aware (<code>postgres</code> / <code>duckdb</code>) in <code>packages/sql</code></li>
+          <li>Dialect-aware (<code>postgres</code> / <code>duckdb</code> / <code>mysql</code> /{' '}
+            <code>sqlite</code> / <code>clickhouse</code>) in <code>packages/sql</code>
+          </li>
         </ul>
 
         <h2 id="trust-explainability">Trust &amp; explainability</h2>

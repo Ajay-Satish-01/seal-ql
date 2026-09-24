@@ -126,6 +126,9 @@ python:
   pydantic-settings: ">=2.6.0"
   asyncpg: ">=0.30.0"
   duckdb: ">=1.1.0"
+  aiomysql: ">=0.2.0"
+  aiosqlite: ">=0.20.0"
+  clickhouse-connect: ">=0.8.0"
   pyyaml: ">=6.0.0"
   instructor: ">=1.7.0"
   httpx: ">=0.28.0"
@@ -149,6 +152,9 @@ python:
         - pytest
         - pytest-asyncio
       chromadb_linux_extra: ">=0.6,<0.7"
+      aiomysql_extra: ">=0.2.0"
+      aiosqlite_extra: ">=0.20.0"
+      clickhouse_connect_extra: ">=0.8.0"
 
     packages/sql:
       dependencies:
@@ -160,6 +166,9 @@ python:
         - pytest
         - pytest-asyncio
         - pandas
+      aiomysql_extra: ">=0.2.0"
+      aiosqlite_extra: ">=0.20.0"
+      clickhouse_connect_extra: ">=0.8.0"
 
     packages/charts:
       dependencies:

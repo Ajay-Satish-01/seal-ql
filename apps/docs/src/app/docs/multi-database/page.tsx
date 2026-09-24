@@ -24,8 +24,8 @@ export default function MultiDatabasePage() {
           <code>make up</code>). Some setups have <strong>more than one</strong> place data lives:
         </p>
         <ul>
-          <li>Primary Postgres for orders + a DuckDB file for pre-aggregated analytics</li>
-          <li>Operational DB + a read-only warehouse replica</li>
+          <li>Primary Postgres for orders + a DuckDB or SQLite file for pre-aggregated analytics</li>
+          <li>Operational MySQL/MariaDB + a ClickHouse warehouse</li>
           <li>Dev database vs a local analytics sandbox</li>
         </ul>
         <p>
@@ -107,6 +107,22 @@ Unknown id?  →  HTTP 404  unknown_database_id`}
             <code>DATABASE_URL</code> in Docker)
           </li>
           <li>
+            <strong>MySQL / MariaDB</strong> — <code>mysql://user:pass@host:3306/dbname</code>,{' '}
+            <code>mysql+pymysql://…</code>, or <code>mariadb://…</code> (internal dialect{' '}
+            <code>mysql</code>)
+          </li>
+          <li>
+            <strong>SQLite file</strong> — <code>sqlite:///relative.db</code> or{' '}
+            <code>sqlite:////absolute/path.db</code> (four slashes for an absolute path)
+          </li>
+          <li>
+            <strong>SQLite in-memory</strong> — <code>sqlite:///:memory:</code>
+          </li>
+          <li>
+            <strong>ClickHouse</strong> — <code>clickhouse://user:pass@host:8123/dbname</code>; use{' '}
+            <code>clickhouses://</code> for TLS. HTTP interface (default port 8123)
+          </li>
+          <li>
             <strong>DuckDB file</strong> — <code>duckdb:///data/analytics.duckdb</code> (recommended
             URL style) or a plain path such as <code>/data/analytics.duckdb</code>
           </li>
@@ -115,11 +131,18 @@ Unknown id?  →  HTTP 404  unknown_database_id`}
             analytics
           </li>
         </ul>
-        <Callout variant="info" title="DuckDB URL normalization">
-          Seal accepts <code>duckdb:///path/to/file.duckdb</code> in config for consistency with
-          Postgres-style URLs. At startup it converts that to the file path the DuckDB driver
-          expects (for example <code>/path/to/file.duckdb</code>). Remote DuckDB hosts are not
-          supported — only local files or <code>:memory:</code>.
+        <Callout variant="info" title="File URL normalization (DuckDB and SQLite)">
+          Seal accepts <code>duckdb:///path/to/file.duckdb</code> and{' '}
+          <code>sqlite:///relative.db</code> / <code>sqlite:////absolute/path.db</code> in config for
+          consistency with hosted URLs. At startup it converts those to the file path the driver
+          expects. Remote DuckDB or SQLite hosts are not supported — only local files or{' '}
+          <code>:memory:</code>.
+        </Callout>
+        <Callout variant="info" title="ClickHouse mutations stay blocked">
+          ClickHouse <code>ALTER TABLE … DELETE/UPDATE</code> mutations and other DDL never reach the
+          warehouse. Every LLM-generated statement is parsed with SQLGlot (
+          <code>schema.dialect=clickhouse</code>) and must be a read-only SELECT after sanitizer
+          LIMIT rules. See <Link href="/docs/zero-trust-sql">Zero-trust SQL</Link>.
         </Callout>
         <p>
           In Docker, mount a host directory into the API container so the file persists, for
@@ -424,6 +447,25 @@ const chat = await client.chat('Summarize daily_revenue', { databaseId: 'analyti
           </li>
         </ul>
         <p>
+          Per-database catalog files and per-database vector indexes are deferred (GitHub issues{' '}
+          <a href="https://github.com/Ajay-Satish-01/seal-ql/issues/57">#57</a> and{' '}
+          <a href="https://github.com/Ajay-Satish-01/seal-ql/issues/58">#58</a>). This release does
+          not half-build them. Until then, run <strong>one Seal container per database</strong> when
+          catalog descriptions or RAG must match a non-default schema.
+        </p>
+        <h3>Optional dialect drivers</h3>
+        <p>
+          Compose and the default API image include Postgres and DuckDB only. MySQL/MariaDB, SQLite,
+          and ClickHouse need extras (not live servers in default Compose):
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`uv sync --extra mysql --package seal-api          # aiomysql
+uv sync --extra sqlite --package seal-api         # aiosqlite
+uv sync --extra clickhouse --package seal-api     # clickhouse-connect
+# Docker: docker compose build --build-arg SEAL_EXTRA=mysql`}
+        />
+        <p>
           If your databases have <strong>completely different schemas</strong>, the reliable pattern
           is <strong>one Seal container per database</strong> (each with its own{' '}
           <code>DATABASE_URL</code>). Your application picks which Seal URL to call — see{' '}
@@ -480,6 +522,15 @@ const chat = await client.chat('Summarize daily_revenue', { databaseId: 'analyti
             <strong>DuckDB file not found / invalid database file</strong> — path not mounted in
             Docker, or pointing at a non-database file. Use <code>duckdb:///…</code> with a
             writable directory inside the container.
+          </li>
+          <li>
+            <strong>SQLite unable to open database</strong> — missing directory or three-vs-four
+            slash confusion. Relative files use <code>sqlite:///relative.db</code>; absolute paths
+            need four slashes: <code>sqlite:////data/app.db</code>.
+          </li>
+          <li>
+            <strong>ClickHouse connection errors</strong> — confirm the HTTP port (8123) and whether
+            TLS requires <code>clickhouses://</code>.
           </li>
           <li>
             <strong>SQL errors on non-default id</strong> — schema differs from what the planner

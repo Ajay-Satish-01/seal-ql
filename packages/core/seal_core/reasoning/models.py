@@ -63,6 +63,18 @@ class ReasoningMetadata(BaseModel):
     )
 
 
+_PROVIDER_BY_DIALECT = {
+    "postgres": "postgres",
+    "postgresql": "postgres",
+    "duckdb": "duckdb",
+    "mysql": "mysql",
+    "mariadb": "mysql",
+    "sqlite": "sqlite",
+    "clickhouse": "clickhouse",
+}
+_JSON_COLUMN_PROVIDERS = frozenset({"postgres", "mysql", "clickhouse"})
+
+
 @dataclass(frozen=True)
 class DatabaseCapabilities:
     """Database-agnostic capability hints for reasoning layers."""
@@ -76,15 +88,13 @@ class DatabaseCapabilities:
     @classmethod
     def from_bundle(cls, *, database_id: str, dialect: str) -> DatabaseCapabilities:
         """Build capabilities from registry bundle metadata."""
-        dialect_lower = dialect.lower()
-        provider = "duckdb" if "duckdb" in dialect_lower else "postgres"
-        if "postgres" in dialect_lower:
-            provider = "postgres"
+        dialect_lower = dialect.lower().strip()
+        provider = _PROVIDER_BY_DIALECT.get(dialect_lower, dialect_lower)
         return cls(
             database_id=database_id,
             dialect=dialect,
             supports_time_series=True,
-            supports_json_columns=provider == "postgres",
+            supports_json_columns=provider in _JSON_COLUMN_PROVIDERS,
             provider=provider,
         )
 

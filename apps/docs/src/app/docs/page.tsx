@@ -163,7 +163,7 @@ export default function DocsPage() {
     → Enhancement (schema + optional vector RAG)
     → LiteLLM + Instructor planner
     → SQLGlot AST validation
-    → Postgres / DuckDB executor
+    → Postgres / DuckDB / MySQL / SQLite / ClickHouse executor
     → Results + Vega-Lite chart`}
         </pre>
         <p>

@@ -21,13 +21,14 @@ COPY evals/pyproject.toml evals/pyproject.toml
 # ---- Dev Stage ----
 FROM base AS dev
 
-# Optional: SEAL_EXTRA=chroma installs chromadb (when VECTOR_STORE=chroma in .env)
+# Optional extras are declared on seal-api (chroma, mysql, sqlite, clickhouse, dialects).
+# dialects exists only on seal-api — do not apply it to seal-core.
 ARG SEAL_EXTRA=
 
 # Install dependencies (cached layer)
 RUN uv sync --frozen --no-install-workspace --all-packages \
     && if [ -n "$SEAL_EXTRA" ]; then \
-      uv sync --frozen --no-install-workspace --extra "$SEAL_EXTRA" --package seal-api --package seal-core; \
+      uv sync --frozen --no-install-workspace --extra "$SEAL_EXTRA" --package seal-api; \
     fi
 
 # Copy source code
@@ -36,7 +37,7 @@ COPY . .
 # Install workspace packages in editable mode
 RUN uv sync --frozen --all-packages \
     && if [ -n "$SEAL_EXTRA" ]; then \
-      uv sync --frozen --extra "$SEAL_EXTRA" --package seal-api --package seal-core; \
+      uv sync --frozen --extra "$SEAL_EXTRA" --package seal-api; \
     fi
 
 RUN chmod +x /app/scripts/healthcheck.py
@@ -63,7 +64,7 @@ ARG SEAL_EXTRA=
 # Install production dependencies only (frozen lockfile)
 RUN uv sync --frozen --no-install-workspace --all-packages --no-dev \
     && if [ -n "$SEAL_EXTRA" ]; then \
-      uv sync --frozen --no-install-workspace --no-dev --extra "$SEAL_EXTRA" --package seal-api --package seal-core; \
+      uv sync --frozen --no-install-workspace --no-dev --extra "$SEAL_EXTRA" --package seal-api; \
     fi
 
 # Copy source code
@@ -72,7 +73,7 @@ COPY . .
 # Install workspace packages (no dev deps)
 RUN uv sync --frozen --all-packages --no-dev \
     && if [ -n "$SEAL_EXTRA" ]; then \
-      uv sync --frozen --no-dev --extra "$SEAL_EXTRA" --package seal-api --package seal-core; \
+      uv sync --frozen --no-dev --extra "$SEAL_EXTRA" --package seal-api; \
     fi
 
 RUN chmod +x /app/scripts/healthcheck.py

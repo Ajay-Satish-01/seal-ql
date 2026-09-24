@@ -1,8 +1,9 @@
 """Canonical data models for database schema representation.
 
 These models are the single source of truth for schema metadata throughout
-the entire Seal system. Every introspector (DuckDB, Postgres)
-produces these models, and every downstream consumer (planner, validator) reads them.
+the entire Seal system. Every introspector (Postgres, DuckDB, MySQL, SQLite,
+ClickHouse) produces these models, and every downstream consumer (planner,
+validator) reads them.
 """
 
 from __future__ import annotations

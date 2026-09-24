@@ -16,7 +16,8 @@ export default function ZeroTrustSqlPage() {
           Seal never executes raw SQL from a model. After{' '}
           <Link href="/docs/guardrails">guardrails</Link> allow a request, generated SQL passes through
           a <strong>SQLGlot AST pipeline</strong> in <code>packages/sql/</code>. Only then does the
-          query executor run against Postgres or DuckDB.
+          query executor run against the registered backend (Postgres, DuckDB, MySQL/MariaDB,
+          SQLite, or ClickHouse).
         </p>
 
         <Callout variant="info" title="Guardrails vs SQL boundary">
@@ -64,7 +65,8 @@ QueryExecutor  — timeout, retries, row cap (safety net)`}
         <h2>Layer 2 — SQLValidator (schema)</h2>
         <p>
           <code>SQLValidator</code> parses with SQLGlot using the target database{' '}
-          <strong>dialect</strong> (<code>postgres</code> or <code>duckdb</code>), then:
+          <strong>dialect</strong> (<code>postgres</code>, <code>duckdb</code>, <code>mysql</code>,{' '}
+          <code>sqlite</code>, or <code>clickhouse</code>), then:
         </p>
         <ul>
           <li>
@@ -123,7 +125,9 @@ QueryExecutor  — timeout, retries, row cap (safety net)`}
         </ul>
         <p>
           Nested writes in CTEs are caught (e.g.{' '}
-          <code>WITH d AS (DELETE FROM orders …) SELECT …</code>).
+          <code>WITH d AS (DELETE FROM orders …) SELECT …</code>). ClickHouse mutations such as{' '}
+          <code>ALTER TABLE … DELETE</code> / <code>UPDATE</code> are the same class of write and
+          remain blocked.
         </p>
 
         <h3>Allowed statement shapes</h3>

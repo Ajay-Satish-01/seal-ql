@@ -22,13 +22,13 @@ See [integrations/agent-frameworks.md](integrations/agent-frameworks.md) for HTT
 
 | Pattern                    | When to use                                         | Config                                                                                 |
 | -------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **One Seal, one DB**       | Single analytics Postgres or DuckDB                 | `DATABASE_URL` only; omit `databases.yaml`                                             |
+| **One Seal, one DB**       | Single analytics Postgres, DuckDB, MySQL, SQLite, or ClickHouse | `DATABASE_URL` only; omit `databases.yaml`                                             |
 | **One Seal, multiple DBs** | Same process, several registered backends           | `config/databases.yaml` or `SEAL_DATABASES` + `database_id` per request                |
 | **One Seal per database**  | Hard tenant isolation, different credentials per DB | Separate compose stack / K8s deployment per tenant                                     |
 | **BFF / API gateway**      | Browser or mobile clients                           | Your API validates JWT → calls Seal with `X-API-Key`; never expose Seal key to clients |
 
 ```text
-  [Browser] ──JWT──► [Your API / BFF] ──X-API-Key──► [Seal API] ──SQL──► [Postgres / DuckDB]
+  [Browser] ──JWT──► [Your API / BFF] ──X-API-Key──► [Seal API] ──SQL──► [registered database]
 ```
 
 Multi-database details: [multi-database.md](multi-database.md). Authentication: docs site `/docs/authentication`.
@@ -142,9 +142,9 @@ Dashboard smoke test: `apps/web` on port **3001** (database dropdown, Query/Chat
 
 | Item                             | Status                                           |
 | -------------------------------- | ------------------------------------------------ |
-| Per-database catalog YAML        | Planned — today catalog is global from `default` |
-| Per-database vector indexes      | Planned — today index is default-only            |
-| Per-database semantic registries | Planned                                          |
+| Per-database catalog YAML        | Deferred — [issue #57](https://github.com/Ajay-Satish-01/seal-ql/issues/57); catalog stays global from `default` |
+| Per-database vector indexes      | Deferred — [issue #58](https://github.com/Ajay-Satish-01/seal-ql/issues/58); index stays default-only |
+| Per-database semantic registries | Planned; not started                             |
 
 Session pinning to `database_id` **is** shipped; see [multi-database.md](multi-database.md#chat-sessions-and-database_id).
 

@@ -6,7 +6,7 @@ Contributor-oriented overview of request flow, LLM usage, and safety boundaries.
 
 - **API** — `apps/api` (FastAPI), routes under `/v1/*`
 - **Core** — `packages/core/seal_core/` (chat, planner, guardrails, enhancement, catalog, workspace, pipeline)
-- **SQL** — `packages/sql/` (SQLGlot validator, sanitizer, executor)
+- **SQL** — `packages/sql/` (SQLGlot validator, sanitizer, executor — Postgres, DuckDB, MySQL/MariaDB, SQLite, ClickHouse)
 - **Charts** — `packages/charts/` (Vega-Lite from plan + result, no LLM)
 - **LLM** — LiteLLM + Instructor via `seal_core.llm.client`
 
@@ -42,7 +42,7 @@ See [guardrails.md](guardrails.md).
 
 No chat enhancement chain on this path. See [reasoning-layers.md](reasoning-layers.md).
 
-See [multi-database.md](multi-database.md) for registry config, DuckDB URL normalization, and limitations.
+See [multi-database.md](multi-database.md) for registry config, DuckDB/SQLite URL normalization, MySQL/ClickHouse URLs, and limitations.
 
 ## Chat path
 
