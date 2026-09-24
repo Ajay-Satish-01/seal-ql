@@ -26,7 +26,7 @@
 - **Query**: `QueryService` (`seal_core/pipeline/query_service.py`) — stateless `/v1/query` orchestration; shares `execute_natural_language_query` with chat.
 - **Query Planner**: LiteLLM + Instructor; shared `execute_natural_language_query` pipeline with chat SQL.
 - **SQL Validator**: SQLGlot AST — zero-trust boundary for all LLM-generated SQL.
-- **Database Executor**: Postgres (TimescaleDB) or DuckDB.
+- **Database Executor**: Postgres (TimescaleDB), DuckDB, MySQL/MariaDB, SQLite, or ClickHouse.
 - **Chart Spec Generator**: Vega-Lite; always on `/v1/query`; optional on chat via `include_charts`.
 
 ## Docker

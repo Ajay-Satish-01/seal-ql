@@ -138,7 +138,7 @@ export default function EmbeddingPage() {
         <h3>2. SQL (zero-trust)</h3>
         <p>
           <em>Is this statement safe to execute?</em> Every generated query is parsed with SQLGlot,
-          validated against live schema, sanitized, and limited before Postgres or DuckDB sees it.
+          validated against live schema, sanitized, and limited before your database sees it.
           Same path for <code>/v1/query</code> and chat turns that run SQL.
         </p>
         <p>

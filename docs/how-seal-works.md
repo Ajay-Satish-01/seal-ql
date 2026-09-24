@@ -42,7 +42,7 @@ See [guardrails.md](guardrails.md).
 
 No chat enhancement chain on this path. See [reasoning-layers.md](reasoning-layers.md).
 
-See [multi-database.md](multi-database.md) for registry config, DuckDB URL normalization, and limitations.
+See [multi-database.md](multi-database.md) for registry config, DuckDB/SQLite URL normalization, MySQL/ClickHouse URLs, and limitations.
 
 ## Chat path
 

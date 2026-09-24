@@ -67,7 +67,7 @@ const MODES: {
       {
         id: 'db',
         label: 'Executor',
-        sub: 'Postgres · DuckDB',
+        sub: 'Postgres · DuckDB · MySQL · SQLite · ClickHouse',
         icon: Database,
       },
       {

@@ -17,13 +17,13 @@ export const databaseConfig: ConfigRow[] = [
     description:
       'Optional YAML file with a top-level `databases:` map (id → url string or {url: "…"}). If the file is missing, Seal uses only DATABASE_URL. Entries named `default` in YAML are ignored.',
     expect:
-      'On restart, logs show `Registering database` for each id. Requests with that database_id introspect and execute on the configured backend. Unknown ids → HTTP 404. DuckDB URLs like duckdb:///data/file.duckdb are normalized to file paths.',
+      'On restart, logs show `Registering database` for each id. Requests with that database_id introspect and execute on the configured backend. Unknown ids → HTTP 404. DuckDB and SQLite URLs are normalized to file paths; MySQL/MariaDB (`mysql://`, `mariadb://`) and ClickHouse (`clickhouse://`) URLs are passed through.',
   },
   {
     name: 'SEAL_DATABASES',
     type: 'JSON string',
     description:
-      'Optional env override: JSON object mapping database_id to a connection URL or {"url":"…"}. Merges with SEAL_DATABASES_PATH; cannot override `default`. Example: {"analytics":"duckdb:///data/analytics.duckdb"}.',
+      'Optional env override: JSON object mapping database_id to a connection URL or {"url":"…"}. Merges with SEAL_DATABASES_PATH; cannot override `default`. Example: {"analytics":"duckdb:///data/analytics.duckdb","mysql_ops":"mysql://reader@host:3306/ops"}.',
     expect:
       'Same routing behavior as SEAL_DATABASES_PATH. Useful in Docker when you prefer env over mounting databases.yaml. See /docs/multi-database for URL formats and chat session pinning.',
   },

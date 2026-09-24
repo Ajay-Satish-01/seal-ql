@@ -1,7 +1,8 @@
 """QueryExecutor — safe, sandboxed SQL query execution.
 
-Executes validated and sanitized SQL queries against Postgres (via asyncpg)
-or DuckDB databases. Provides:
+Executes validated and sanitized SQL queries against Postgres (asyncpg),
+DuckDB, MySQL/MariaDB (aiomysql), SQLite (aiosqlite), or ClickHouse
+(clickhouse-connect in a thread pool). Provides:
   - Configurable query timeout (default 30s)
   - Automatic retry with exponential backoff (default 2 retries)
   - Row cap enforcement as a safety net
@@ -114,7 +115,7 @@ class ExecutionConfig:
 
 
 class QueryExecutor:
-    """Executes SQL queries safely against Postgres or DuckDB.
+    """Executes SQL queries safely against a supported dialect.
 
     Handles connection management, timeouts, retries, and result normalization.
     Each execution returns a QueryResult with metadata.
@@ -136,20 +137,26 @@ class QueryExecutor:
         """Initialize the executor.
 
         Args:
-            dialect: Database dialect ('postgres' or 'duckdb').
-            connection_string: Database connection string.
+            dialect: Database dialect (postgres, duckdb, mysql, sqlite, clickhouse).
+            connection_string: Database connection string or file path.
             config: Optional execution configuration. Uses defaults if not provided.
         """
-        # Validate dialect early.
-        to_sqlglot_dialect(dialect)
+        # Validate dialect early. MariaDB shares the MySQL SQLGlot dialect.
+        key = dialect.lower().strip()
+        if key == "mariadb":
+            key = Dialect.MYSQL
+        to_sqlglot_dialect(key)
 
-        self._dialect = dialect.lower().strip()
+        self._dialect = key
         self._connection_string = connection_string
         self._config = config or ExecutionConfig()
 
         # Lazily initialized connections.
         self._pg_pool: Any = None  # asyncpg.Pool
         self._duckdb_conn: Any = None  # duckdb.DuckDBPyConnection
+        self._mysql_pool: Any = None  # aiomysql.Pool
+        self._sqlite_conn: Any = None  # aiosqlite.Connection
+        self._clickhouse_client: Any = None  # clickhouse_connect.driver.Client
 
     async def close(self) -> None:
         """Close the underlying database connection / pool."""
@@ -160,6 +167,19 @@ class QueryExecutor:
         if self._duckdb_conn is not None:
             self._duckdb_conn.close()
             self._duckdb_conn = None
+
+        if self._mysql_pool is not None:
+            self._mysql_pool.close()
+            await self._mysql_pool.wait_closed()
+            self._mysql_pool = None
+
+        if self._sqlite_conn is not None:
+            await self._sqlite_conn.close()
+            self._sqlite_conn = None
+
+        if self._clickhouse_client is not None:
+            self._clickhouse_client.close()
+            self._clickhouse_client = None
 
     async def execute(self, sql: str) -> QueryResult:
         """Execute a SQL query with timeout, retry, and row cap.
@@ -238,6 +258,21 @@ class QueryExecutor:
         elif self._dialect == Dialect.DUCKDB:
             raw_rows, columns = await asyncio.wait_for(
                 self._execute_duckdb(sql),
+                timeout=self._config.timeout_seconds,
+            )
+        elif self._dialect == Dialect.MYSQL:
+            raw_rows, columns = await asyncio.wait_for(
+                self._execute_mysql(sql),
+                timeout=self._config.timeout_seconds,
+            )
+        elif self._dialect == Dialect.SQLITE:
+            raw_rows, columns = await asyncio.wait_for(
+                self._execute_sqlite(sql),
+                timeout=self._config.timeout_seconds,
+            )
+        elif self._dialect == Dialect.CLICKHOUSE:
+            raw_rows, columns = await asyncio.wait_for(
+                self._execute_clickhouse(sql),
                 timeout=self._config.timeout_seconds,
             )
         else:
@@ -364,6 +399,135 @@ class QueryExecutor:
 
         return rows, columns
 
+    # ============================================================
+    # MySQL / MariaDB execution
+    # ============================================================
+
+    async def _get_mysql_pool(self) -> Any:
+        """Lazily create and return the aiomysql connection pool."""
+        if self._mysql_pool is None:
+            import aiomysql
+            from seal_core.database.config import parse_network_url
+
+            params = parse_network_url(
+                self._connection_string,
+                default_port=3306,
+                default_user="root",
+            )
+            self._mysql_pool = await aiomysql.create_pool(
+                host=params.host,
+                port=params.port,
+                user=params.user,
+                password=params.password,
+                db=params.database or None,
+                minsize=1,
+                maxsize=5,
+                autocommit=True,
+                charset="utf8mb4",
+            )
+        return self._mysql_pool
+
+    async def _execute_mysql(self, sql: str) -> tuple[list[dict[str, Any]], list[ColumnMetadata]]:
+        """Execute SQL against MySQL/MariaDB via aiomysql."""
+        import aiomysql
+
+        pool = await self._get_mysql_pool()
+        async with pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute(sql)
+                records = await cur.fetchall()
+                description = cur.description or []
+
+        columns = [
+            ColumnMetadata(
+                name=col[0],
+                type=_mysql_type_code_name(col[1]) if len(col) > 1 else "str",
+                nullable=True if len(col) < 7 else bool(col[6]),
+            )
+            for col in description
+        ]
+        rows = [dict(record) for record in records]
+        return rows, columns
+
+    # ============================================================
+    # SQLite execution
+    # ============================================================
+
+    async def _get_sqlite_conn(self) -> Any:
+        """Lazily create and return the aiosqlite connection."""
+        if self._sqlite_conn is None:
+            import aiosqlite
+
+            self._sqlite_conn = await aiosqlite.connect(self._connection_string)
+            self._sqlite_conn.row_factory = aiosqlite.Row
+        return self._sqlite_conn
+
+    async def _execute_sqlite(self, sql: str) -> tuple[list[dict[str, Any]], list[ColumnMetadata]]:
+        """Execute SQL against SQLite via aiosqlite."""
+        conn = await self._get_sqlite_conn()
+        cursor = await conn.execute(sql)
+        raw_rows = await cursor.fetchall()
+        description = cursor.description or []
+        await cursor.close()
+
+        columns = [
+            ColumnMetadata(name=col[0], type="str", nullable=True) for col in description
+        ]
+        rows = [dict(row) for row in raw_rows]
+        return rows, columns
+
+    # ============================================================
+    # ClickHouse execution
+    # ============================================================
+
+    def _get_clickhouse_client(self) -> Any:
+        """Lazily create and return a clickhouse-connect client."""
+        if self._clickhouse_client is None:
+            import clickhouse_connect
+            from seal_core.database.config import clickhouse_default_port, parse_network_url
+
+            params = parse_network_url(
+                self._connection_string,
+                default_port=clickhouse_default_port(self._connection_string),
+                default_user="default",
+                default_database="default",
+            )
+            self._clickhouse_client = clickhouse_connect.get_client(
+                host=params.host,
+                port=params.port,
+                username=params.user,
+                password=params.password,
+                database=params.database or "default",
+                secure=params.secure,
+            )
+        return self._clickhouse_client
+
+    async def _execute_clickhouse(
+        self, sql: str
+    ) -> tuple[list[dict[str, Any]], list[ColumnMetadata]]:
+        """Execute SQL against ClickHouse.
+
+        clickhouse-connect is synchronous, so work runs in a thread pool.
+        """
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self._execute_clickhouse_sync, sql)
+
+    def _execute_clickhouse_sync(
+        self, sql: str
+    ) -> tuple[list[dict[str, Any]], list[ColumnMetadata]]:
+        """Synchronous ClickHouse execution via clickhouse-connect."""
+        client = self._get_clickhouse_client()
+        timeout = max(1, int(self._config.timeout_seconds))
+        result = client.query(sql, settings={"max_execution_time": timeout})
+        names = list(result.column_names)
+        type_names = [str(t) for t in result.column_types]
+        columns = [
+            ColumnMetadata(name=name, type=type_name or "str", nullable=True)
+            for name, type_name in zip(names, type_names, strict=False)
+        ]
+        rows = [dict(zip(names, row, strict=False)) for row in result.result_rows]
+        return rows, columns
+
 
 # ============================================================
 # Helpers
@@ -393,3 +557,40 @@ _PG_OID_MAP: dict[int, str] = {
 def _pg_oid_to_type_name(oid: int) -> str:
     """Convert a Postgres type OID to a human-readable type name."""
     return _PG_OID_MAP.get(oid, f"oid:{oid}")
+
+
+# pymysql / MySQLdb FIELD_TYPE codes used by aiomysql descriptions.
+_MYSQL_FIELD_TYPE_MAP: dict[int, str] = {
+    0: "decimal",
+    1: "tinyint",
+    2: "smallint",
+    3: "int",
+    4: "float",
+    5: "double",
+    7: "timestamp",
+    8: "bigint",
+    9: "mediumint",
+    10: "date",
+    11: "time",
+    12: "datetime",
+    13: "year",
+    15: "varchar",
+    16: "bit",
+    245: "json",
+    246: "decimal",
+    247: "enum",
+    248: "set",
+    249: "tinyblob",
+    250: "mediumblob",
+    251: "longblob",
+    252: "blob",
+    253: "varchar",
+    254: "char",
+}
+
+
+def _mysql_type_code_name(type_code: object) -> str:
+    """Convert a MySQL field type code to a readable name."""
+    if isinstance(type_code, int):
+        return _MYSQL_FIELD_TYPE_MAP.get(type_code, f"mysql:{type_code}")
+    return str(type_code) if type_code else "str"

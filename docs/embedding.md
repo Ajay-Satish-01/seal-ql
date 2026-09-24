@@ -22,13 +22,13 @@ See [integrations/agent-frameworks.md](integrations/agent-frameworks.md) for HTT
 
 | Pattern                    | When to use                                         | Config                                                                                 |
 | -------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **One Seal, one DB**       | Single analytics Postgres or DuckDB                 | `DATABASE_URL` only; omit `databases.yaml`                                             |
+| **One Seal, one DB**       | Single analytics Postgres, DuckDB, MySQL, SQLite, or ClickHouse | `DATABASE_URL` only; omit `databases.yaml`                                             |
 | **One Seal, multiple DBs** | Same process, several registered backends           | `config/databases.yaml` or `SEAL_DATABASES` + `database_id` per request                |
 | **One Seal per database**  | Hard tenant isolation, different credentials per DB | Separate compose stack / K8s deployment per tenant                                     |
 | **BFF / API gateway**      | Browser or mobile clients                           | Your API validates JWT → calls Seal with `X-API-Key`; never expose Seal key to clients |
 
 ```text
-  [Browser] ──JWT──► [Your API / BFF] ──X-API-Key──► [Seal API] ──SQL──► [Postgres / DuckDB]
+  [Browser] ──JWT──► [Your API / BFF] ──X-API-Key──► [Seal API] ──SQL──► [registered database]
 ```
 
 Multi-database details: [multi-database.md](multi-database.md). Authentication: docs site `/docs/authentication`.

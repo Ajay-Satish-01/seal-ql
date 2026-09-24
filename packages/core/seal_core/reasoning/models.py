@@ -76,15 +76,26 @@ class DatabaseCapabilities:
     @classmethod
     def from_bundle(cls, *, database_id: str, dialect: str) -> DatabaseCapabilities:
         """Build capabilities from registry bundle metadata."""
-        dialect_lower = dialect.lower()
-        provider = "duckdb" if "duckdb" in dialect_lower else "postgres"
-        if "postgres" in dialect_lower:
+        dialect_lower = dialect.lower().strip()
+        if dialect_lower in {"postgres", "postgresql"}:
             provider = "postgres"
+        elif dialect_lower == "duckdb":
+            provider = "duckdb"
+        elif dialect_lower in {"mysql", "mariadb"}:
+            provider = "mysql"
+        elif dialect_lower == "sqlite":
+            provider = "sqlite"
+        elif dialect_lower == "clickhouse":
+            provider = "clickhouse"
+        else:
+            provider = dialect_lower
+
+        json_providers = {"postgres", "mysql", "clickhouse"}
         return cls(
             database_id=database_id,
             dialect=dialect,
             supports_time_series=True,
-            supports_json_columns=provider == "postgres",
+            supports_json_columns=provider in json_providers,
             provider=provider,
         )
 

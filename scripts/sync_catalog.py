@@ -9,6 +9,7 @@ from pathlib import Path
 
 from seal_core.catalog.registry import DataCatalogRegistry
 from seal_core.catalog.sync import sync_catalog
+from seal_core.database.config import infer_dialect, normalize_connection_url
 from seal_core.schema.introspector import get_introspector
 from seal_core.settings import get_settings
 
@@ -19,8 +20,9 @@ async def main() -> int:
         print("DATA_CATALOG_PATH is not set", file=sys.stderr)
         return 1
 
-    dialect = "postgres" if "postgres" in settings.database_url else "duckdb"
-    introspector = get_introspector(dialect, settings.database_url)
+    dialect = infer_dialect(settings.database_url)
+    connection_url = normalize_connection_url(settings.database_url)
+    introspector = get_introspector(dialect, connection_url)
     try:
         schema = await introspector.introspect()
         path = Path(settings.data_catalog_path)

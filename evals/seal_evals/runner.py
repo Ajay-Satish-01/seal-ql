@@ -69,10 +69,9 @@ def empty_metrics() -> dict[str, Any]:
 
 def dialect_for_url(db_url: str) -> str:
     """Infer SQL dialect from a database URL."""
-    lowered = db_url.strip().lower()
-    if "postgres" in lowered or "postgresql" in lowered:
-        return "postgres"
-    return "duckdb"
+    from seal_core.database.config import infer_dialect
+
+    return infer_dialect(db_url)
 
 
 def is_in_memory_url(db_url: str) -> bool:
@@ -80,7 +79,7 @@ def is_in_memory_url(db_url: str) -> bool:
     normalized = db_url.strip().lower()
     if normalized in (":memory:", ""):
         return True
-    return normalized.startswith("duckdb:///:memory:")
+    return normalized.endswith(":///:memory:")
 
 
 def _parse_float_arg(value: str, *, name: str) -> float:
@@ -271,8 +270,11 @@ class EvalRunner:
         self.query_timeout = query_timeout if query_timeout is not None else default_query_timeout()
         self.model = model
         self.planner = QueryPlanner(model=model)
-        self.executor = QueryExecutor(dialect, db_url)
-        self.introspector = get_introspector(dialect, db_url)
+        from seal_core.database.config import normalize_connection_url
+
+        connection_url = normalize_connection_url(db_url)
+        self.executor = QueryExecutor(dialect, connection_url)
+        self.introspector = get_introspector(dialect, connection_url)
 
     @asynccontextmanager
     async def _resources(self) -> AsyncIterator[None]:

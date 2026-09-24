@@ -158,6 +158,26 @@ docker compose exec -T api uv run pytest -v \\
           </table>
         </div>
 
+        <h2>Optional live MySQL / ClickHouse</h2>
+        <p>
+          Unit tests mock MySQL and ClickHouse drivers. Optional integration tests run only when you
+          point at a real server:
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`# Live MySQL/MariaDB (pytest marker mysql)
+SEAL_TEST_MYSQL_URL='mysql://root:pass@127.0.0.1:3306/seal_test' \\
+  uv run pytest -m mysql -v
+
+# Live ClickHouse (pytest marker clickhouse)
+SEAL_TEST_CLICKHOUSE_URL='clickhouse://default@127.0.0.1:8123/default' \\
+  uv run pytest -m clickhouse -v`}
+        />
+        <p>
+          SQLite is covered in default unit tests with <code>:memory:</code> and temporary files —
+          no extra marker. These live markers are skipped in CI unless the env vars are set.
+        </p>
+
         <h2>Branch protection</h2>
         <p>
           Repository maintainers can require the <strong>E2E Tests (Python &amp; TypeScript)</strong>{' '}

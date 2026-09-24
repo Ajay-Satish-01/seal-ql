@@ -105,11 +105,15 @@ def test_dialect_for_url() -> None:
     assert dialect_for_url("postgresql+asyncpg://localhost/seal") == "postgres"
     assert dialect_for_url("postgres://user@host/db") == "postgres"
     assert dialect_for_url("duckdb:///data/x.duckdb") == "duckdb"
+    assert dialect_for_url("mysql://localhost/analytics") == "mysql"
+    assert dialect_for_url("sqlite:///data.db") == "sqlite"
+    assert dialect_for_url("clickhouse://localhost:8123/default") == "clickhouse"
 
 
 def test_is_in_memory_url() -> None:
     assert is_in_memory_url(":memory:") is True
     assert is_in_memory_url("duckdb:///:memory:") is True
+    assert is_in_memory_url("sqlite:///:memory:") is True
     assert is_in_memory_url("postgresql+asyncpg://localhost/seal") is False
     assert is_in_memory_url("duckdb:///data/memory_backup.duckdb") is False
 

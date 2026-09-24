@@ -149,13 +149,14 @@ console.log(result.sql, result.results, result.chart);`}
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">3c. Multiple databases (optional)</h2>
         <p>
-          If you have more than one SQL backend (Postgres + DuckDB analytics file, read replica, etc.),
+          If you have more than one SQL backend (Postgres + DuckDB/SQLite file, MySQL, ClickHouse,
+          read replica, etc.),
           register extra ids in <code>config/databases.yaml</code> or <code>SEAL_DATABASES</code>, then
           pass <code>database_id</code> on <code>/v1/query</code>, <code>/v1/chat</code>, and{' '}
           <code>/v1/schema</code>. Clients never send raw connection URLs.
         </p>
         <p>
-          Full walkthrough with curl, SDK, session pinning, and DuckDB paths:{' '}
+          Full walkthrough with curl, SDK, session pinning, and file-path URLs:{' '}
           <Link href="/docs/multi-database">Multi-database routing</Link>.
         </p>
 

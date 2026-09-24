@@ -1,8 +1,9 @@
 """Dialect mapping between internal identifiers and SQLGlot dialects.
 
-Maps our DatabaseSchema.dialect strings (e.g., 'postgres', 'duckdb') to the
-corresponding SQLGlot dialect objects. Also provides transpilation support
-when the LLM generates SQL in a different dialect than the target database.
+Maps our DatabaseSchema.dialect strings (e.g., 'postgres', 'duckdb', 'mysql',
+'sqlite', 'clickhouse') to the corresponding SQLGlot dialect objects. Also
+provides transpilation support when the LLM generates SQL in a different dialect
+than the target database.
 """
 
 from __future__ import annotations
@@ -18,6 +19,9 @@ class Dialect(StrEnum):
 
     POSTGRES = "postgres"
     DUCKDB = "duckdb"
+    MYSQL = "mysql"
+    SQLITE = "sqlite"
+    CLICKHOUSE = "clickhouse"
 
 
 # Mapping from our internal dialect enum to SQLGlot dialect strings.
@@ -25,17 +29,25 @@ class Dialect(StrEnum):
 _DIALECT_MAP: dict[str, str] = {
     Dialect.POSTGRES: "postgres",
     Dialect.DUCKDB: "duckdb",
+    Dialect.MYSQL: "mysql",
+    "mariadb": "mysql",
+    Dialect.SQLITE: "sqlite",
+    Dialect.CLICKHOUSE: "clickhouse",
 }
 
 # Reverse map for resolving from SQLGlot dialect back to ours.
-_REVERSE_DIALECT_MAP: dict[str, Dialect] = {v: Dialect(k) for k, v in _DIALECT_MAP.items()}
+_REVERSE_DIALECT_MAP: dict[str, Dialect] = {
+    sqlglot_name: key if isinstance(key, Dialect) else Dialect(key)
+    for key, sqlglot_name in _DIALECT_MAP.items()
+    if isinstance(key, Dialect)
+}
 
 
 def to_sqlglot_dialect(dialect: str | Dialect) -> str:
     """Convert an internal dialect identifier to a SQLGlot dialect string.
 
     Args:
-        dialect: Internal dialect string (e.g., 'postgres', 'duckdb').
+        dialect: Internal dialect string (e.g., 'postgres', 'mysql', 'clickhouse').
 
     Returns:
         The corresponding SQLGlot dialect string.

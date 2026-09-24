@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qsl, unquote, urlparse
 
 import yaml
 
@@ -14,9 +15,30 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_DATABASE_ID = "default"
 
+_MYSQL_SCHEMES = frozenset({"mysql", "mariadb"})
+_SQLITE_SCHEMES = frozenset({"sqlite"})
+_CLICKHOUSE_SCHEMES = frozenset({"clickhouse", "clickhouses"})
+_POSTGRES_SCHEMES = frozenset({"postgres", "postgresql"})
+
+_SUPPORTED_SCHEMES_MSG = (
+    "postgresql/postgres, duckdb, mysql/mariadb, sqlite, clickhouse"
+)
+
 
 class DatabaseConfigError(ValueError):
     """Invalid database configuration."""
+
+
+@dataclass(frozen=True)
+class NetworkConnectionParams:
+    """Hosted-database connection fields parsed from a URL."""
+
+    host: str
+    port: int
+    user: str
+    password: str
+    database: str
+    secure: bool = False
 
 
 def is_default_database_id(database_id: str) -> bool:
@@ -31,23 +53,34 @@ def database_id_from_metadata(metadata: dict[str, Any] | None) -> str:
     return str(metadata.get("database_id", DEFAULT_DATABASE_ID))
 
 
+def _scheme_base(scheme: str) -> str:
+    """Strip SQLAlchemy-style driver suffixes (``mysql+pymysql`` → ``mysql``)."""
+    return scheme.split("+", 1)[0].lower()
+
+
 def infer_dialect(url: str) -> str:
-    """Infer postgres vs duckdb from a connection URL or path.
+    """Infer dialect from a connection URL or path.
 
     Raises:
         DatabaseConfigError: When the URL scheme is not supported.
     """
     lower = url.lower().strip()
     parsed = urlparse(lower)
-    scheme = parsed.scheme
-    if scheme in {"postgres", "postgresql"} or scheme.startswith("postgresql+"):
+    scheme = _scheme_base(parsed.scheme)
+    if scheme in _POSTGRES_SCHEMES or parsed.scheme.startswith("postgresql+"):
         return "postgres"
+    if scheme in _MYSQL_SCHEMES:
+        return "mysql"
+    if scheme in _SQLITE_SCHEMES:
+        return "sqlite"
+    if scheme in _CLICKHOUSE_SCHEMES:
+        return "clickhouse"
     if scheme == "duckdb" or lower == ":memory:" or lower.startswith(":memory:"):
         return "duckdb"
     if scheme and "://" in lower:
         msg = (
             f"Unsupported database URL scheme in {url!r}; "
-            "supported schemes: postgresql/postgres, duckdb"
+            f"supported schemes: {_SUPPORTED_SCHEMES_MSG}"
         )
         raise DatabaseConfigError(msg)
     return "duckdb"
@@ -56,28 +89,121 @@ def infer_dialect(url: str) -> str:
 def normalize_connection_url(url: str) -> str:
     """Return the concrete connection string/path used by drivers.
 
-    DuckDB's Python driver accepts file paths, not ``duckdb:///`` URLs. Seal's
-    config accepts the URL form for consistency with Postgres, then normalizes it
-    before constructing introspectors/executors.
+    DuckDB and SQLite Python drivers accept file paths, not ``scheme:///`` URLs.
+    Seal's config accepts the URL form for consistency with hosted databases,
+    then normalizes file-backed URLs before constructing introspectors/executors.
+
+    Hosted dialects (Postgres, MySQL/MariaDB, ClickHouse) are passed through.
     """
     stripped = url.strip()
-    if infer_dialect(stripped) != "duckdb":
-        return stripped
+    dialect = infer_dialect(stripped)
+    if dialect == "duckdb":
+        return _normalize_file_url(
+            stripped,
+            scheme="duckdb",
+            original=url,
+            relative_three_slash=False,
+        )
+    if dialect == "sqlite":
+        return _normalize_file_url(
+            stripped,
+            scheme="sqlite",
+            original=url,
+            relative_three_slash=True,
+        )
+    return stripped
+
+
+def _normalize_file_url(
+    stripped: str,
+    *,
+    scheme: str,
+    original: str,
+    relative_three_slash: bool,
+) -> str:
+    """Normalize ``scheme:///path`` URLs to driver file paths or ``:memory:``.
+
+    When ``relative_three_slash`` is True (SQLite SQLAlchemy form):
+    ``sqlite:///relative.db`` → ``relative.db``;
+    ``sqlite:////absolute/path.db`` → ``/absolute/path.db``;
+    ``sqlite:///:memory:`` → ``:memory:``.
+
+    When False (DuckDB): ``duckdb:///data/file.duckdb`` keeps the leading slash
+    as an absolute path.
+    """
     parsed = urlparse(stripped)
-    if parsed.scheme.lower() != "duckdb":
+    parsed_scheme = _scheme_base(parsed.scheme)
+    if parsed_scheme != scheme:
         return stripped
     if parsed.params or parsed.query or parsed.fragment:
-        raise DatabaseConfigError(f"DuckDB URL {url!r} must not include params, query, or fragment")
+        raise DatabaseConfigError(
+            f"{scheme.upper()} URL {original!r} must not include params, query, or fragment"
+        )
     if parsed.netloc:
         raise DatabaseConfigError(
-            f"DuckDB URL {url!r} must be a local path like duckdb:///data/file.duckdb"
+            f"{scheme.upper()} URL {original!r} must be a local path like {scheme}:///data/file.db"
         )
     path = unquote(parsed.path)
     if path in {"", "/"}:
-        raise DatabaseConfigError(f"DuckDB URL {url!r} requires a database path")
+        raise DatabaseConfigError(f"{scheme.upper()} URL {original!r} requires a database path")
     if path == "/:memory:":
         return ":memory:"
+    if relative_three_slash:
+        # Four slashes: sqlite:////abs/path.db → path='//abs/path.db'
+        if path.startswith("//"):
+            return path[1:]
+        # Three slashes: sqlite:///relative.db → path='/relative.db'
+        return path.lstrip("/")
     return path
+
+
+def clickhouse_default_port(url: str) -> int:
+    """HTTP 8123, or HTTPS 8443 when the scheme is ``clickhouses://``."""
+    scheme = _scheme_base(urlparse(url.strip()).scheme)
+    return 8443 if scheme == "clickhouses" else 8123
+
+
+def parse_network_url(
+    url: str,
+    *,
+    default_port: int,
+    default_user: str = "",
+    default_database: str = "",
+) -> NetworkConnectionParams:
+    """Parse a hosted SQL URL into driver connection fields.
+
+    Strips SQLAlchemy driver suffixes (``mysql+pymysql://`` → ``mysql://``).
+    ``clickhouses://`` and ``?secure=true`` enable TLS.
+    """
+    stripped = url.strip()
+    parsed_original = urlparse(stripped)
+    scheme = parsed_original.scheme
+    if "+" in scheme:
+        base = scheme.split("+", 1)[0]
+        stripped = stripped.replace(f"{scheme}://", f"{base}://", 1)
+        parsed_original = urlparse(stripped)
+
+    parsed = parsed_original
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    database = unquote(parsed.path.lstrip("/")) if parsed.path else ""
+    if "/" in database:
+        database = database.split("/", 1)[0]
+    secure = _scheme_base(parsed.scheme) == "clickhouses" or query.get("secure", "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    host = unquote(parsed.hostname) if parsed.hostname else "localhost"
+    user = unquote(parsed.username) if parsed.username else default_user
+    password = unquote(parsed.password) if parsed.password else ""
+    return NetworkConnectionParams(
+        host=host,
+        port=parsed.port or default_port,
+        user=user,
+        password=password,
+        database=database or default_database,
+        secure=secure,
+    )
 
 
 def planner_resources_for_database(

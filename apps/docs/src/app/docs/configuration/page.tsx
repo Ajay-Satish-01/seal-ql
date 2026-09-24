@@ -64,7 +64,8 @@ export default function ConfigurationPage() {
                 Postgres instead.
               </p>
               <p>
-                To register additional backends (warehouse, DuckDB file, read replica), see{' '}
+                To register additional backends (warehouse, DuckDB/SQLite file, MySQL, ClickHouse,
+                read replica), see{' '}
                 <Link href="/docs/multi-database">Multi-database routing</Link> — a step-by-step guide
                 with examples. Each request passes <code>database_id</code> (default{' '}
                 <code>&quot;default&quot;</code>).

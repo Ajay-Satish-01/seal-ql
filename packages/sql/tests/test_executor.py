@@ -89,9 +89,27 @@ class TestExecutorInit:
         executor = QueryExecutor(dialect="duckdb", connection_string=":memory:")
         assert executor._dialect == "duckdb"
 
+    def test_valid_mysql_dialect(self) -> None:
+        executor = QueryExecutor(dialect="mysql", connection_string="mysql://localhost/test")
+        assert executor._dialect == "mysql"
+
+    def test_valid_sqlite_dialect(self) -> None:
+        executor = QueryExecutor(dialect="sqlite", connection_string=":memory:")
+        assert executor._dialect == "sqlite"
+
+    def test_valid_clickhouse_dialect(self) -> None:
+        executor = QueryExecutor(
+            dialect="clickhouse", connection_string="clickhouse://localhost:8123/default"
+        )
+        assert executor._dialect == "clickhouse"
+
+    def test_mariadb_alias_maps_to_mysql(self) -> None:
+        executor = QueryExecutor(dialect="mariadb", connection_string="mariadb://localhost/test")
+        assert executor._dialect == "mysql"
+
     def test_unsupported_dialect_raises(self) -> None:
         with pytest.raises(ValueError, match="Unsupported dialect"):
-            QueryExecutor(dialect="mysql", connection_string="mysql://localhost/test")
+            QueryExecutor(dialect="oracle", connection_string="oracle://localhost/test")
 
     def test_case_insensitive_dialect(self) -> None:
         executor = QueryExecutor(dialect="DUCKDB", connection_string=":memory:")
@@ -528,3 +546,119 @@ class TestResultIntegration:
         result = await executor.execute("SELECT name, price FROM products")
         col_names = [c.name for c in result.columns]
         assert col_names == ["name", "price"]
+
+
+# ---------------------------------------------------------------------------
+# SQLite execution (real in-memory database)
+# ---------------------------------------------------------------------------
+
+
+class TestSQLiteExecution:
+    """Integration-style tests using aiosqlite in-memory."""
+
+    @pytest.fixture
+    async def executor(self) -> QueryExecutor:
+        executor = QueryExecutor(dialect="sqlite", connection_string=":memory:")
+        conn = await executor._get_sqlite_conn()
+        await conn.execute("CREATE TABLE users (id INTEGER, name TEXT, score REAL)")
+        await conn.execute("INSERT INTO users VALUES (1, 'Alice', 95.5)")
+        await conn.execute("INSERT INTO users VALUES (2, 'Bob', 87.3)")
+        await conn.commit()
+        return executor
+
+    @pytest.mark.asyncio
+    async def test_simple_select(self, executor: QueryExecutor) -> None:
+        result = await executor.execute("SELECT id, name FROM users ORDER BY id")
+        assert result.row_count == 2
+        assert result.rows[0]["name"] == "Alice"
+        assert result.columns[0].name == "id"
+
+    @pytest.mark.asyncio
+    async def test_row_cap(self) -> None:
+        config = ExecutionConfig(row_cap=2)
+        executor = QueryExecutor(dialect="sqlite", connection_string=":memory:", config=config)
+        conn = await executor._get_sqlite_conn()
+        await conn.execute("CREATE TABLE t (id INTEGER)")
+        for i in range(5):
+            await conn.execute("INSERT INTO t VALUES (?)", (i,))
+        await conn.commit()
+        result = await executor.execute("SELECT id FROM t")
+        assert result.row_count == 2
+        assert result.truncated is True
+        await executor.close()
+
+    @pytest.mark.asyncio
+    async def test_close(self, executor: QueryExecutor) -> None:
+        await executor.execute("SELECT 1")
+        await executor.close()
+        assert executor._sqlite_conn is None
+
+
+class TestMySQLExecutorMocked:
+    """MySQL execution without a live server (mocked driver calls)."""
+
+    @pytest.mark.asyncio
+    async def test_execute_once_uses_mysql_path(self) -> None:
+        executor = QueryExecutor(dialect="mysql", connection_string="mysql://localhost/test")
+
+        async def fake_mysql(sql: str) -> tuple[list[dict[str, Any]], list[Any]]:
+            from seal_sql.result import ColumnMetadata
+
+            return [{"id": 1}], [ColumnMetadata(name="id", type="int")]
+
+        executor._execute_mysql = fake_mysql  # type: ignore[assignment]
+        result = await executor.execute("SELECT id FROM users LIMIT 1")
+        assert result.row_count == 1
+        assert result.rows[0]["id"] == 1
+
+    @pytest.mark.asyncio
+    async def test_timeout_wraps_mysql(self) -> None:
+        executor = QueryExecutor(
+            dialect="mysql",
+            connection_string="mysql://localhost/test",
+            config=ExecutionConfig(timeout_seconds=0.05, max_retries=0),
+        )
+
+        async def slow_mysql(sql: str) -> Any:
+            await asyncio.sleep(10)
+            return [], []
+
+        executor._execute_mysql = slow_mysql  # type: ignore[assignment]
+        with pytest.raises(QueryTimeoutError):
+            await executor.execute("SELECT 1")
+
+
+class TestClickHouseExecutorMocked:
+    """ClickHouse execution without a live server (mocked driver calls)."""
+
+    @pytest.mark.asyncio
+    async def test_execute_once_uses_clickhouse_path(self) -> None:
+        executor = QueryExecutor(
+            dialect="clickhouse", connection_string="clickhouse://localhost:8123/default"
+        )
+
+        async def fake_ch(sql: str) -> tuple[list[dict[str, Any]], list[Any]]:
+            from seal_sql.result import ColumnMetadata
+
+            return [{"n": 3}], [ColumnMetadata(name="n", type="UInt64")]
+
+        executor._execute_clickhouse = fake_ch  # type: ignore[assignment]
+        result = await executor.execute("SELECT count() AS n FROM events")
+        assert result.row_count == 1
+        assert result.rows[0]["n"] == 3
+
+    @pytest.mark.asyncio
+    async def test_timeout_wraps_clickhouse(self) -> None:
+        executor = QueryExecutor(
+            dialect="clickhouse",
+            connection_string="clickhouse://localhost:8123/default",
+            config=ExecutionConfig(timeout_seconds=0.05, max_retries=0),
+        )
+
+        async def slow_ch(sql: str) -> Any:
+            await asyncio.sleep(10)
+            return [], []
+
+        executor._execute_clickhouse = slow_ch  # type: ignore[assignment]
+        with pytest.raises(QueryTimeoutError):
+            await executor.execute("SELECT 1")

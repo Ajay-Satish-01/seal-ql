@@ -1,8 +1,9 @@
 """Canonical data models for database schema representation.
 
 These models are the single source of truth for schema metadata throughout
-the entire Seal system. Every introspector (DuckDB, Postgres)
-produces these models, and every downstream consumer (planner, validator) reads them.
+the entire Seal system. Every introspector (Postgres, DuckDB, MySQL, SQLite,
+ClickHouse) produces these models, and every downstream consumer (planner,
+validator) reads them.
 """
 
 from __future__ import annotations
@@ -168,7 +169,9 @@ class DatabaseSchema(BaseModel):
     aggregates), their columns, and relationships.
     """
 
-    dialect: str = Field(description="Database dialect: 'postgres' or 'duckdb'")
+    dialect: str = Field(
+        description="Database dialect: postgres, duckdb, mysql, sqlite, or clickhouse"
+    )
     tables: list[TableSchema] = Field(default_factory=list, description="All tables/views/matviews")
     relationships: list[RelationshipInfo] = Field(
         default_factory=list, description="Foreign key relationships"
