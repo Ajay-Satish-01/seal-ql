@@ -487,9 +487,7 @@ class QueryExecutor:
         description = cursor.description or []
         await cursor.close()
 
-        columns = [
-            ColumnMetadata(name=col[0], type="str", nullable=True) for col in description
-        ]
+        columns = [ColumnMetadata(name=col[0], type="str", nullable=True) for col in description]
         rows = [dict(row) for row in raw_rows]
         return rows, columns
 

@@ -20,9 +20,7 @@ _SQLITE_SCHEMES = frozenset({"sqlite"})
 _CLICKHOUSE_SCHEMES = frozenset({"clickhouse", "clickhouses"})
 _POSTGRES_SCHEMES = frozenset({"postgres", "postgresql"})
 
-_SUPPORTED_SCHEMES_MSG = (
-    "postgresql/postgres, duckdb, mysql/mariadb, sqlite, clickhouse"
-)
+_SUPPORTED_SCHEMES_MSG = "postgresql/postgres, duckdb, mysql/mariadb, sqlite, clickhouse"
 
 
 class DatabaseConfigError(ValueError):

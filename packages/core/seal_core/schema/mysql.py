@@ -69,9 +69,7 @@ def _normalize_mysql_type(raw_type: str) -> ColumnType:
     return ColumnType.OTHER
 
 
-_SCHEMA_FILTER = (
-    "NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys')"
-)
+_SCHEMA_FILTER = "NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys')"
 
 _TABLES_QUERY = f"""
 SELECT

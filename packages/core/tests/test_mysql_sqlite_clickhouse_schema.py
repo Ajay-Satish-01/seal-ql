@@ -218,8 +218,7 @@ class TestSQLiteIntrospector:
         orders = schema.get_table("orders")
         assert orders is not None
         assert any(
-            rel.from_table == "orders" and rel.to_table == "users"
-            for rel in schema.relationships
+            rel.from_table == "orders" and rel.to_table == "users" for rel in schema.relationships
         )
 
     @pytest.mark.asyncio
