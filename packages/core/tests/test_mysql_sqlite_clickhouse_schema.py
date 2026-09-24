@@ -170,6 +170,7 @@ class TestSQLiteIntrospector:
         importlib.util.find_spec("aiosqlite") is None,
         reason="sqlite extra (aiosqlite) is not installed",
     )
+
     @pytest.mark.asyncio
     async def test_introspect_empty_memory(self) -> None:
         intro = SQLiteIntrospector(":memory:")
