@@ -177,10 +177,9 @@ class MySQLIntrospector:
             ) from exc
 
         pool = await self._get_pool()
-        async with pool.acquire() as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute(sql)
-                rows = await cur.fetchall()
+        async with pool.acquire() as conn, conn.cursor(aiomysql.DictCursor) as cur:
+            await cur.execute(sql)
+            rows = await cur.fetchall()
         return [dict(row) for row in rows]
 
     async def introspect(self) -> DatabaseSchema:

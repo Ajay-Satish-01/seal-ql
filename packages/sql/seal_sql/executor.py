@@ -444,11 +444,10 @@ class QueryExecutor:
             ) from exc
 
         pool = await self._get_mysql_pool()
-        async with pool.acquire() as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute(sql)
-                records = await cur.fetchall()
-                description = cur.description or []
+        async with pool.acquire() as conn, conn.cursor(aiomysql.DictCursor) as cur:
+            await cur.execute(sql)
+            records = await cur.fetchall()
+            description = cur.description or []
 
         columns = [
             ColumnMetadata(
