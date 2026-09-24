@@ -8,9 +8,9 @@ license = { text = "MIT" }
 
 [dependency-groups]
 dev = [
-    "ruff>=0.15.14",
-    "pytest>=8.0",
-    "pytest-asyncio>=0.24.0",
+    "ruff>=0.16.8",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
 ]
 [tool.uv.workspace]
 members = [
@@ -26,7 +26,7 @@ members = [
 [tool.uv]
 # Sync with config/dependency-catalog.yaml → python.constraints
 constraint-dependencies = [
-    "litellm>=1.83.7,<2",
+    "litellm>=1.102.1,<2",
 ]
 required-environments = [
     "sys_platform == 'darwin' and platform_machine == 'aarch64'",

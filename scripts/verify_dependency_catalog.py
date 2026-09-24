@@ -103,8 +103,8 @@ def _parse_pyproject_dependency(path: Path, name: str) -> str | None:
 
 _OPTIONAL_DEP_ALIASES: dict[str, str] = {
     "chromadb_linux_extra": "chromadb>=0.6,<0.7; sys_platform == 'linux'",
-    "polars_optional": "polars>=1.15.0",
-    "pandas_optional": "pandas>=2.2.0",
+    "polars_optional": "polars>=1.44.2",
+    "pandas_optional": "pandas>=3.0.6",
 }
 
 

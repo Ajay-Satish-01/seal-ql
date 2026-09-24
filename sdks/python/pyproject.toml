@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.27.0"]
+requires = ["hatchling>=1.32.4"]
 build-backend = "hatchling.build"
 
 [project]
@@ -22,8 +22,8 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "httpx>=0.28.0",
-    "pydantic>=2.10.0",
+    "httpx>=0.28.1",
+    "pydantic>=2.13.5",
 ]
 
 [project.urls]
@@ -33,11 +33,11 @@ Documentation = "https://github.com/seal/seal/tree/main/sdks/python"
 Issues = "https://github.com/seal/seal/issues"
 
 [project.optional-dependencies]
-polars = ["polars>=1.15.0"]
-pandas = ["pandas>=2.2.0"]
+polars = ["polars>=1.44.2"]
+pandas = ["pandas>=3.0.6"]
 dev = [
-    "pytest>=8.0",
-    "pytest-asyncio>=0.24.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
 ]
 
 [tool.hatch.build.targets.sdist]
