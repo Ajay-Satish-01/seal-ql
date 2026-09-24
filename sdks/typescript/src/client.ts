@@ -118,10 +118,15 @@ export class Seal {
    * @param databaseId - Optional database identifier.
    * @returns QueryResponse containing SQL, results, chart spec, and metadata.
    */
-  async query(query: string, databaseId: string = 'default'): Promise<QueryResponse> {
+  async query(
+    query: string,
+    databaseId: string = 'default',
+    options?: { chartStyle?: { template: string; color_scheme: string } },
+  ): Promise<QueryResponse> {
     return this.request<QueryResponse>('POST', '/v1/query', {
       query,
       database_id: databaseId,
+      ...(options?.chartStyle ? { chart_style: options.chartStyle } : {}),
     });
   }
 
@@ -150,6 +155,7 @@ export class Seal {
       includeCharts?: boolean;
       enhancement?: boolean;
       databaseId?: string;
+      chartStyle?: { template: string; color_scheme: string };
     },
   ): Promise<ChatResponse> {
     return this.request<ChatResponse>('POST', '/v1/chat', {
@@ -159,6 +165,7 @@ export class Seal {
       stream: false,
       enhancement: options?.enhancement,
       database_id: options?.databaseId ?? 'default',
+      ...(options?.chartStyle ? { chart_style: options.chartStyle } : {}),
     });
   }
 
@@ -172,6 +179,7 @@ export class Seal {
       includeCharts?: boolean;
       enhancement?: boolean;
       databaseId?: string;
+      chartStyle?: { template: string; color_scheme: string };
     },
   ): AsyncGenerator<ChatStreamEvent> {
     const url = `${this.baseUrl}/v1/chat`;
@@ -189,6 +197,7 @@ export class Seal {
           stream: true,
           enhancement: options?.enhancement,
           database_id: options?.databaseId ?? 'default',
+          ...(options?.chartStyle ? { chart_style: options.chartStyle } : {}),
         }),
         signal,
       });

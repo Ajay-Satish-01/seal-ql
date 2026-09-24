@@ -84,6 +84,26 @@ export interface paths {
         readonly patch?: never;
         readonly trace?: never;
     };
+    readonly "/v1/charts/styles": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * List Chart Styles
+         * @description Return available chart templates and color schemes.
+         */
+        readonly get: operations["list_chart_styles_v1_charts_styles_get"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly "/v1/chat": {
         readonly parameters: {
             readonly query?: never;
@@ -348,6 +368,20 @@ export interface components {
             readonly path: string;
         };
         /**
+         * ChartColorScheme
+         * @enum {string}
+         */
+        readonly ChartColorScheme: "category10" | "tableau10" | "set2" | "viridis" | "blues" | "oranges";
+        /** ChartColorSchemeInfo */
+        readonly ChartColorSchemeInfo: {
+            /** Id */
+            readonly id: string;
+            /** Label */
+            readonly label: string;
+            /** Swatches */
+            readonly swatches: readonly string[];
+        };
+        /**
          * ChartSpec
          * @description The final visualization specification.
          *
@@ -369,6 +403,37 @@ export interface components {
                 readonly [key: string]: unknown;
             };
         };
+        /**
+         * ChartStyleOptions
+         * @description User-selected chart template and color scheme.
+         */
+        readonly ChartStyleOptions: {
+            /** @default default */
+            readonly template: components["schemas"]["ChartTemplate"];
+            /** @default category10 */
+            readonly color_scheme: components["schemas"]["ChartColorScheme"];
+        };
+        /** ChartStyleTemplateInfo */
+        readonly ChartStyleTemplateInfo: {
+            /** Id */
+            readonly id: string;
+            /** Label */
+            readonly label: string;
+            /** Description */
+            readonly description: string;
+        };
+        /** ChartStylesResponse */
+        readonly ChartStylesResponse: {
+            /** Templates */
+            readonly templates: readonly components["schemas"]["ChartStyleTemplateInfo"][];
+            /** Color Schemes */
+            readonly color_schemes: readonly components["schemas"]["ChartColorSchemeInfo"][];
+        };
+        /**
+         * ChartTemplate
+         * @enum {string}
+         */
+        readonly ChartTemplate: "default" | "minimal" | "bold" | "rounded";
         /**
          * ChartType
          * @description Supported chart types for visualization.
@@ -501,6 +566,8 @@ export interface components {
              * @default default
              */
             readonly database_id: string;
+            /** @description Optional chart template and color scheme when include_charts is true. */
+            readonly chart_style?: components["schemas"]["ChartStyleOptions"] | null;
         };
         /** ChatResponse */
         readonly ChatResponse: {
@@ -857,6 +924,8 @@ export interface components {
              * @default default
              */
             readonly database_id: string;
+            /** @description Optional chart template and color scheme. */
+            readonly chart_style?: components["schemas"]["ChartStyleOptions"] | null;
         };
         /**
          * QueryResponse
@@ -1571,6 +1640,26 @@ export interface operations {
                 };
                 content: {
                     readonly "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    readonly list_chart_styles_v1_charts_styles_get: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["ChartStylesResponse"];
                 };
             };
         };

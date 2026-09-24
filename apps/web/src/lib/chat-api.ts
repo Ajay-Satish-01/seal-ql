@@ -1,5 +1,6 @@
 import { formatApiError } from '@/lib/api-error';
 import { flushSseRemainder, splitSseBuffer, type SseParseResult } from '@/lib/sse-parse';
+import type { ChartStyleSelection } from '@seal/chart-styles';
 import type { ChatMetadata, ColumnDescriptor, ExecutionMetadata } from '@seal/metadata-contract';
 import { mapChatSseEvent, type ChatStreamEvent } from '@seal/chat-sse-events';
 
@@ -51,6 +52,7 @@ export async function postChat(
     include_charts?: boolean;
     stream?: boolean;
     enhancement?: boolean;
+    chart_style?: ChartStyleSelection;
   },
   apiKey?: string,
   signal?: AbortSignal,
@@ -85,6 +87,7 @@ export async function* streamChat(
     database_id?: string;
     include_charts?: boolean;
     enhancement?: boolean;
+    chart_style?: ChartStyleSelection;
   },
   apiKey?: string,
   signal?: AbortSignal,

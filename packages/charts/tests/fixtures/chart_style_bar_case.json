@@ -1,0 +1,30 @@
+{
+  "description": "Shared bar chart style case for Python apply_chart_style parity checks.",
+  "base_spec": {
+    "mark": { "type": "bar", "tooltip": true },
+    "encoding": {
+      "x": { "field": "category", "type": "nominal" },
+      "y": { "field": "total_revenue", "type": "quantitative" }
+    }
+  },
+  "style": {
+    "template": "rounded",
+    "color_scheme": "tableau10"
+  },
+  "heuristics": {
+    "chart_type": "bar",
+    "x_field": "category",
+    "y_field": "total_revenue",
+    "color_field": null
+  },
+  "expected": {
+    "mark": { "cornerRadiusEnd": 4 },
+    "encoding": {
+      "color": {
+        "field": "category",
+        "type": "nominal",
+        "scale": { "scheme": "tableau10" }
+      }
+    }
+  }
+}

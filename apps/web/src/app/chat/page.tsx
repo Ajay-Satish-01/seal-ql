@@ -2,6 +2,7 @@
 
 import { ChartPanel } from '@/components/dashboard/chart-panel';
 import { ReasoningPanel, reasoningPanelHasContent } from '@/components/dashboard/reasoning-panel';
+import { DEFAULT_CHART_STYLE, type ChartStyleSelection } from '@seal/chart-styles';
 import { contentForLlmHistory } from '@seal/conversation';
 import {
   ExplainabilityTrigger,
@@ -117,6 +118,8 @@ const AssistantMessage = memo(function AssistantMessage({
   explainability,
   trustExplainabilityEnabled,
   onOpenExplainability,
+  chartStyle,
+  onChartStyleChange,
   streaming = false,
   explainabilityPending = false,
 }: {
@@ -124,6 +127,8 @@ const AssistantMessage = memo(function AssistantMessage({
   explainability: TurnExplainability;
   trustExplainabilityEnabled: boolean;
   onOpenExplainability: (surface: ExplainabilitySurface) => void;
+  chartStyle: ChartStyleSelection;
+  onChartStyleChange: (style: ChartStyleSelection) => void;
   streaming?: boolean;
   explainabilityPending?: boolean;
 }) {
@@ -152,7 +157,13 @@ const AssistantMessage = memo(function AssistantMessage({
       ) : null}
       <ReasoningPanel reasoning={explainability.metadata?.reasoning} />
       {explainability.chart ? (
-        <ChartPanel chart={explainability.chart} results={explainability.results} />
+        <ChartPanel
+          chart={explainability.chart}
+          results={explainability.results}
+          chartStyle={chartStyle}
+          onChartStyleChange={onChartStyleChange}
+          stylePersistAction="Send a message"
+        />
       ) : null}
     </div>
   );
@@ -166,6 +177,7 @@ function ChatPage() {
   const urlSessionId = searchParams.get('session') ?? undefined;
 
   const [message, setMessage] = useState('What tables are in the database?');
+  const [chartStyle, setChartStyle] = useState<ChartStyleSelection>(DEFAULT_CHART_STYLE);
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [activeDatabaseId, setActiveDatabaseId] = useState<string | undefined>();
   const [turns, setTurns] = useState<ChatTurn[]>([]);
@@ -343,6 +355,7 @@ function ChatPage() {
             database_id: databaseId,
             include_charts: true,
             enhancement: true,
+            chart_style: chartStyle,
           },
           apiKey.trim(),
           controller.signal,
@@ -422,6 +435,8 @@ function ChatPage() {
                 explainability={turn.explainability}
                 trustExplainabilityEnabled={trustExplainabilityEnabled}
                 onOpenExplainability={openExplainability}
+                chartStyle={chartStyle}
+                onChartStyleChange={setChartStyle}
               />
             ),
           )}
@@ -431,6 +446,8 @@ function ChatPage() {
               explainability={pendingAssistant.explainability}
               trustExplainabilityEnabled={trustExplainabilityEnabled}
               onOpenExplainability={openExplainability}
+              chartStyle={chartStyle}
+              onChartStyleChange={setChartStyle}
               streaming={isPending}
               explainabilityPending={
                 isPending &&

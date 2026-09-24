@@ -30,7 +30,18 @@ from seal_core.workspace.bootstrap import apply_workspace_on_startup
 from seal_core.workspace.store import create_workspace_store
 from seal_semantic.registry import SemanticRegistry
 
-from app.routes import catalog, chat, databases, health, query, schema, sessions, vector, workspace
+from app.routes import (
+    catalog,
+    charts,
+    chat,
+    databases,
+    health,
+    query,
+    schema,
+    sessions,
+    vector,
+    workspace,
+)
 
 load_dotenv()
 
@@ -177,6 +188,7 @@ def create_app() -> FastAPI:
     app.include_router(databases.router, prefix="/v1")
     app.include_router(schema.router, prefix="/v1")
     app.include_router(query.router, prefix="/v1")
+    app.include_router(charts.router, prefix="/v1")
     app.include_router(chat.router, prefix="/v1")
     app.include_router(sessions.router, prefix="/v1")
     app.include_router(catalog.router, prefix="/v1")

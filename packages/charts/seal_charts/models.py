@@ -10,6 +10,15 @@ from typing import Any
 from pydantic import BaseModel, Field
 from seal_core.planner.models import ChartType  # noqa: TCH002
 
+from seal_charts.styles import ChartColorScheme, ChartTemplate
+
+
+class ChartStyleOptions(BaseModel):
+    """User-selected chart template and color scheme."""
+
+    template: ChartTemplate = ChartTemplate.DEFAULT
+    color_scheme: ChartColorScheme = ChartColorScheme.CATEGORY10
+
 
 class ChartSpec(BaseModel):
     """The final visualization specification.

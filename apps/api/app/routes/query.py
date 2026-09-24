@@ -32,6 +32,7 @@ async def execute_query(
         result = await query_service.execute(
             query=request.query,
             database_id=request.database_id,
+            chart_style=request.chart_style,
         )
     except UnknownDatabaseError as exc:
         raise HTTPException(status_code=404, detail="unknown_database_id") from exc

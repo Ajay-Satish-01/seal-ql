@@ -12,6 +12,8 @@ sys.path.insert(0, str(root_dir / "packages" / "sql"))
 sys.path.insert(0, str(root_dir / "packages" / "charts"))
 
 from seal_charts.engine import ChartEngine  # noqa: E402
+from seal_charts.models import ChartStyleOptions  # noqa: E402
+from seal_charts.styles import ChartColorScheme, ChartTemplate  # noqa: E402
 from seal_core.planner.models import ChartType, QueryPlan  # noqa: E402
 from seal_sql.result import ColumnMetadata, QueryResult  # noqa: E402
 
@@ -37,6 +39,7 @@ def _response(
     columns: list[ColumnMetadata],
     rows: list[dict],
     plan: QueryPlan,
+    chart_style: ChartStyleOptions | None = None,
 ) -> dict:
     result = QueryResult(
         columns=columns,
@@ -45,9 +48,9 @@ def _response(
         execution_time_ms=METADATA_BASE["execution_time_ms"],
         truncated=False,
     )
-    chart = ChartEngine.generate(plan, result)
+    chart = ChartEngine.generate(plan, result, style=chart_style)
     meta = {**METADATA_BASE, "row_count": len(rows)}
-    return {
+    payload: dict = {
         "id": preset_id,
         "label": label,
         "query": query,
@@ -63,6 +66,12 @@ def _response(
             "metadata": meta,
         },
     }
+    if chart_style is not None:
+        payload["chart_style"] = {
+            "template": chart_style.template.value,
+            "color_scheme": chart_style.color_scheme.value,
+        }
+    return payload
 
 
 def build_presets() -> list[dict]:
@@ -95,6 +104,10 @@ def build_presets() -> list[dict]:
             title="Revenue by Product Category",
             explanation="Bar chart of revenue grouped by category.",
         ),
+        chart_style=ChartStyleOptions(
+            template=ChartTemplate.ROUNDED,
+            color_scheme=ChartColorScheme.TABLEAU10,
+        ),
     )
 
     hourly_rows = [
@@ -124,6 +137,10 @@ def build_presets() -> list[dict]:
             y_field="event_count",
             title="Hourly Event Volume",
             explanation="Line chart of events over time.",
+        ),
+        chart_style=ChartStyleOptions(
+            template=ChartTemplate.MINIMAL,
+            color_scheme=ChartColorScheme.VIRIDIS,
         ),
     )
 

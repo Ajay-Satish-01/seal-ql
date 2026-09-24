@@ -124,7 +124,13 @@ class Seal:
         _handle_error(resp)
         return HealthResponse.model_validate(resp.json())
 
-    def query(self, query: str, *, database_id: str = "default") -> QueryResponse:
+    def query(
+        self,
+        query: str,
+        *,
+        database_id: str = "default",
+        chart_style: dict[str, str] | None = None,
+    ) -> QueryResponse:
         """Send a natural language query to the API.
 
         Args:
@@ -140,9 +146,12 @@ class Seal:
             SealConnectionError: If the API is unreachable.
         """
         try:
+            body: dict[str, Any] = {"query": query, "database_id": database_id}
+            if chart_style is not None:
+                body["chart_style"] = chart_style
             resp = self._client.post(
                 "/v1/query",
-                json={"query": query, "database_id": database_id},
+                json=body,
             )
         except httpx.RequestError as exc:
             raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
@@ -188,6 +197,7 @@ class Seal:
         stream: bool = False,
         enhancement: bool | None = None,
         database_id: str = "default",
+        chart_style: dict[str, str] | None = None,
     ) -> ChatResponse:
         """Send a conversational message to /v1/chat."""
         if stream:
@@ -202,6 +212,8 @@ class Seal:
             body["session_id"] = session_id
         if enhancement is not None:
             body["enhancement"] = enhancement
+        if chart_style is not None:
+            body["chart_style"] = chart_style
         try:
             resp = self._client.post("/v1/chat", json=body)
         except httpx.RequestError as exc:
@@ -217,6 +229,7 @@ class Seal:
         include_charts: bool = False,
         enhancement: bool | None = None,
         database_id: str = "default",
+        chart_style: dict[str, str] | None = None,
     ) -> Iterator[ChatStreamEvent]:
         """Stream chat answer events from /v1/chat (SSE)."""
         body: dict[str, Any] = {
@@ -229,6 +242,8 @@ class Seal:
             body["session_id"] = session_id
         if enhancement is not None:
             body["enhancement"] = enhancement
+        if chart_style is not None:
+            body["chart_style"] = chart_style
         try:
             with self._client.stream("POST", "/v1/chat", json=body) as resp:
                 if resp.status_code >= 400:
@@ -303,7 +318,13 @@ class AsyncSeal:
         _handle_error(resp)
         return HealthResponse.model_validate(resp.json())
 
-    async def query(self, query: str, *, database_id: str = "default") -> QueryResponse:
+    async def query(
+        self,
+        query: str,
+        *,
+        database_id: str = "default",
+        chart_style: dict[str, str] | None = None,
+    ) -> QueryResponse:
         """Send a natural language query to the API.
 
         Args:
@@ -319,9 +340,12 @@ class AsyncSeal:
             SealConnectionError: If the API is unreachable.
         """
         try:
+            body: dict[str, Any] = {"query": query, "database_id": database_id}
+            if chart_style is not None:
+                body["chart_style"] = chart_style
             resp = await self._client.post(
                 "/v1/query",
-                json={"query": query, "database_id": database_id},
+                json=body,
             )
         except httpx.RequestError as exc:
             raise SealConnectionError(_connection_error_message(self._base_url, exc)) from exc
@@ -365,6 +389,7 @@ class AsyncSeal:
         include_charts: bool = False,
         enhancement: bool | None = None,
         database_id: str = "default",
+        chart_style: dict[str, str] | None = None,
     ) -> ChatResponse:
         body: dict[str, Any] = {
             "message": message,
@@ -376,6 +401,8 @@ class AsyncSeal:
             body["session_id"] = session_id
         if enhancement is not None:
             body["enhancement"] = enhancement
+        if chart_style is not None:
+            body["chart_style"] = chart_style
         try:
             resp = await self._client.post("/v1/chat", json=body)
         except httpx.RequestError as exc:
@@ -391,6 +418,7 @@ class AsyncSeal:
         include_charts: bool = False,
         enhancement: bool | None = None,
         database_id: str = "default",
+        chart_style: dict[str, str] | None = None,
     ) -> AsyncIterator[ChatStreamEvent]:
         """Stream chat answer events from /v1/chat (SSE)."""
         body: dict[str, Any] = {
@@ -403,6 +431,8 @@ class AsyncSeal:
             body["session_id"] = session_id
         if enhancement is not None:
             body["enhancement"] = enhancement
+        if chart_style is not None:
+            body["chart_style"] = chart_style
         try:
             async with self._client.stream("POST", "/v1/chat", json=body) as resp:
                 if resp.status_code >= 400:

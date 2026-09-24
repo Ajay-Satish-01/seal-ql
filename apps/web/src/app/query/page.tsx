@@ -4,6 +4,7 @@ import { ChartPanel } from '@/components/dashboard/chart-panel';
 import { MetadataPanel } from '@/components/dashboard/metadata-panel';
 import { ReasoningPanel, reasoningPanelHasContent } from '@/components/dashboard/reasoning-panel';
 import { shouldShowTrustPanel } from '@seal/trust-explainability';
+import { DEFAULT_CHART_STYLE, type ChartStyleSelection } from '@seal/chart-styles';
 import { TrustPanel } from '@/components/dashboard/trust-panel';
 import { PageShell } from '@/components/dashboard/page-shell';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ export default function QueryPage() {
   const [sources, setSources] = useState<string[]>([]);
   const [results, setResults] = useState<Record<string, unknown>[]>([]);
   const [chart, setChart] = useState<ChartSpec | null>(null);
+  const [chartStyle, setChartStyle] = useState<ChartStyleSelection>(DEFAULT_CHART_STYLE);
   const [metadata, setMetadata] = useState<QueryMetadata | null>(null);
   const [assistantMessage, setAssistantMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -34,7 +36,7 @@ export default function QueryPage() {
     }
     startTransition(async () => {
       try {
-        const res = await postQuery(apiUrl, text, apiKey.trim(), databaseId);
+        const res = await postQuery(apiUrl, text, apiKey.trim(), databaseId, undefined, chartStyle);
         setSql(res.sql || null);
         setSources(res.sources ?? []);
         setResults(res.results);
@@ -109,7 +111,13 @@ export default function QueryPage() {
           <p className="text-muted-foreground mb-3 text-xs font-medium tracking-wide uppercase">
             Results
           </p>
-          <ChartPanel chart={chart} results={results} />
+          <ChartPanel
+            chart={chart}
+            results={results}
+            chartStyle={chartStyle}
+            onChartStyleChange={setChartStyle}
+            stylePersistAction="Run the query again"
+          />
         </Card>
       ) : null}
 
