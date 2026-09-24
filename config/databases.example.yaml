@@ -14,7 +14,10 @@
 # ClickHouse: clickhouse://user:pass@host:8123/dbname  (clickhouses:// for TLS)
 #
 # Drivers: default image is Postgres + DuckDB. For MySQL/SQLite/ClickHouse:
-#   uv sync --extra mysql|sqlite|clickhouse   (or --extra dialects --package seal-api)
+#   uv sync --extra mysql --package seal-api
+#   uv sync --extra sqlite --package seal-api
+#   uv sync --extra clickhouse --package seal-api
+#   (or all three: uv sync --extra dialects --package seal-api)
 #   docker compose build --build-arg SEAL_EXTRA=mysql
 #
 # API usage: POST /v1/query, POST /v1/chat, GET /v1/schema?database_id=<id>

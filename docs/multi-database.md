@@ -177,9 +177,9 @@ Until those land, use **one Seal instance per database** when catalogs or RAG mu
 Default `uv sync` / Docker image ships **Postgres + DuckDB** only (`asyncpg`, `duckdb`). MySQL/MariaDB, SQLite, and ClickHouse drivers are extras — not baked into the default image or Compose stack:
 
 ```bash
-uv sync --extra mysql          # aiomysql
-uv sync --extra sqlite         # aiosqlite
-uv sync --extra clickhouse     # clickhouse-connect
+uv sync --extra mysql --package seal-api          # aiomysql
+uv sync --extra sqlite --package seal-api         # aiosqlite
+uv sync --extra clickhouse --package seal-api     # clickhouse-connect
 # or all three:
 uv sync --extra dialects --package seal-api
 ```

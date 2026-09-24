@@ -460,9 +460,9 @@ const chat = await client.chat('Summarize daily_revenue', { databaseId: 'analyti
         </p>
         <CodeBlock
           language="bash"
-          code={`uv sync --extra mysql          # aiomysql
-uv sync --extra sqlite         # aiosqlite
-uv sync --extra clickhouse     # clickhouse-connect
+          code={`uv sync --extra mysql --package seal-api          # aiomysql
+uv sync --extra sqlite --package seal-api         # aiosqlite
+uv sync --extra clickhouse --package seal-api     # clickhouse-connect
 # Docker: docker compose build --build-arg SEAL_EXTRA=mysql`}
         />
         <p>

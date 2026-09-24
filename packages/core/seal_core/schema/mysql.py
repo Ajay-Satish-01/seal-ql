@@ -73,11 +73,11 @@ _SCHEMA_FILTER = "NOT IN ('information_schema', 'mysql', 'performance_schema', '
 
 _TABLES_QUERY = f"""
 SELECT
-    table_schema,
-    table_name,
-    table_type,
-    table_rows,
-    table_comment
+    table_schema AS table_schema,
+    table_name AS table_name,
+    table_type AS table_type,
+    table_rows AS table_rows,
+    table_comment AS table_comment
 FROM information_schema.tables
 WHERE table_schema {_SCHEMA_FILTER}
   AND table_type IN ('BASE TABLE', 'VIEW')
@@ -86,15 +86,15 @@ ORDER BY table_schema, table_name
 
 _COLUMNS_QUERY = f"""
 SELECT
-    table_schema,
-    table_name,
-    column_name,
-    data_type,
-    column_type,
-    is_nullable,
-    column_default,
-    column_key,
-    column_comment
+    table_schema AS table_schema,
+    table_name AS table_name,
+    column_name AS column_name,
+    data_type AS data_type,
+    column_type AS column_type,
+    is_nullable AS is_nullable,
+    column_default AS column_default,
+    column_key AS column_key,
+    column_comment AS column_comment
 FROM information_schema.columns
 WHERE table_schema {_SCHEMA_FILTER}
 ORDER BY table_schema, table_name, ordinal_position
@@ -102,7 +102,7 @@ ORDER BY table_schema, table_name, ordinal_position
 
 _FOREIGN_KEYS_QUERY = f"""
 SELECT
-    kcu.constraint_name,
+    kcu.constraint_name AS constraint_name,
     kcu.table_schema AS from_schema,
     kcu.table_name AS from_table,
     kcu.column_name AS from_column,
@@ -178,7 +178,7 @@ class MySQLIntrospector:
         async with pool.acquire() as conn, conn.cursor(aiomysql.DictCursor) as cur:
             await cur.execute(sql)
             rows = await cur.fetchall()
-        return [dict(row) for row in rows]
+        return [_lowercase_row_keys(dict(row)) for row in rows]
 
     async def introspect(self) -> DatabaseSchema:
         """Introspect tables, columns, PKs, and FKs from information_schema."""
@@ -188,6 +188,7 @@ class MySQLIntrospector:
 
         columns_lookup: dict[str, list[ColumnInfo]] = {}
         for row in columns_rows:
+            row = _lowercase_row_keys(row)
             key = f"{row['table_schema']}.{row['table_name']}"
             raw_type = row.get("column_type") or row.get("data_type") or ""
             col = ColumnInfo(
@@ -203,6 +204,7 @@ class MySQLIntrospector:
 
         tables: list[TableSchema] = []
         for row in tables_rows:
+            row = _lowercase_row_keys(row)
             schema_name = row["table_schema"]
             table_name = row["table_name"]
             key = f"{schema_name}.{table_name}"
@@ -226,7 +228,7 @@ class MySQLIntrospector:
                 to_column=row["to_column"],
                 constraint_name=_optional_str(row.get("constraint_name")),
             )
-            for row in fk_rows
+            for row in (_lowercase_row_keys(raw) for raw in fk_rows)
             if row.get("from_table") and row.get("to_table")
         ]
 
@@ -236,6 +238,11 @@ class MySQLIntrospector:
             relationships=relationships,
             has_timescaledb=False,
         )
+
+
+def _lowercase_row_keys(row: dict[str, Any]) -> dict[str, Any]:
+    """Normalize information_schema keys (MySQL 8 may return UPPERCASE)."""
+    return {str(key).lower(): value for key, value in row.items()}
 
 
 def _optional_str(value: Any) -> str | None:

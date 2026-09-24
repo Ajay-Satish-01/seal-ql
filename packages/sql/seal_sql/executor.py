@@ -475,17 +475,37 @@ class QueryExecutor:
                     "(uv sync --extra sqlite, or pip install 'seal-sql[sqlite]')."
                 ) from exc
 
-            self._sqlite_conn = await aiosqlite.connect(self._connection_string)
+            from seal_core.database.config import sqlite_connect_args
+
+            database, uri = sqlite_connect_args(self._connection_string)
+            self._sqlite_conn = await aiosqlite.connect(database, uri=uri)
             self._sqlite_conn.row_factory = aiosqlite.Row
         return self._sqlite_conn
 
     async def _execute_sqlite(self, sql: str) -> tuple[list[dict[str, Any]], list[ColumnMetadata]]:
         """Execute SQL against SQLite via aiosqlite."""
         conn = await self._get_sqlite_conn()
-        cursor = await conn.execute(sql)
-        raw_rows = await cursor.fetchall()
-        description = cursor.description or []
-        await cursor.close()
+        deadline = time.monotonic() + self._config.timeout_seconds
+
+        def _progress_handler() -> int:
+            return int(time.monotonic() > deadline)
+
+        await conn.set_progress_handler(_progress_handler, 10_000)
+        try:
+            cursor = await conn.execute(sql)
+            raw_rows = await cursor.fetchall()
+            description = cursor.description or []
+            await cursor.close()
+        except TimeoutError:
+            raise
+        except Exception as exc:
+            if time.monotonic() > deadline:
+                raise TimeoutError(
+                    f"SQLite query exceeded {self._config.timeout_seconds}s"
+                ) from exc
+            raise
+        finally:
+            await conn.set_progress_handler(None, 0)
 
         columns = [ColumnMetadata(name=col[0], type="str", nullable=True) for col in description]
         rows = [dict(row) for row in raw_rows]
@@ -520,6 +540,7 @@ class QueryExecutor:
                 password=params.password,
                 database=params.database or "default",
                 secure=params.secure,
+                autogenerate_session_id=False,
             )
         return self._clickhouse_client
 

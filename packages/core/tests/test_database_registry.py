@@ -17,6 +17,7 @@ from seal_core.database.config import (
     normalize_connection_url,
     parse_network_url,
     planner_resources_for_database,
+    sqlite_connect_args,
 )
 from seal_core.database.registry import (
     DatabaseBundle,
@@ -72,6 +73,26 @@ def test_normalize_connection_url_sqlite() -> None:
     assert normalize_connection_url("sqlite:////tmp/absolute.db") == "/tmp/absolute.db"
     assert normalize_connection_url("sqlite:///:memory:") == ":memory:"
     assert normalize_connection_url("sqlite+aiosqlite:///data/app.db") == "data/app.db"
+
+
+def test_sqlite_connect_args_memory() -> None:
+    assert sqlite_connect_args(":memory:") == (":memory:", False)
+    assert sqlite_connect_args("  :memory:  ") == (":memory:", False)
+
+
+def test_sqlite_connect_args_missing_file(tmp_path: Path) -> None:
+    missing = tmp_path / "nope.db"
+    with pytest.raises(FileNotFoundError, match="SQLite database file not found"):
+        sqlite_connect_args(str(missing))
+
+
+def test_sqlite_connect_args_existing_file_is_readonly_uri(tmp_path: Path) -> None:
+    db_path = tmp_path / "app.db"
+    db_path.write_bytes(b"")
+    database, uri = sqlite_connect_args(str(db_path))
+    assert uri is True
+    assert database.startswith("file:")
+    assert database.endswith("?mode=ro")
 
 
 def test_normalize_connection_url_passes_through_hosted() -> None:

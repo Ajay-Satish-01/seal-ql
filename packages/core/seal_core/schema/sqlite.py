@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from seal_core.database.config import sqlite_connect_args
 from seal_core.schema.models import (
     ColumnInfo,
     ColumnType,
@@ -100,7 +101,8 @@ class SQLiteIntrospector:
                     "(uv sync --extra sqlite, or pip install 'seal-core[sqlite]')."
                 ) from exc
 
-            self._conn = await aiosqlite.connect(self._connection_string)
+            database, uri = sqlite_connect_args(self._connection_string)
+            self._conn = await aiosqlite.connect(database, uri=uri)
             self._conn.row_factory = aiosqlite.Row
         return self._conn
 

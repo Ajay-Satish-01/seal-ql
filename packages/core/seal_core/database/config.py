@@ -84,6 +84,22 @@ def infer_dialect(url: str) -> str:
     return "duckdb"
 
 
+def sqlite_connect_args(connection_string: str) -> tuple[str, bool]:
+    """Return ``(database, uri)`` for ``aiosqlite.connect`` / ``sqlite3.connect``.
+
+    ``:memory:`` stays writable. File-backed paths open read-only via URI
+    ``mode=ro`` and raise ``FileNotFoundError`` if the file is missing so Seal
+    does not silently create an empty database.
+    """
+    target = connection_string.strip()
+    if target == ":memory:":
+        return target, False
+    path = Path(target)
+    if not path.is_file():
+        raise FileNotFoundError(f"SQLite database file not found: {connection_string}")
+    return f"{path.resolve().as_uri()}?mode=ro", True
+
+
 def normalize_connection_url(url: str) -> str:
     """Return the concrete connection string/path used by drivers.
 

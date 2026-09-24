@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import importlib.util
+import sqlite3
+import sys
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -164,6 +166,56 @@ class TestMySQLIntrospectorMocked:
         assert schema.relationships[0].from_table == "orders"
         assert schema.relationships[0].to_table == "users"
 
+    @pytest.mark.asyncio
+    async def test_introspect_mysql8_uppercase_keys(self) -> None:
+        intro = MySQLIntrospector("mysql://localhost/app")
+
+        async def fake_query(sql: str) -> list[dict[str, Any]]:
+            lowered = sql.lower()
+            if "information_schema.tables" in lowered:
+                return [
+                    {
+                        "TABLE_SCHEMA": "app",
+                        "TABLE_NAME": "users",
+                        "TABLE_TYPE": "BASE TABLE",
+                        "TABLE_ROWS": 1,
+                        "TABLE_COMMENT": "",
+                    }
+                ]
+            if "information_schema.columns" in lowered:
+                return [
+                    {
+                        "TABLE_SCHEMA": "app",
+                        "TABLE_NAME": "users",
+                        "COLUMN_NAME": "id",
+                        "DATA_TYPE": "int",
+                        "COLUMN_TYPE": "int",
+                        "IS_NULLABLE": "NO",
+                        "COLUMN_DEFAULT": None,
+                        "COLUMN_KEY": "PRI",
+                        "COLUMN_COMMENT": "",
+                    }
+                ]
+            if "key_column_usage" in lowered:
+                return [
+                    {
+                        "CONSTRAINT_NAME": "fk_unused",
+                        "FROM_TABLE": None,
+                        "FROM_COLUMN": None,
+                        "TO_TABLE": None,
+                        "TO_COLUMN": None,
+                    }
+                ]
+            raise AssertionError(f"unexpected SQL: {sql}")
+
+        intro._query = fake_query  # type: ignore[assignment]
+        schema = await intro.introspect()
+        users = schema.get_table("users")
+        assert users is not None
+        assert users.get_column("id") is not None
+        assert users.get_column("id").is_primary_key is True
+        assert schema.relationships == []
+
 
 class TestSQLiteIntrospector:
     pytestmark = pytest.mark.skipif(
@@ -182,30 +234,30 @@ class TestSQLiteIntrospector:
     @pytest.mark.asyncio
     async def test_introspect_tables_pk_fk(self, tmp_path: Any) -> None:
         db_path = tmp_path / "app.db"
-        intro = SQLiteIntrospector(str(db_path))
-        conn = await intro._get_conn()
-        await conn.execute(
-            """
-            CREATE TABLE users (
-                id INTEGER PRIMARY KEY,
-                name TEXT NOT NULL,
-                email TEXT
+        with sqlite3.connect(db_path) as seed:
+            seed.execute(
+                """
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    email TEXT
+                )
+                """
             )
-            """
-        )
-        await conn.execute(
-            """
-            CREATE TABLE orders (
-                id INTEGER PRIMARY KEY,
-                user_id INTEGER NOT NULL,
-                amount REAL,
-                FOREIGN KEY (user_id) REFERENCES users(id)
+            seed.execute(
+                """
+                CREATE TABLE orders (
+                    id INTEGER PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    amount REAL,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                )
+                """
             )
-            """
-        )
-        await conn.execute("INSERT INTO users VALUES (1, 'Alice', 'a@example.com')")
-        await conn.commit()
+            seed.execute("INSERT INTO users VALUES (1, 'Alice', 'a@example.com')")
+            seed.commit()
 
+        intro = SQLiteIntrospector(str(db_path))
         schema = await intro.introspect()
         await intro.close()
 
@@ -225,13 +277,19 @@ class TestSQLiteIntrospector:
     @pytest.mark.asyncio
     async def test_file_url_normalized_path(self, tmp_path: Any) -> None:
         db_path = tmp_path / "file.db"
+        with sqlite3.connect(db_path) as seed:
+            seed.execute("CREATE TABLE t (id INTEGER)")
+            seed.commit()
         intro = SQLiteIntrospector(str(db_path))
-        conn = await intro._get_conn()
-        await conn.execute("CREATE TABLE t (id INTEGER)")
-        await conn.commit()
         schema = await intro.introspect()
         await intro.close()
         assert schema.get_table("t") is not None
+
+    @pytest.mark.asyncio
+    async def test_missing_file_raises(self, tmp_path: Any) -> None:
+        intro = SQLiteIntrospector(str(tmp_path / "missing.db"))
+        with pytest.raises(FileNotFoundError, match="SQLite database file not found"):
+            await intro.introspect()
 
 
 class TestClickHouseIntrospectorMocked:
@@ -310,6 +368,22 @@ class TestClickHouseIntrospectorMocked:
         assert daily is not None
         assert daily.kind == TableKind.MATERIALIZED_VIEW
         assert schema.relationships == []
+
+    def test_shared_client_disables_autogenerated_session(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        captured: dict[str, Any] = {}
+
+        class FakeConnect:
+            @staticmethod
+            def get_client(**kwargs: Any) -> Any:
+                captured.update(kwargs)
+                return MagicMock()
+
+        monkeypatch.setitem(sys.modules, "clickhouse_connect", FakeConnect)
+        intro = ClickHouseIntrospector("clickhouse://localhost:8123/default")
+        intro._get_client()
+        assert captured.get("autogenerate_session_id") is False
 
 
 class TestDatabaseCapabilities:

@@ -7,6 +7,7 @@ MergeTree ``is_in_primary_key``.
 
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import Any
 
@@ -172,6 +173,7 @@ class ClickHouseIntrospector:
                 password=params.password,
                 database=params.database or "default",
                 secure=params.secure,
+                autogenerate_session_id=False,
             )
         return self._client
 
@@ -190,8 +192,8 @@ class ClickHouseIntrospector:
 
     async def introspect(self) -> DatabaseSchema:
         """Introspect tables/views and columns from system catalogs."""
-        tables_rows = self._query(_TABLES_QUERY)
-        columns_rows = self._query(_COLUMNS_QUERY)
+        tables_rows = await asyncio.to_thread(self._query, _TABLES_QUERY)
+        columns_rows = await asyncio.to_thread(self._query, _COLUMNS_QUERY)
 
         columns_lookup: dict[str, list[ColumnInfo]] = {}
         for row in columns_rows:

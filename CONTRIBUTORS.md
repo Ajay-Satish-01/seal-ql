@@ -300,7 +300,7 @@ Python tests are written using `pytest` and `pytest-asyncio` for async database 
   uv run pytest packages/core/tests/test_database_registry.py apps/api/tests/test_database_routing.py -v
 
   # MySQL / SQLite / ClickHouse (mocked + in-memory SQLite when extras are installed)
-  uv sync --extra sqlite   # needed for aiosqlite unit tests
+  uv sync --extra sqlite --package seal-api   # needed for aiosqlite unit tests
   uv run pytest packages/sql/tests/test_dialects.py packages/sql/tests/test_sanitizer.py \
     packages/sql/tests/test_validator.py packages/sql/tests/test_executor.py \
     packages/core/tests/test_mysql_sqlite_clickhouse_schema.py -v

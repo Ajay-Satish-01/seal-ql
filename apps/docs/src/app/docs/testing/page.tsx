@@ -165,9 +165,9 @@ docker compose exec -T api uv run pytest -v \\
         </p>
         <CodeBlock
           language="bash"
-          code={`uv sync --extra sqlite        # in-memory SQLite unit tests
-uv sync --extra mysql         # aiomysql (mocked tests do not need this)
-uv sync --extra clickhouse    # clickhouse-connect`}
+          code={`uv sync --extra sqlite --package seal-api        # in-memory SQLite unit tests
+uv sync --extra mysql --package seal-api         # aiomysql (mocked tests do not need this)
+uv sync --extra clickhouse --package seal-api    # clickhouse-connect`}
         />
         <p>
           Unit tests mock MySQL and ClickHouse drivers. SQLite file/memory tests skip when the{' '}
