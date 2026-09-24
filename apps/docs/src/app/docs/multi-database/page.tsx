@@ -447,6 +447,25 @@ const chat = await client.chat('Summarize daily_revenue', { databaseId: 'analyti
           </li>
         </ul>
         <p>
+          Per-database catalog files and per-database vector indexes are deferred (GitHub issues{' '}
+          <a href="https://github.com/Ajay-Satish-01/seal-ql/issues/57">#57</a> and{' '}
+          <a href="https://github.com/Ajay-Satish-01/seal-ql/issues/58">#58</a>). This release does
+          not half-build them. Until then, run <strong>one Seal container per database</strong> when
+          catalog descriptions or RAG must match a non-default schema.
+        </p>
+        <h3>Optional dialect drivers</h3>
+        <p>
+          Compose and the default API image include Postgres and DuckDB only. MySQL/MariaDB, SQLite,
+          and ClickHouse need extras (not live servers in default Compose):
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`uv sync --extra mysql          # aiomysql
+uv sync --extra sqlite         # aiosqlite
+uv sync --extra clickhouse     # clickhouse-connect
+# Docker: docker compose build --build-arg SEAL_EXTRA=mysql`}
+        />
+        <p>
           If your databases have <strong>completely different schemas</strong>, the reliable pattern
           is <strong>one Seal container per database</strong> (each with its own{' '}
           <code>DATABASE_URL</code>). Your application picks which Seal URL to call — see{' '}

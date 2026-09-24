@@ -158,10 +158,7 @@ class DatabaseInfo(BaseModel):
     """One entry in the configured database registry."""
 
     database_id: str = Field(..., description="Registered identifier passed as database_id.")
-    dialect: str = Field(
-        ...,
-        description="SQL dialect (postgres, duckdb, mysql, sqlite, clickhouse).",
-    )
+    dialect: str = Field(..., description="SQL dialect (postgres, duckdb, …).")
     is_default: bool = Field(..., description="True for the primary DATABASE_URL backend.")
 
 

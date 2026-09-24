@@ -13,6 +13,7 @@ These are not run in default CI. Example:
 
 from __future__ import annotations
 
+import importlib.util
 import os
 
 import pytest
@@ -24,6 +25,10 @@ _CLICKHOUSE_URL = os.environ.get("SEAL_TEST_CLICKHOUSE_URL", "").strip()
 
 @pytest.mark.mysql
 @pytest.mark.skipif(not _MYSQL_URL, reason="SEAL_TEST_MYSQL_URL is not set")
+@pytest.mark.skipif(
+    importlib.util.find_spec("aiomysql") is None,
+    reason="mysql extra (aiomysql) is not installed",
+)
 @pytest.mark.asyncio
 async def test_mysql_live_select() -> None:
     executor = QueryExecutor(
@@ -41,6 +46,10 @@ async def test_mysql_live_select() -> None:
 
 @pytest.mark.clickhouse
 @pytest.mark.skipif(not _CLICKHOUSE_URL, reason="SEAL_TEST_CLICKHOUSE_URL is not set")
+@pytest.mark.skipif(
+    importlib.util.find_spec("clickhouse_connect") is None,
+    reason="clickhouse extra (clickhouse-connect) is not installed",
+)
 @pytest.mark.asyncio
 async def test_clickhouse_live_select() -> None:
     executor = QueryExecutor(

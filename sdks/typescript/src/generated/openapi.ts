@@ -729,7 +729,7 @@ export interface components {
             readonly database_id: string;
             /**
              * Dialect
-             * @description SQL dialect (postgres, duckdb, mysql, sqlite, clickhouse).
+             * @description SQL dialect (postgres, duckdb, …).
              */
             readonly dialect: string;
             /**
@@ -749,7 +749,7 @@ export interface components {
         readonly DatabaseSchema: {
             /**
              * Dialect
-             * @description Database dialect: postgres, duckdb, mysql, sqlite, or clickhouse
+             * @description Database dialect: 'postgres' or 'duckdb'
              */
             readonly dialect: string;
             /**

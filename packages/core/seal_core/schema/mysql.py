@@ -133,7 +133,13 @@ class MySQLIntrospector:
     async def _get_pool(self) -> Any:
         """Lazily create and return the aiomysql connection pool."""
         if self._pool is None:
-            import aiomysql
+            try:
+                import aiomysql
+            except ImportError as exc:
+                raise ImportError(
+                    "MySQL/MariaDB support requires the mysql extra "
+                    "(uv sync --extra mysql, or pip install 'seal-core[mysql]')."
+                ) from exc
 
             params = parse_network_url(
                 self._connection_string,
@@ -162,7 +168,13 @@ class MySQLIntrospector:
 
     async def _query(self, sql: str) -> list[dict[str, Any]]:
         """Run a read-only information_schema query and return dict rows."""
-        import aiomysql
+        try:
+            import aiomysql
+        except ImportError as exc:
+            raise ImportError(
+                "MySQL/MariaDB support requires the mysql extra "
+                "(uv sync --extra mysql, or pip install 'seal-core[mysql]')."
+            ) from exc
 
         pool = await self._get_pool()
         async with pool.acquire() as conn:

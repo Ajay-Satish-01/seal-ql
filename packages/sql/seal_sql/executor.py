@@ -406,7 +406,13 @@ class QueryExecutor:
     async def _get_mysql_pool(self) -> Any:
         """Lazily create and return the aiomysql connection pool."""
         if self._mysql_pool is None:
-            import aiomysql
+            try:
+                import aiomysql
+            except ImportError as exc:
+                raise ImportError(
+                    "MySQL/MariaDB support requires the mysql extra "
+                    "(uv sync --extra mysql, or pip install 'seal-sql[mysql]')."
+                ) from exc
             from seal_core.database.config import parse_network_url
 
             params = parse_network_url(
@@ -429,7 +435,13 @@ class QueryExecutor:
 
     async def _execute_mysql(self, sql: str) -> tuple[list[dict[str, Any]], list[ColumnMetadata]]:
         """Execute SQL against MySQL/MariaDB via aiomysql."""
-        import aiomysql
+        try:
+            import aiomysql
+        except ImportError as exc:
+            raise ImportError(
+                "MySQL/MariaDB support requires the mysql extra "
+                "(uv sync --extra mysql, or pip install 'seal-sql[mysql]')."
+            ) from exc
 
         pool = await self._get_mysql_pool()
         async with pool.acquire() as conn:
@@ -456,7 +468,13 @@ class QueryExecutor:
     async def _get_sqlite_conn(self) -> Any:
         """Lazily create and return the aiosqlite connection."""
         if self._sqlite_conn is None:
-            import aiosqlite
+            try:
+                import aiosqlite
+            except ImportError as exc:
+                raise ImportError(
+                    "SQLite support requires the sqlite extra "
+                    "(uv sync --extra sqlite, or pip install 'seal-sql[sqlite]')."
+                ) from exc
 
             self._sqlite_conn = await aiosqlite.connect(self._connection_string)
             self._sqlite_conn.row_factory = aiosqlite.Row
@@ -483,7 +501,13 @@ class QueryExecutor:
     def _get_clickhouse_client(self) -> Any:
         """Lazily create and return a clickhouse-connect client."""
         if self._clickhouse_client is None:
-            import clickhouse_connect
+            try:
+                import clickhouse_connect
+            except ImportError as exc:
+                raise ImportError(
+                    "ClickHouse support requires the clickhouse extra "
+                    "(uv sync --extra clickhouse, or pip install 'seal-sql[clickhouse]')."
+                ) from exc
             from seal_core.database.config import clickhouse_default_port, parse_network_url
 
             params = parse_network_url(

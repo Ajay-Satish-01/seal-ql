@@ -145,9 +145,6 @@ python:
         - pydantic-settings
         - asyncpg
         - duckdb
-        - aiomysql
-        - aiosqlite
-        - clickhouse-connect
         - pyyaml
         - instructor
         - litellm
@@ -155,20 +152,23 @@ python:
         - pytest
         - pytest-asyncio
       chromadb_linux_extra: ">=0.6,<0.7"
+      aiomysql_extra: ">=0.2.0"
+      aiosqlite_extra: ">=0.20.0"
+      clickhouse_connect_extra: ">=0.8.0"
 
     packages/sql:
       dependencies:
         - pydantic
         - asyncpg
         - duckdb
-        - aiomysql
-        - aiosqlite
-        - clickhouse-connect
         - polars
       dev:
         - pytest
         - pytest-asyncio
         - pandas
+      aiomysql_extra: ">=0.2.0"
+      aiosqlite_extra: ">=0.20.0"
+      clickhouse_connect_extra: ">=0.8.0"
 
     packages/charts:
       dependencies:

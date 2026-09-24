@@ -169,9 +169,7 @@ class DatabaseSchema(BaseModel):
     aggregates), their columns, and relationships.
     """
 
-    dialect: str = Field(
-        description="Database dialect: postgres, duckdb, mysql, sqlite, or clickhouse"
-    )
+    dialect: str = Field(description="Database dialect: 'postgres' or 'duckdb'")
     tables: list[TableSchema] = Field(default_factory=list, description="All tables/views/matviews")
     relationships: list[RelationshipInfo] = Field(
         default_factory=list, description="Foreign key relationships"

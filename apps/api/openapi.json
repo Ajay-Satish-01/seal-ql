@@ -1656,7 +1656,7 @@
           "dialect": {
             "type": "string",
             "title": "Dialect",
-            "description": "SQL dialect (postgres, duckdb, mysql, sqlite, clickhouse)."
+            "description": "SQL dialect (postgres, duckdb, \u2026)."
           },
           "is_default": {
             "type": "boolean",
@@ -1678,7 +1678,7 @@
           "dialect": {
             "type": "string",
             "title": "Dialect",
-            "description": "Database dialect: postgres, duckdb, mysql, sqlite, or clickhouse"
+            "description": "Database dialect: 'postgres' or 'duckdb'"
           },
           "tables": {
             "items": {

@@ -160,8 +160,18 @@ docker compose exec -T api uv run pytest -v \\
 
         <h2>Optional live MySQL / ClickHouse</h2>
         <p>
-          Unit tests mock MySQL and ClickHouse drivers. Optional integration tests run only when you
-          point at a real server:
+          Default Compose and the API image include Postgres and DuckDB only. Install extras before
+          exercising the other engines:
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`uv sync --extra sqlite        # in-memory SQLite unit tests
+uv sync --extra mysql         # aiomysql (mocked tests do not need this)
+uv sync --extra clickhouse    # clickhouse-connect`}
+        />
+        <p>
+          Unit tests mock MySQL and ClickHouse drivers. SQLite file/memory tests skip when the{' '}
+          <code>sqlite</code> extra is missing. Optional live servers (not in default Compose):
         </p>
         <CodeBlock
           language="bash"
@@ -174,8 +184,8 @@ SEAL_TEST_CLICKHOUSE_URL='clickhouse://default@127.0.0.1:8123/default' \\
   uv run pytest -m clickhouse -v`}
         />
         <p>
-          SQLite is covered in default unit tests with <code>:memory:</code> and temporary files —
-          no extra marker. These live markers are skipped in CI unless the env vars are set.
+          These live markers are skipped in CI unless the env vars are set. Do not add MySQL or
+          ClickHouse services to default Compose — Postgres and DuckDB already cover CI.
         </p>
 
         <h2>Branch protection</h2>

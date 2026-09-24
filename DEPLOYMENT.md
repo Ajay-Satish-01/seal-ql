@@ -188,9 +188,19 @@ Install `seal-core[chroma]` in the image (Linux builds) or use a custom store:
 
 ```bash
 VECTOR_STORE=chroma
+docker compose build --build-arg SEAL_EXTRA=chroma
 ```
 
 Persist Chroma data with an additional volume if using the reference implementation.
+
+### Optional dialect extras (MySQL / SQLite / ClickHouse)
+
+Default Compose and the API image include **Postgres + DuckDB** only. To execute against MySQL, SQLite, or ClickHouse, install extras (no extra Compose services):
+
+```bash
+docker compose build --build-arg SEAL_EXTRA=mysql
+# or sqlite, clickhouse, or dialects (all three)
+```
 
 ### Standalone `docker run` (cloud)
 

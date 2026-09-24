@@ -142,9 +142,9 @@ Dashboard smoke test: `apps/web` on port **3001** (database dropdown, Query/Chat
 
 | Item                             | Status                                           |
 | -------------------------------- | ------------------------------------------------ |
-| Per-database catalog YAML        | Planned — today catalog is global from `default` |
-| Per-database vector indexes      | Planned — today index is default-only            |
-| Per-database semantic registries | Planned                                          |
+| Per-database catalog YAML        | Deferred — [issue #57](https://github.com/Ajay-Satish-01/seal-ql/issues/57); catalog stays global from `default` |
+| Per-database vector indexes      | Deferred — [issue #58](https://github.com/Ajay-Satish-01/seal-ql/issues/58); index stays default-only |
+| Per-database semantic registries | Planned; not started                             |
 
 Session pinning to `database_id` **is** shipped; see [multi-database.md](multi-database.md#chat-sessions-and-database_id).
 

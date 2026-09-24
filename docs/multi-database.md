@@ -82,10 +82,10 @@ SEAL_DATABASES='{"analytics":"duckdb:///data/analytics.duckdb","sandbox":":memor
 | Dialect | Accepted forms | Notes |
 | ------- | -------------- | ----- |
 | **Postgres** | `postgresql+asyncpg://user:pass@host:5432/db` | Standard Docker / `make up` default |
-| **MySQL / MariaDB** | `mysql://user:pass@host:3306/db`, `mysql+pymysql://…`, `mariadb://…` | Internal dialect `mysql` (SQLGlot mysql). Passed through to aiomysql. |
-| **SQLite file** | `sqlite:///relative.db`, `sqlite:////absolute/path.db` | SQLAlchemy-style slashes; normalized to a file path internally |
-| **SQLite in-memory** | `sqlite:///:memory:` | Ephemeral; new empty DB per introspector/executor connection |
-| **ClickHouse** | `clickhouse://user:pass@host:8123/db`, `clickhouses://…` (TLS) | HTTP via clickhouse-connect (sync in a thread pool) |
+| **MySQL / MariaDB** | `mysql://user:pass@host:3306/db`, `mysql+pymysql://…`, `mariadb://…` | Extra `mysql` (`aiomysql`). Internal dialect `mysql`. |
+| **SQLite file** | `sqlite:///relative.db`, `sqlite:////absolute/path.db` | Extra `sqlite` (`aiosqlite`). SQLAlchemy-style slashes; normalized to a file path |
+| **SQLite in-memory** | `sqlite:///:memory:` | Extra `sqlite`. Ephemeral; new empty DB per introspector/executor connection |
+| **ClickHouse** | `clickhouse://user:pass@host:8123/db`, `clickhouses://…` (TLS) | Extra `clickhouse` (`clickhouse-connect`, sync in a thread pool) |
 | **DuckDB file** | `duckdb:///absolute/or/relative/path.duckdb` | URL form; normalized to a file path internally |
 | **DuckDB in-memory** | `:memory:` or `duckdb:///:memory:` | Ephemeral; new empty DB per API process |
 | **DuckDB path** | `/data/analytics.duckdb` | Plain path (no scheme) also works |
@@ -165,9 +165,35 @@ Always pass `database_id` on **every** chat message in a session, not only the f
 | `SchemaAwareEnhancer` on non-default | Introspected schema only — no catalog/semantic prompt injection |
 | `VectorRagEnhancer` on non-default | Skipped (index matches default) |
 
-## API & SDK
+Per-`database_id` catalog files and per-database vector indexes are **deferred** — do not half-build them here:
 
-### HTTP examples
+- [GitHub #57 — Per-database catalog sync](https://github.com/Ajay-Satish-01/seal-ql/issues/57)
+- [GitHub #58 — Per-database vector RAG indexes](https://github.com/Ajay-Satish-01/seal-ql/issues/58)
+
+Until those land, use **one Seal instance per database** when catalogs or RAG must match a non-default schema.
+
+## Drivers (optional extras)
+
+Default `uv sync` / Docker image ships **Postgres + DuckDB** only (`asyncpg`, `duckdb`). MySQL/MariaDB, SQLite, and ClickHouse drivers are extras — not baked into the default image or Compose stack:
+
+```bash
+uv sync --extra mysql          # aiomysql
+uv sync --extra sqlite         # aiosqlite
+uv sync --extra clickhouse     # clickhouse-connect
+# or all three:
+uv sync --extra dialects --package seal-api
+```
+
+Docker (same `SEAL_EXTRA` pattern as Chroma):
+
+```bash
+docker compose build --build-arg SEAL_EXTRA=mysql
+# or SEAL_EXTRA=dialects
+```
+
+Missing extras raise a clear `ImportError` when that dialect is first used.
+
+## API & SDK
 
 ```bash
 # Query — analytics DuckDB

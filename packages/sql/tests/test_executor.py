@@ -16,6 +16,7 @@ Those belong in integration tests (run via `make test-integration`).
 from __future__ import annotations
 
 import asyncio
+import importlib.util
 from typing import Any
 
 import duckdb
@@ -555,6 +556,11 @@ class TestResultIntegration:
 
 class TestSQLiteExecution:
     """Integration-style tests using aiosqlite in-memory."""
+
+    pytestmark = pytest.mark.skipif(
+        importlib.util.find_spec("aiosqlite") is None,
+        reason="sqlite extra (aiosqlite) is not installed",
+    )
 
     @pytest.fixture
     async def executor(self) -> QueryExecutor:

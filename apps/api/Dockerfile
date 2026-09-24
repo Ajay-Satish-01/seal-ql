@@ -22,6 +22,7 @@ COPY evals/pyproject.toml evals/pyproject.toml
 FROM base AS dev
 
 # Optional: SEAL_EXTRA=chroma installs chromadb (when VECTOR_STORE=chroma in .env)
+# Dialect extras: mysql, sqlite, clickhouse, or dialects (not in the default image)
 ARG SEAL_EXTRA=
 
 # Install dependencies (cached layer)

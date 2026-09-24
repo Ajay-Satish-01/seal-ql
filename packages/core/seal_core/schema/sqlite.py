@@ -92,7 +92,13 @@ class SQLiteIntrospector:
     async def _get_conn(self) -> Any:
         """Lazily create and return an aiosqlite connection."""
         if self._conn is None:
-            import aiosqlite
+            try:
+                import aiosqlite
+            except ImportError as exc:
+                raise ImportError(
+                    "SQLite support requires the sqlite extra "
+                    "(uv sync --extra sqlite, or pip install 'seal-core[sqlite]')."
+                ) from exc
 
             self._conn = await aiosqlite.connect(self._connection_string)
             self._conn.row_factory = aiosqlite.Row

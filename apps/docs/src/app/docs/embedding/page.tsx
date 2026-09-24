@@ -215,8 +215,15 @@ export default function EmbeddingPage() {
 
         <h2>Roadmap for future work</h2>
         <ul>
-          <li>Per-database catalog YAML</li>
-          <li>Per-database vector indexes</li>
+          <li>
+            Per-database catalog YAML — deferred (
+            <a href="https://github.com/Ajay-Satish-01/seal-ql/issues/57">GitHub #57</a>); not
+            half-built in this release
+          </li>
+          <li>
+            Per-database vector indexes — deferred (
+            <a href="https://github.com/Ajay-Satish-01/seal-ql/issues/58">GitHub #58</a>)
+          </li>
           <li>Per-database semantic registries</li>
         </ul>
         <p className="text-muted-foreground text-sm">

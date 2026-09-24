@@ -151,7 +151,13 @@ class ClickHouseIntrospector:
     def _get_client(self) -> Any:
         """Lazily create and return a clickhouse-connect client."""
         if self._client is None:
-            import clickhouse_connect
+            try:
+                import clickhouse_connect
+            except ImportError as exc:
+                raise ImportError(
+                    "ClickHouse support requires the clickhouse extra "
+                    "(uv sync --extra clickhouse, or pip install 'seal-core[clickhouse]')."
+                ) from exc
 
             params = parse_network_url(
                 self._connection_string,

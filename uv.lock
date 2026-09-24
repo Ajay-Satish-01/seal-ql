@@ -2837,6 +2837,22 @@ dependencies = [
 chroma = [
     { name = "seal-core", extra = ["chroma"] },
 ]
+clickhouse = [
+    { name = "seal-core", extra = ["clickhouse"] },
+    { name = "seal-sql", extra = ["clickhouse"] },
+]
+dialects = [
+    { name = "seal-core", extra = ["mysql", "sqlite", "clickhouse"] },
+    { name = "seal-sql", extra = ["mysql", "sqlite", "clickhouse"] },
+]
+mysql = [
+    { name = "seal-core", extra = ["mysql"] },
+    { name = "seal-sql", extra = ["mysql"] },
+]
+sqlite = [
+    { name = "seal-core", extra = ["sqlite"] },
+    { name = "seal-sql", extra = ["sqlite"] },
+]
 dev = [
     { name = "httpx" },
     { name = "pytest" },
@@ -2856,11 +2872,19 @@ requires-dist = [
     { name = "seal-charts", editable = "packages/charts" },
     { name = "seal-core", editable = "packages/core" },
     { name = "seal-core", extras = ["chroma"], marker = "extra == 'chroma'", editable = "packages/core" },
+    { name = "seal-core", extras = ["clickhouse"], marker = "extra == 'clickhouse'", editable = "packages/core" },
+    { name = "seal-core", extras = ["mysql", "sqlite", "clickhouse"], marker = "extra == 'dialects'", editable = "packages/core" },
+    { name = "seal-core", extras = ["mysql"], marker = "extra == 'mysql'", editable = "packages/core" },
+    { name = "seal-core", extras = ["sqlite"], marker = "extra == 'sqlite'", editable = "packages/core" },
     { name = "seal-semantic", editable = "packages/semantic" },
     { name = "seal-sql", editable = "packages/sql" },
+    { name = "seal-sql", extras = ["clickhouse"], marker = "extra == 'clickhouse'", editable = "packages/sql" },
+    { name = "seal-sql", extras = ["mysql", "sqlite", "clickhouse"], marker = "extra == 'dialects'", editable = "packages/sql" },
+    { name = "seal-sql", extras = ["mysql"], marker = "extra == 'mysql'", editable = "packages/sql" },
+    { name = "seal-sql", extras = ["sqlite"], marker = "extra == 'sqlite'", editable = "packages/sql" },
     { name = "uvicorn", specifier = ">=0.34.0" },
 ]
-provides-extras = ["chroma", "dev"]
+provides-extras = ["chroma", "mysql", "sqlite", "clickhouse", "dialects", "dev"]
 
 [[package]]
 name = "seal-charts"
@@ -2891,10 +2915,7 @@ name = "seal-core"
 version = "0.1.0"
 source = { editable = "packages/core" }
 dependencies = [
-    { name = "aiomysql" },
-    { name = "aiosqlite" },
     { name = "asyncpg" },
-    { name = "clickhouse-connect" },
     { name = "duckdb" },
     { name = "instructor" },
     { name = "litellm" },
@@ -2907,6 +2928,15 @@ dependencies = [
 chroma = [
     { name = "chromadb", marker = "sys_platform == 'linux'" },
 ]
+clickhouse = [
+    { name = "clickhouse-connect" },
+]
+mysql = [
+    { name = "aiomysql" },
+]
+sqlite = [
+    { name = "aiosqlite" },
+]
 dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -2914,11 +2944,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiomysql", specifier = ">=0.2.0" },
-    { name = "aiosqlite", specifier = ">=0.20.0" },
+    { name = "aiomysql", marker = "extra == 'mysql'", specifier = ">=0.2.0" },
+    { name = "aiosqlite", marker = "extra == 'sqlite'", specifier = ">=0.20.0" },
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "chromadb", marker = "sys_platform == 'linux' and extra == 'chroma'", specifier = ">=0.6,<0.7" },
-    { name = "clickhouse-connect", specifier = ">=0.8.0" },
+    { name = "clickhouse-connect", marker = "extra == 'clickhouse'", specifier = ">=0.8.0" },
     { name = "duckdb", specifier = ">=1.1.0" },
     { name = "instructor", specifier = ">=1.7.0" },
     { name = "litellm", specifier = ">=1.83.7,<2" },
@@ -2928,7 +2958,7 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
     { name = "pyyaml", specifier = ">=6.0.0" },
 ]
-provides-extras = ["chroma", "dev"]
+provides-extras = ["chroma", "mysql", "sqlite", "clickhouse", "dev"]
 
 [[package]]
 name = "seal-evals"
@@ -2981,10 +3011,7 @@ name = "seal-sql"
 version = "0.1.0"
 source = { editable = "packages/sql" }
 dependencies = [
-    { name = "aiomysql" },
-    { name = "aiosqlite" },
     { name = "asyncpg" },
-    { name = "clickhouse-connect" },
     { name = "duckdb" },
     { name = "polars" },
     { name = "pydantic" },
@@ -2993,6 +3020,15 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+clickhouse = [
+    { name = "clickhouse-connect" },
+]
+mysql = [
+    { name = "aiomysql" },
+]
+sqlite = [
+    { name = "aiosqlite" },
+]
 dev = [
     { name = "pandas" },
     { name = "pytest" },
@@ -3001,10 +3037,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiomysql", specifier = ">=0.2.0" },
-    { name = "aiosqlite", specifier = ">=0.20.0" },
+    { name = "aiomysql", marker = "extra == 'mysql'", specifier = ">=0.2.0" },
+    { name = "aiosqlite", marker = "extra == 'sqlite'", specifier = ">=0.20.0" },
     { name = "asyncpg", specifier = ">=0.30.0" },
-    { name = "clickhouse-connect", specifier = ">=0.8.0" },
+    { name = "clickhouse-connect", marker = "extra == 'clickhouse'", specifier = ">=0.8.0" },
     { name = "duckdb", specifier = ">=1.1.0" },
     { name = "pandas", marker = "extra == 'dev'", specifier = ">=2.2.0" },
     { name = "polars", specifier = ">=1.15.0" },
@@ -3014,7 +3050,7 @@ requires-dist = [
     { name = "seal-core", editable = "packages/core" },
     { name = "sqlglot", extras = ["c"], specifier = ">=26.0.0" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["mysql", "sqlite", "clickhouse", "dev"]
 
 [[package]]
 name = "seal-workspace"

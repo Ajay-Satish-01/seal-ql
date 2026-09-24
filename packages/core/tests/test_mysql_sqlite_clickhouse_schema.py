@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -165,6 +166,10 @@ class TestMySQLIntrospectorMocked:
 
 
 class TestSQLiteIntrospector:
+    pytestmark = pytest.mark.skipif(
+        importlib.util.find_spec("aiosqlite") is None,
+        reason="sqlite extra (aiosqlite) is not installed",
+    )
     @pytest.mark.asyncio
     async def test_introspect_empty_memory(self) -> None:
         intro = SQLiteIntrospector(":memory:")
