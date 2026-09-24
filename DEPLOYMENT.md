@@ -172,6 +172,12 @@ Example `config/databases.yaml` (mount with `./config:/app/config`):
 databases:
   analytics:
     url: duckdb:///data/analytics.duckdb
+  # mysql_ops:
+  #   url: mysql://reader:pass@host:3306/ops
+  # sqlite_local:
+  #   url: sqlite:///data/local.db
+  # clickhouse_olap:
+  #   url: clickhouse://default@host:8123/default
 ```
 
 Clients pass `"database_id": "analytics"` on `/v1/query`, `/v1/chat`, and `GET /v1/schema?database_id=analytics`. Unknown ids → HTTP **404** `unknown_database_id`.

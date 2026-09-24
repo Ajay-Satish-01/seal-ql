@@ -11,7 +11,6 @@ from __future__ import annotations
 from enum import StrEnum
 
 import sqlglot
-from sqlglot.dialects.dialect import Dialect as SQLGlotDialect
 
 
 class Dialect(StrEnum):
@@ -35,13 +34,6 @@ _DIALECT_MAP: dict[str, str] = {
     Dialect.CLICKHOUSE: "clickhouse",
 }
 
-# Reverse map for resolving from SQLGlot dialect back to ours.
-_REVERSE_DIALECT_MAP: dict[str, Dialect] = {
-    sqlglot_name: key if isinstance(key, Dialect) else Dialect(key)
-    for key, sqlglot_name in _DIALECT_MAP.items()
-    if isinstance(key, Dialect)
-}
-
 
 def to_sqlglot_dialect(dialect: str | Dialect) -> str:
     """Convert an internal dialect identifier to a SQLGlot dialect string.
@@ -62,19 +54,6 @@ def to_sqlglot_dialect(dialect: str | Dialect) -> str:
             f"Supported dialects: {', '.join(_DIALECT_MAP.keys())}"
         )
     return _DIALECT_MAP[key]
-
-
-def get_sqlglot_dialect_obj(dialect: str | Dialect) -> type[SQLGlotDialect]:
-    """Return the SQLGlot Dialect class for a given dialect string.
-
-    Args:
-        dialect: Internal dialect string.
-
-    Returns:
-        The SQLGlot Dialect class.
-    """
-    sqlglot_name = to_sqlglot_dialect(dialect)
-    return SQLGlotDialect.get_or_raise(sqlglot_name)
 
 
 def transpile(

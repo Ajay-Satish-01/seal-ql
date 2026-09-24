@@ -67,7 +67,7 @@ def infer_dialect(url: str) -> str:
     lower = url.lower().strip()
     parsed = urlparse(lower)
     scheme = _scheme_base(parsed.scheme)
-    if scheme in _POSTGRES_SCHEMES or parsed.scheme.startswith("postgresql+"):
+    if scheme in _POSTGRES_SCHEMES:
         return "postgres"
     if scheme in _MYSQL_SCHEMES:
         return "mysql"

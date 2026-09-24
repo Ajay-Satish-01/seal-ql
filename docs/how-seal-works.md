@@ -6,7 +6,7 @@ Contributor-oriented overview of request flow, LLM usage, and safety boundaries.
 
 - **API** — `apps/api` (FastAPI), routes under `/v1/*`
 - **Core** — `packages/core/seal_core/` (chat, planner, guardrails, enhancement, catalog, workspace, pipeline)
-- **SQL** — `packages/sql/` (SQLGlot validator, sanitizer, executor)
+- **SQL** — `packages/sql/` (SQLGlot validator, sanitizer, executor — Postgres, DuckDB, MySQL/MariaDB, SQLite, ClickHouse)
 - **Charts** — `packages/charts/` (Vega-Lite from plan + result, no LLM)
 - **LLM** — LiteLLM + Instructor via `seal_core.llm.client`
 

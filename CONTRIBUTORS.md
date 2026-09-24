@@ -299,6 +299,15 @@ Python tests are written using `pytest` and `pytest-asyncio` for async database 
   # Multi-database registry
   uv run pytest packages/core/tests/test_database_registry.py apps/api/tests/test_database_routing.py -v
 
+  # MySQL / SQLite / ClickHouse (mocked + in-memory SQLite; no live credentials)
+  uv run pytest packages/sql/tests/test_dialects.py packages/sql/tests/test_sanitizer.py \
+    packages/sql/tests/test_validator.py packages/sql/tests/test_executor.py \
+    packages/core/tests/test_mysql_sqlite_clickhouse_schema.py -v
+
+  # Optional live servers (skipped unless env vars are set)
+  # SEAL_TEST_MYSQL_URL=... uv run pytest -m mysql
+  # SEAL_TEST_CLICKHOUSE_URL=... uv run pytest -m clickhouse
+
   # Guardrails
   uv run pytest packages/core/tests/test_guardrails_scope.py packages/core/tests/test_chat_guardrails.py apps/api/tests/test_guardrails_api.py -v
 

@@ -252,14 +252,14 @@ def test_build_database_registry_from_settings(
 
 def test_parse_network_url_mysql() -> None:
     params = parse_network_url(
-        "mysql+pymysql://reader:s3cret@db.example:3307/analytics",
+        "mysql+pymysql://reader:pass@db.example:3307/analytics",
         default_port=3306,
         default_user="root",
     )
     assert params.host == "db.example"
     assert params.port == 3307
     assert params.user == "reader"
-    assert params.password == "s3cret"
+    assert params.password == "pass"
     assert params.database == "analytics"
     assert params.secure is False
 
