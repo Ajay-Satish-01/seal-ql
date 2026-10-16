@@ -16,6 +16,13 @@ dependencies = [
 
 [project.optional-dependencies]
 chroma = ["seal-core[chroma]"]
+mysql = ["seal-core[mysql]", "seal-sql[mysql]"]
+sqlite = ["seal-core[sqlite]", "seal-sql[sqlite]"]
+clickhouse = ["seal-core[clickhouse]", "seal-sql[clickhouse]"]
+dialects = [
+    "seal-core[mysql,sqlite,clickhouse]",
+    "seal-sql[mysql,sqlite,clickhouse]",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24.0",

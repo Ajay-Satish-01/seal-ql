@@ -45,7 +45,7 @@ export default function ArchitecturePage() {
                     └───────────────────────────┬───────────────────────────┘
                                                 │
                     ┌───────────────────────────▼───────────────────────────┐
-                    │ Executor — Postgres / TimescaleDB / DuckDB              │
+                    │ Executor — Postgres / TimescaleDB / DuckDB / MySQL / SQLite / ClickHouse │
                     └───────────────────────────┬───────────────────────────┘
                                                 │
                     ┌───────────────────────────▼───────────────────────────┐

@@ -389,3 +389,66 @@ class TestEdgeCases:
             "JOIN products p ON p.id = 1"
         )
         assert result.valid
+
+
+class TestDialectAwareValidation:
+    def test_mysql_schema_select(self) -> None:
+        schema = DatabaseSchema(
+            dialect="mysql",
+            tables=[
+                TableSchema(
+                    name="users",
+                    kind=TableKind.TABLE,
+                    columns=[
+                        ColumnInfo(
+                            name="id",
+                            data_type="INT",
+                            normalized_type=ColumnType.INTEGER,
+                        )
+                    ],
+                )
+            ],
+        )
+        result = SQLValidator(schema).validate("SELECT id FROM users LIMIT 10")
+        assert result.valid
+
+    def test_clickhouse_schema_select(self) -> None:
+        schema = DatabaseSchema(
+            dialect="clickhouse",
+            tables=[
+                TableSchema(
+                    name="events",
+                    kind=TableKind.TABLE,
+                    columns=[
+                        ColumnInfo(
+                            name="id",
+                            data_type="UInt64",
+                            normalized_type=ColumnType.INTEGER,
+                        )
+                    ],
+                )
+            ],
+        )
+        result = SQLValidator(schema).validate("SELECT id FROM events LIMIT 10")
+        assert result.valid
+
+    def test_sqlite_unknown_table(self) -> None:
+        schema = DatabaseSchema(
+            dialect="sqlite",
+            tables=[
+                TableSchema(
+                    name="users",
+                    kind=TableKind.TABLE,
+                    columns=[
+                        ColumnInfo(
+                            name="id",
+                            data_type="INTEGER",
+                            normalized_type=ColumnType.INTEGER,
+                        )
+                    ],
+                )
+            ],
+        )
+        result = SQLValidator(schema).validate("SELECT id FROM missing")
+        assert not result.valid
+        assert any("Unknown table" in e for e in result.errors)

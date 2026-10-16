@@ -8,6 +8,17 @@
 # DuckDB: use duckdb:///path/to/file.duckdb (normalized to a file path at startup)
 #         or :memory: for ephemeral analytics.
 # Postgres: postgresql+asyncpg://user:pass@host:5432/dbname
+# MySQL / MariaDB: mysql://user:pass@host:3306/dbname
+#                  mysql+pymysql://… and mariadb://… are also accepted
+# SQLite: sqlite:///relative.db | sqlite:////absolute/path.db | sqlite:///:memory:
+# ClickHouse: clickhouse://user:pass@host:8123/dbname  (clickhouses:// for TLS)
+#
+# Drivers: default image is Postgres + DuckDB. For MySQL/SQLite/ClickHouse:
+#   uv sync --extra mysql --package seal-api
+#   uv sync --extra sqlite --package seal-api
+#   uv sync --extra clickhouse --package seal-api
+#   (or all three: uv sync --extra dialects --package seal-api)
+#   docker compose build --build-arg SEAL_EXTRA=mysql
 #
 # API usage: POST /v1/query, POST /v1/chat, GET /v1/schema?database_id=<id>
 # Docs: https://seal.dev/docs/multi-database (or /docs/multi-database on your docs host)
@@ -17,3 +28,9 @@ databases:
     url: duckdb:///data/analytics.duckdb
   # warehouse:
   #   url: postgresql+asyncpg://reader@host:5432/warehouse
+  # mysql_ops:
+  #   url: mysql://reader:pass@host:3306/ops
+  # sqlite_local:
+  #   url: sqlite:///data/local.db
+  # clickhouse_olap:
+  #   url: clickhouse://default@host:8123/default

@@ -74,7 +74,7 @@ for event in client.chat_stream("Summarize", database_id="analytics"):
         />
         <p>
           See <Link href="/docs/multi-database">Multi-database routing</Link> for YAML/JSON config,
-          DuckDB paths, and chat session pinning.
+          DuckDB/SQLite paths, MySQL/ClickHouse URLs, and chat session pinning.
         </p>
 
         <h2 className="text-foreground mt-10 text-2xl font-bold">Chat &amp; catalog</h2>

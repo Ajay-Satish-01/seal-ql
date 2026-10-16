@@ -105,6 +105,9 @@ _OPTIONAL_DEP_ALIASES: dict[str, str] = {
     "chromadb_linux_extra": "chromadb>=0.6,<0.7; sys_platform == 'linux'",
     "polars_optional": "polars>=1.15.0",
     "pandas_optional": "pandas>=2.2.0",
+    "aiomysql_extra": "aiomysql>=0.2.0",
+    "aiosqlite_extra": "aiosqlite>=0.20.0",
+    "clickhouse_connect_extra": "clickhouse-connect>=0.8.0",
 }
 
 

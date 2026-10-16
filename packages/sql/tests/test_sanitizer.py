@@ -1,7 +1,12 @@
 """Tests for the SQL sanitizer module."""
 
 import pytest
-from seal_sql.limits import DEFAULT_MAX_JOINS, DEFAULT_MAX_ROWS, DEFAULT_MAX_SUBQUERY_DEPTH
+from seal_sql.limits import (
+    DEFAULT_MAX_JOINS,
+    DEFAULT_MAX_ROWS,
+    DEFAULT_MAX_SUBQUERY_DEPTH,
+    SanitizerLimits,
+)
 from seal_sql.sanitizer import SQLSanitizer
 
 
@@ -319,6 +324,72 @@ class TestDuckDBDialect:
         assert not result.safe
 
 
+class TestMySQLDialect:
+    def test_mysql_select(self) -> None:
+        sanitizer = SQLSanitizer(dialect="mysql", limits=SanitizerLimits())
+        result = sanitizer.sanitize("SELECT id FROM users LIMIT 10")
+        assert result.safe
+
+    def test_mysql_blocks_delete(self) -> None:
+        sanitizer = SQLSanitizer(dialect="mysql", limits=SanitizerLimits())
+        result = sanitizer.sanitize("DELETE FROM users WHERE id = 1")
+        assert not result.safe
+        assert any("DELETE" in op for op in result.blocked_operations)
+
+
+class TestSQLiteDialect:
+    def test_sqlite_select(self) -> None:
+        sanitizer = SQLSanitizer(dialect="sqlite", limits=SanitizerLimits())
+        result = sanitizer.sanitize("SELECT id FROM users LIMIT 10")
+        assert result.safe
+
+    def test_sqlite_blocks_pragma(self) -> None:
+        sanitizer = SQLSanitizer(dialect="sqlite", limits=SanitizerLimits())
+        result = sanitizer.sanitize("PRAGMA table_info(users)")
+        assert not result.safe
+
+
+class TestClickHouseDialect:
+    def test_clickhouse_select_limit(self) -> None:
+        sanitizer = SQLSanitizer(dialect="clickhouse", limits=SanitizerLimits())
+        result = sanitizer.sanitize("SELECT id FROM events LIMIT 10")
+        assert result.safe
+        assert "LIMIT" in result.sanitized_sql.upper()
+
+    def test_clickhouse_injects_limit(self) -> None:
+        sanitizer = SQLSanitizer(dialect="clickhouse", max_rows=100, limits=SanitizerLimits())
+        result = sanitizer.sanitize("SELECT id FROM events")
+        assert result.safe
+        assert "LIMIT" in result.sanitized_sql.upper()
+        assert "100" in result.sanitized_sql
+
+    def test_clickhouse_clamps_limit(self) -> None:
+        sanitizer = SQLSanitizer(dialect="clickhouse", max_rows=50, limits=SanitizerLimits())
+        result = sanitizer.sanitize("SELECT id FROM events LIMIT 9999")
+        assert result.safe
+        assert "50" in result.sanitized_sql
+
+    def test_clickhouse_blocks_alter_delete_mutation(self) -> None:
+        sanitizer = SQLSanitizer(dialect="clickhouse", limits=SanitizerLimits())
+        result = sanitizer.sanitize("ALTER TABLE events DELETE WHERE id = 1")
+        assert not result.safe
+
+    def test_clickhouse_blocks_alter_update_mutation(self) -> None:
+        sanitizer = SQLSanitizer(dialect="clickhouse", limits=SanitizerLimits())
+        result = sanitizer.sanitize("ALTER TABLE events UPDATE value = 0 WHERE id = 1")
+        assert not result.safe
+
+    def test_clickhouse_blocks_insert(self) -> None:
+        sanitizer = SQLSanitizer(dialect="clickhouse", limits=SanitizerLimits())
+        result = sanitizer.sanitize("INSERT INTO events VALUES (1)")
+        assert not result.safe
+
+    def test_clickhouse_blocks_optimize(self) -> None:
+        sanitizer = SQLSanitizer(dialect="clickhouse", limits=SanitizerLimits())
+        result = sanitizer.sanitize("OPTIMIZE TABLE events")
+        assert not result.safe
+
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -335,4 +406,4 @@ class TestConfiguration:
 
     def test_unsupported_dialect_raises(self) -> None:
         with pytest.raises(ValueError, match="Unsupported dialect"):
-            SQLSanitizer(dialect="mysql")
+            SQLSanitizer(dialect="oracle")

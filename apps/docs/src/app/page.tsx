@@ -91,7 +91,7 @@ const PRODUCTION_FEATURES = [
   {
     icon: Database,
     title: 'Deep Introspection',
-    desc: 'Postgres, TimescaleDB hypertables, materialized views, and DuckDB.',
+    desc: 'Postgres, TimescaleDB, DuckDB, MySQL/MariaDB, SQLite, and ClickHouse.',
     href: '/docs/features',
   },
   {

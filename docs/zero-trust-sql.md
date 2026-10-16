@@ -20,7 +20,7 @@ Every LLM-generated statement is parsed with **SQLGlot** before execution. Guard
 
 ## SQLValidator
 
-- Parse with `schema.dialect` (`postgres` | `duckdb`)
+- Parse with `schema.dialect` (`postgres` \| `duckdb` \| `mysql` \| `sqlite` \| `clickhouse`)
 - Reject unknown tables/columns; ambiguous unqualified columns per SELECT scope (one error per UNION branch)
 - CTE aliases in scope; CTE output columns not catalog-validated
 - Warn on `SELECT *`
@@ -28,6 +28,7 @@ Every LLM-generated statement is parsed with **SQLGlot** before execution. Guard
 ## SQLSanitizer
 
 - Tree-wide block: DML/DDL, `COPY`, `INTO`, `Lock`, `Command`, `Execute`, etc. (`packages/sql/seal_sql/safety.py`)
+- ClickHouse mutations (`ALTER TABLE … DELETE/UPDATE`) and other DDL remain blocked — the zero-trust boundary is dialect-agnostic
 - Root must be `Select` | `Union` | `Intersect` | `Except`
 - No multi-statement scripts
 - Reject dynamic/negative LIMIT/OFFSET; reject OFFSET > `MAX_ROWS`; clamp all literal LIMITs > `MAX_ROWS`; inject root LIMIT when missing

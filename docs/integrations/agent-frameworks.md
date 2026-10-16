@@ -38,7 +38,7 @@ Register additional backends with `SEAL_DATABASES_PATH` or `SEAL_DATABASES`; pas
 | `seal_query` | Optional (default `default`) | Unknown id → HTTP 404 before guardrails |
 | `seal_chat` | Optional (default `default`) | Pass on **every** turn; session pins after first successful in-scope reply |
 
-DuckDB entries use `duckdb:///path/file.duckdb` or `:memory:` in config (see multi-database guide).
+DuckDB and SQLite entries use `duckdb:///path/file.duckdb`, `sqlite:///relative.db`, or `:memory:` / `sqlite:///:memory:` in config (see multi-database guide). MySQL/MariaDB and ClickHouse use hosted URLs (`mysql://…`, `clickhouse://…`).
 
 ## Scope and errors
 

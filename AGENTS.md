@@ -26,7 +26,7 @@
 - **Query**: `QueryService` (`seal_core/pipeline/query_service.py`) — stateless `/v1/query` orchestration; shares `execute_natural_language_query` with chat.
 - **Query Planner**: LiteLLM + Instructor; shared `execute_natural_language_query` pipeline with chat SQL.
 - **SQL Validator**: SQLGlot AST — zero-trust boundary for all LLM-generated SQL.
-- **Database Executor**: Postgres (TimescaleDB) or DuckDB.
+- **Database Executor**: Postgres (TimescaleDB) and DuckDB by default; MySQL/MariaDB, SQLite, and ClickHouse via extras (`mysql` / `sqlite` / `clickhouse`). Same QueryService path.
 - **Chart Spec Generator**: Vega-Lite; always on `/v1/query`; optional on chat via `include_charts`.
 
 ## Docker
@@ -34,6 +34,7 @@
 - Docker-first: image `seal/api` on Docker Hub; compose stacks API + Postgres + optional Ollama.
 - Mount `./config` for catalog YAML persistence (`CATALOG_AUTO_SYNC`, `DATA_CATALOG_PATH`).
 - Default `VECTOR_STORE=none`; optional Chroma via `seal-core[chroma]` and `VECTOR_STORE=chroma`.
+- Optional dialect extras (`mysql`, `sqlite`, `clickhouse`, or `dialects`) — not in the default image. Same `SEAL_EXTRA` build-arg as Chroma.
 - Local frontends: docs **3000**, dashboard **3001**, API **8000**.
 
 ## SDKs
@@ -41,7 +42,7 @@
 - Python and TypeScript: `Seal` / `AsyncSeal` with `query`, `schema`, `catalog`, `chat`, `chat_stream` / `chatStream`.
 - **TypeScript types**: Pydantic v2 → FastAPI OpenAPI (`make openapi`) → `openapi-typescript` (`make openapi-ts`) → `sdks/typescript/src/generated/openapi.ts`. Do not edit `types.ts` field lists by hand; regenerate.
 - Pass `api_key` / `apiKey` when `SEAL_API_KEY` is set (`X-API-Key`).
-- LiteLLM for providers (OpenAI, Anthropic, Google, Ollama, etc.); Postgres and DuckDB for data.
+- LiteLLM for providers (OpenAI, Anthropic, Google, Ollama, etc.); Postgres and DuckDB for data by default; optional MySQL/MariaDB, SQLite, and ClickHouse extras (`mysql` / `sqlite` / `clickhouse`).
 
 ## Conventions
 

@@ -1,8 +1,9 @@
 """Dialect mapping between internal identifiers and SQLGlot dialects.
 
-Maps our DatabaseSchema.dialect strings (e.g., 'postgres', 'duckdb') to the
-corresponding SQLGlot dialect objects. Also provides transpilation support
-when the LLM generates SQL in a different dialect than the target database.
+Maps our DatabaseSchema.dialect strings (e.g., 'postgres', 'duckdb', 'mysql',
+'sqlite', 'clickhouse') to the corresponding SQLGlot dialect objects. Also
+provides transpilation support when the LLM generates SQL in a different dialect
+than the target database.
 """
 
 from __future__ import annotations
@@ -10,7 +11,6 @@ from __future__ import annotations
 from enum import StrEnum
 
 import sqlglot
-from sqlglot.dialects.dialect import Dialect as SQLGlotDialect
 
 
 class Dialect(StrEnum):
@@ -18,6 +18,9 @@ class Dialect(StrEnum):
 
     POSTGRES = "postgres"
     DUCKDB = "duckdb"
+    MYSQL = "mysql"
+    SQLITE = "sqlite"
+    CLICKHOUSE = "clickhouse"
 
 
 # Mapping from our internal dialect enum to SQLGlot dialect strings.
@@ -25,17 +28,18 @@ class Dialect(StrEnum):
 _DIALECT_MAP: dict[str, str] = {
     Dialect.POSTGRES: "postgres",
     Dialect.DUCKDB: "duckdb",
+    Dialect.MYSQL: "mysql",
+    "mariadb": "mysql",
+    Dialect.SQLITE: "sqlite",
+    Dialect.CLICKHOUSE: "clickhouse",
 }
-
-# Reverse map for resolving from SQLGlot dialect back to ours.
-_REVERSE_DIALECT_MAP: dict[str, Dialect] = {v: Dialect(k) for k, v in _DIALECT_MAP.items()}
 
 
 def to_sqlglot_dialect(dialect: str | Dialect) -> str:
     """Convert an internal dialect identifier to a SQLGlot dialect string.
 
     Args:
-        dialect: Internal dialect string (e.g., 'postgres', 'duckdb').
+        dialect: Internal dialect string (e.g., 'postgres', 'mysql', 'clickhouse').
 
     Returns:
         The corresponding SQLGlot dialect string.
@@ -50,19 +54,6 @@ def to_sqlglot_dialect(dialect: str | Dialect) -> str:
             f"Supported dialects: {', '.join(_DIALECT_MAP.keys())}"
         )
     return _DIALECT_MAP[key]
-
-
-def get_sqlglot_dialect_obj(dialect: str | Dialect) -> type[SQLGlotDialect]:
-    """Return the SQLGlot Dialect class for a given dialect string.
-
-    Args:
-        dialect: Internal dialect string.
-
-    Returns:
-        The SQLGlot Dialect class.
-    """
-    sqlglot_name = to_sqlglot_dialect(dialect)
-    return SQLGlotDialect.get_or_raise(sqlglot_name)
 
 
 def transpile(

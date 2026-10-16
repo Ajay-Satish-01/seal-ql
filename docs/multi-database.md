@@ -9,7 +9,7 @@ Contributor reference below. **Doc index:** [README.md](./README.md). For pipeli
 Seal routes each request to a **pre-configured** database identified by `database_id`. Clients pass an id string — never a connection URL. This supports:
 
 - **Default analytics DB** — `DATABASE_URL` registers id `default`
-- **Additional backends** — warehouse, DuckDB file, read replica, in-memory analytics, etc.
+- **Additional backends** — warehouse, DuckDB file, SQLite file, MySQL replica, ClickHouse, in-memory analytics, etc.
 
 For strict tenant isolation, use **one Seal instance per tenant database** or map tenants to registered ids in your application layer (with your own auth in front of Seal).
 
@@ -56,6 +56,12 @@ databases:
     url: duckdb:///data/analytics.duckdb
   warehouse:
     url: postgresql+asyncpg://reader@host:5432/warehouse
+  mysql_ops:
+    url: mysql://reader:pass@host:3306/ops
+  sqlite_local:
+    url: sqlite:///data/local.db
+  clickhouse_olap:
+    url: clickhouse://default@host:8123/default
 ```
 
 JSON env (non-default ids only):
@@ -76,15 +82,21 @@ SEAL_DATABASES='{"analytics":"duckdb:///data/analytics.duckdb","sandbox":":memor
 | Dialect | Accepted forms | Notes |
 | ------- | -------------- | ----- |
 | **Postgres** | `postgresql+asyncpg://user:pass@host:5432/db` | Standard Docker / `make up` default |
+| **MySQL / MariaDB** | `mysql://user:pass@host:3306/db`, `mysql+pymysql://…`, `mariadb://…` | Extra `mysql` (`aiomysql`). Internal dialect `mysql`. |
+| **SQLite file** | `sqlite:///relative.db`, `sqlite:////absolute/path.db` | Extra `sqlite` (`aiosqlite`). SQLAlchemy-style slashes; normalized to a file path |
+| **SQLite in-memory** | `sqlite:///:memory:` | Extra `sqlite`. Ephemeral; new empty DB per introspector/executor connection |
+| **ClickHouse** | `clickhouse://user:pass@host:8123/db`, `clickhouses://…` (TLS) | Extra `clickhouse` (`clickhouse-connect`, sync in a thread pool) |
 | **DuckDB file** | `duckdb:///absolute/or/relative/path.duckdb` | URL form; normalized to a file path internally |
 | **DuckDB in-memory** | `:memory:` or `duckdb:///:memory:` | Ephemeral; new empty DB per API process |
 | **DuckDB path** | `/data/analytics.duckdb` | Plain path (no scheme) also works |
 
 DuckDB URLs like `duckdb:///data/file.duckdb` are **not** passed verbatim to the driver. `normalize_connection_url()` strips the scheme and uses the path (`/data/file.duckdb`). Remote DuckDB URLs (`duckdb://host/...`) are rejected.
 
-Postgres URLs are passed through as configured (with `+asyncpg` stripped where needed for asyncpg).
+SQLite follows the same file-path story: `sqlite:///relative.db` becomes `relative.db`; `sqlite:////tmp/app.db` becomes `/tmp/app.db`; `sqlite:///:memory:` becomes `:memory:`. Remote `sqlite://host/…` URLs are rejected.
 
-Dialect is inferred from the URL **scheme**, not substrings in file paths (so `/tmp/postgres-exports.duckdb` is still DuckDB).
+Postgres, MySQL/MariaDB, and ClickHouse URLs are passed through as configured (SQLAlchemy driver suffixes such as `+asyncpg` / `+pymysql` are stripped where the driver requires it).
+
+Dialect is inferred from the URL **scheme**, not substrings in file paths (so `/tmp/postgres-exports.duckdb` is still DuckDB). Plain paths without a scheme remain DuckDB.
 
 ## Code path
 
@@ -153,9 +165,35 @@ Always pass `database_id` on **every** chat message in a session, not only the f
 | `SchemaAwareEnhancer` on non-default | Introspected schema only — no catalog/semantic prompt injection |
 | `VectorRagEnhancer` on non-default | Skipped (index matches default) |
 
-## API & SDK
+Per-`database_id` catalog files and per-database vector indexes are **deferred** — do not half-build them here:
 
-### HTTP examples
+- [GitHub #57 — Per-database catalog sync](https://github.com/Ajay-Satish-01/seal-ql/issues/57)
+- [GitHub #58 — Per-database vector RAG indexes](https://github.com/Ajay-Satish-01/seal-ql/issues/58)
+
+Until those land, use **one Seal instance per database** when catalogs or RAG must match a non-default schema.
+
+## Drivers (optional extras)
+
+Default `uv sync` / Docker image ships **Postgres + DuckDB** only (`asyncpg`, `duckdb`). MySQL/MariaDB, SQLite, and ClickHouse drivers are extras — not baked into the default image or Compose stack:
+
+```bash
+uv sync --extra mysql --package seal-api          # aiomysql
+uv sync --extra sqlite --package seal-api         # aiosqlite
+uv sync --extra clickhouse --package seal-api     # clickhouse-connect
+# or all three:
+uv sync --extra dialects --package seal-api
+```
+
+Docker (same `SEAL_EXTRA` pattern as Chroma):
+
+```bash
+docker compose build --build-arg SEAL_EXTRA=mysql
+# or SEAL_EXTRA=dialects
+```
+
+Missing extras raise a clear `ImportError` when that dialect is first used.
+
+## API & SDK
 
 ```bash
 # Query — analytics DuckDB
@@ -210,8 +248,10 @@ Agent tools: `config/seal-tools.openai.json` — each SQL-related tool accepts o
 | One Seal, one DB | Only `DATABASE_URL`; omit `databases.yaml` |
 | One Seal, multiple DBs | `config/databases.yaml` or `SEAL_DATABASES` + pass `database_id` per request |
 | DuckDB file in Docker | Mount host dir into container (e.g. `./data:/data`) and use `duckdb:///data/file.duckdb` |
+| SQLite file in Docker | Same mount pattern with `sqlite:////data/local.db` (four slashes for an absolute path) |
 | Multi-tenant SaaS | One Seal per tenant DB, or tenant → id mapping in your BFF |
-| Read replica | Register id `replica` with read-only Postgres URL |
+| Read replica | Register id `replica` with a read-only Postgres or MySQL URL |
+| ClickHouse OLAP | Register id `clickhouse_olap` with `clickhouse://…`; mutations/DDL stay blocked by the SQLGlot zero-trust boundary |
 
 ## Troubleshooting
 
@@ -219,6 +259,8 @@ Agent tools: `config/seal-tools.openai.json` — each SQL-related tool accepts o
 | ------- | ------------ | ---------- |
 | `404 unknown_database_id` | Typo or config not loaded | Check YAML/JSON, restart API, read startup logs for `Registering database` |
 | DuckDB IO / invalid database file | Bad path or empty file at path | Ensure directory exists in container; use `duckdb:///…` or plain path; file is created on first connect if missing |
+| SQLite IO / unable to open database | Bad path or missing directory | Use `sqlite:///relative.db` or `sqlite:////absolute/path.db`; mount the directory in Docker |
+| ClickHouse connection refused | Wrong host/port or TLS scheme | HTTP interface defaults to port **8123**; use `clickhouses://` for TLS |
 | `400 session_database_id_mismatch` | Follow-up used different id than pinned session | Send same `database_id` or start a new `session_id` |
 | SQL references wrong tables | Catalog/semantic from default applied to wrong mental model | Use `GET /v1/schema?database_id=…`; expect no catalog hints on non-default |
 | Chat lacks RAG context on `analytics` | Vector index is default-only | Expected; enable separate instance or use `default` for RAG-heavy chat |

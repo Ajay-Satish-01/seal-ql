@@ -57,6 +57,10 @@ pythonpath = [
     "scripts",
 ]
 asyncio_mode = "auto"
+markers = [
+    "mysql: live MySQL/MariaDB integration tests (requires SEAL_TEST_MYSQL_URL)",
+    "clickhouse: live ClickHouse integration tests (requires SEAL_TEST_CLICKHOUSE_URL)",
+]
 
 [tool.ruff]
 target-version = "py311"

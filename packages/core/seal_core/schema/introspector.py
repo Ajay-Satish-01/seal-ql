@@ -37,7 +37,7 @@ def get_introspector(dialect: str, connection_string: str) -> SchemaIntrospector
     """Factory to create the appropriate introspector for a given database dialect.
 
     Args:
-        dialect: Database dialect — 'postgres' or 'duckdb'.
+        dialect: Database dialect — postgres, duckdb, mysql, sqlite, or clickhouse.
         connection_string: Connection string or path for the database.
 
     Returns:
@@ -46,15 +46,28 @@ def get_introspector(dialect: str, connection_string: str) -> SchemaIntrospector
     Raises:
         ValueError: If the dialect is not supported.
     """
-    if dialect == "duckdb":
+    key = dialect.lower().strip()
+    if key == "duckdb":
         from seal_core.schema.duckdb import DuckDBIntrospector
 
         return DuckDBIntrospector(connection_string)
-    elif dialect in ("postgres", "postgresql"):
+    if key in {"postgres", "postgresql"}:
         from seal_core.schema.postgres import PostgresIntrospector
 
         return PostgresIntrospector(connection_string)
-    else:
-        raise ValueError(
-            f"Unsupported dialect: '{dialect}'. Supported dialects: 'postgres', 'duckdb'."
-        )
+    if key in {"mysql", "mariadb"}:
+        from seal_core.schema.mysql import MySQLIntrospector
+
+        return MySQLIntrospector(connection_string)
+    if key == "sqlite":
+        from seal_core.schema.sqlite import SQLiteIntrospector
+
+        return SQLiteIntrospector(connection_string)
+    if key == "clickhouse":
+        from seal_core.schema.clickhouse import ClickHouseIntrospector
+
+        return ClickHouseIntrospector(connection_string)
+    raise ValueError(
+        f"Unsupported dialect: '{dialect}'. "
+        "Supported dialects: 'postgres', 'duckdb', 'mysql', 'sqlite', 'clickhouse'."
+    )
