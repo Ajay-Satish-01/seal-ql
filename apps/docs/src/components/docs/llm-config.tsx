@@ -86,6 +86,11 @@ export function LlmConfigSection() {
             type: 'cloud',
             description: 'Groq (requires OLLAMA_PROFILE=disabled and GROQ_API_KEY).',
           },
+          {
+            name: 'mistral/mistral-large-latest',
+            type: 'cloud',
+            description: 'Mistral (requires OLLAMA_PROFILE=disabled and LLM_API_KEY or MISTRAL_API_KEY).',
+          },
         ]}
       />
 
@@ -122,6 +127,12 @@ export function LlmConfigSection() {
             name: 'GROQ_API_KEY',
             type: 'string',
             description: 'Used when LLM_MODEL starts with groq/.',
+          },
+          
+          {
+            name: 'MISTRAL_API_KEY',
+            type: 'string',
+            description: 'Used when LLM_MODEL starts with mistral/.',
           },
         ]}
       />
@@ -173,7 +184,11 @@ LLM_API_KEY=your-key-here
 
 # Groq example:
 # LLM_MODEL=groq/llama-3.3-70b-versatile
-# GROQ_API_KEY=gsk_...`}
+# GROQ_API_KEY=gsk_...
+
+# Mistral example:
+# LLM_MODEL=mistral/mistral-large-latest
+# MISTRAL_API_KEY=...`}
       />
       <p className="text-muted-foreground mt-4 leading-relaxed">
         <strong>What to expect:</strong> No Ollama container; latency follows your provider region.

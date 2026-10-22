@@ -12,7 +12,7 @@ from seal_core.llm.rate_limit import (
 
 _CLIENT_LLM_AUTH = (
     "LLM authentication failed. Check LLM_API_KEY or provider API keys "
-    "(GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY) in .env."
+    "(GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, MISTRAL_API_KEY) in .env."
 )
 _CLIENT_LLM_MODEL = (
     "LLM model not found or unavailable. Update LLM_MODEL in .env or workspace settings."
